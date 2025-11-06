@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --import-alias \"@/*\" --eslint)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(supabase init:*)",
+      "Bash(supabase migration:*)",
+      "Bash(cat:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(supabase link:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

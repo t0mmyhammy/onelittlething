@@ -1,0 +1,2 @@
+-- Seed file for database initialization
+-- Add your seed data here when needed
