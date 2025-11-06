@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import ChildrenSection from '@/components/ChildrenSection';
+import EntriesSection from '@/components/EntriesSection';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 
 // Disable caching for this page
@@ -217,46 +218,12 @@ export default async function DashboardPage() {
         />
 
         {/* Recent Entries */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-serif text-gray-900">Recent Moments</h3>
-            <button className="bg-sage text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90">
-              New Entry
-            </button>
-          </div>
-
-          {entries && entries.length > 0 ? (
-            <div className="space-y-4">
-              {entries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-4 border border-sand rounded-lg"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {entry.entry_children?.map((ec: any) => (
-                        <span
-                          key={ec.children.id}
-                          className="text-xs bg-amber px-2 py-1 rounded-full"
-                        >
-                          {ec.children.name}
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-500">
-                      {new Date(entry.entry_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">{entry.content}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">
-              No moments captured yet. Start your journey today!
-            </p>
-          )}
-        </div>
+        <EntriesSection
+          initialEntries={entries || []}
+          children={children || []}
+          familyId={familyId}
+          userId={user.id}
+        />
       </main>
     </div>
   );
