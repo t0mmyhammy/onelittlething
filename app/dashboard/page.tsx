@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import ChildrenSection from '@/components/ChildrenSection';
 import EntriesSection from '@/components/EntriesSection';
+import OnThisDay from '@/components/OnThisDay';
+import QuickEntryForm from '@/components/QuickEntryForm';
+import StreakWidget from '@/components/StreakWidget';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 
 // Disable caching for this page
@@ -144,14 +146,14 @@ export default async function DashboardPage() {
   const displayName = userPrefs?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const profilePhotoUrl = userPrefs?.profile_photo_url;
 
-  // Get children
+  // Get children (show all except explicitly archived)
     const { data: children } = await supabase
       .from('children')
-      .select('id, name, birthdate, gender, photo_url, created_at, family_id')
+      .select('id, name, birthdate, gender, photo_url, label_color, created_at, family_id, archived')
       .eq('family_id', familyId)
       .order('created_at', { ascending: true });
 
-  // Get recent entries
+  // Get all entries
   const { data: entries } = await supabase
     .from('entries')
     .select(`
@@ -161,48 +163,68 @@ export default async function DashboardPage() {
       )
     `)
     .eq('family_id', familyId)
+    .order('entry_date', { ascending: false });
+
+  // Get "On This Day" entries from previous years
+  const today = new Date();
+  const monthDay = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const currentYear = today.getFullYear();
+
+  const { data: onThisDayEntries } = await supabase
+    .from('entries')
+    .select(`
+      *,
+      entry_children(
+        children(*)
+      )
+    `)
+    .eq('family_id', familyId)
+    .like('entry_date', `%-${monthDay}`)
+    .neq('entry_date', today.toISOString().split('T')[0]) // Exclude today
     .order('entry_date', { ascending: false })
-    .limit(10);
+    .limit(3);
 
   return (
     <div className="min-h-screen bg-cream">
       <header className="bg-white border-b border-sand">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-serif text-gray-900">OneLittleThing</h1>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/profile"
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            >
-              {profilePhotoUrl ? (
-                <img
-                  src={profilePhotoUrl}
-                  alt={displayName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-sand"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-sand flex items-center justify-center">
-                  <UserCircleIcon className="w-6 h-6 text-gray-400" />
-                </div>
-              )}
-              <span className="text-sm text-gray-700 font-medium">{displayName}</span>
-            </Link>
-            <form action="/api/auth/signout" method="post">
-              <button
-                type="submit"
-                className="text-sm text-gray-600 hover:text-gray-900"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-serif text-gray-900">OneLittleThing</h1>
+            <div className="flex items-center gap-6">
+              <Link
+                href="/settings"
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
               >
-                Sign out
-              </button>
-            </form>
+                {profilePhotoUrl ? (
+                  <img
+                    src={profilePhotoUrl}
+                    alt={displayName}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-sand"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-sand flex items-center justify-center">
+                    <UserCircleIcon className="w-6 h-6 text-gray-400" />
+                  </div>
+                )}
+                <span className="text-sm text-gray-700 font-medium">{displayName}</span>
+              </Link>
+              <form action="/api/auth/signout" method="post">
+                <button
+                  type="submit"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h2 className="text-3xl font-serif text-gray-900 mb-2">
-            Welcome back!
+            Welcome back, {displayName}!
           </h2>
           <p className="text-gray-600">
             {children && children.length > 0
@@ -211,11 +233,24 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Children Section */}
-        <ChildrenSection
-          initialChildren={children || []}
-          familyId={familyId}
-        />
+        {/* Quick Entry Form - Primary Action */}
+        <div className="mb-8">
+          <QuickEntryForm
+            children={children || []}
+            familyId={familyId}
+            userId={user.id}
+          />
+        </div>
+
+        {/* On This Day */}
+        {onThisDayEntries && onThisDayEntries.length > 0 && (
+          <div className="mb-8">
+            <OnThisDay entries={onThisDayEntries} />
+          </div>
+        )}
+
+        {/* Streak Widget */}
+        <StreakWidget entries={entries || []} children={children || []} />
 
         {/* Recent Entries */}
         <EntriesSection

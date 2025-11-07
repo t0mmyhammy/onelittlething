@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface Child {
@@ -18,6 +18,14 @@ interface NewEntryModalProps {
   userId: string;
 }
 
+// Helper function to get local date string in YYYY-MM-DD format
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function NewEntryModal({
   isOpen,
   onClose,
@@ -27,11 +35,27 @@ export default function NewEntryModal({
   userId,
 }: NewEntryModalProps) {
   const [content, setContent] = useState('');
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entryDate, setEntryDate] = useState(getLocalDateString(new Date()));
   const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+  const [showChildSelection, setShowChildSelection] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const supabase = createClient();
+
+  // Fixed placeholder to avoid hydration mismatch
+  const placeholder = "What moment do you want to remember?";
+
+  // Auto-focus text field when modal opens
+  useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      // Small delay to ensure modal animation completes
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
 
   const toggleChild = (childId: string) => {
     setSelectedChildren((prev) =>
@@ -47,8 +71,13 @@ export default function NewEntryModal({
     setLoading(true);
 
     try {
-      if (selectedChildren.length === 0) {
-        throw new Error('Please select at least one child');
+      // If no children selected, default to all children
+      const childrenToTag = selectedChildren.length > 0
+        ? selectedChildren
+        : children.map(c => c.id);
+
+      if (childrenToTag.length === 0) {
+        throw new Error('Please add a child first before creating entries');
       }
 
       // Create the entry
@@ -66,7 +95,7 @@ export default function NewEntryModal({
       if (entryError) throw entryError;
 
       // Create entry-child relationships
-      const entryChildrenData = selectedChildren.map((childId) => ({
+      const entryChildrenData = childrenToTag.map((childId) => ({
         entry_id: entry.id,
         child_id: childId,
       }));
@@ -79,7 +108,7 @@ export default function NewEntryModal({
 
       // Reset form
       setContent('');
-      setEntryDate(new Date().toISOString().split('T')[0]);
+      setEntryDate(getLocalDateString(new Date()));
       setSelectedChildren([]);
       onEntryCreated();
       onClose();
@@ -115,84 +144,223 @@ export default function NewEntryModal({
             </div>
           )}
 
-          {/* Date */}
-          <div>
-            <label htmlFor="entryDate" className="block text-sm font-medium text-gray-700 mb-2">
-              Date
-            </label>
-            <input
-              id="entryDate"
-              type="date"
-              value={entryDate}
-              onChange={(e) => setEntryDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all"
-            />
-          </div>
-
-          {/* Select Children */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Who is this about? <span className="text-rose">*</span>
-            </label>
-            {children.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {children.map((child) => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => toggleChild(child.id)}
-                    className={`p-3 border-2 rounded-lg transition-all ${
-                      selectedChildren.includes(child.id)
-                        ? 'border-sage bg-sage/10'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      {child.photo_url ? (
-                        <img
-                          src={child.photo_url}
-                          alt={child.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                          <span className="text-xl text-gray-400">
-                            {child.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-gray-900">{child.name}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                <p className="text-gray-600 mb-2">No children added yet</p>
-                <p className="text-sm text-gray-500">Add a child first to create entries</p>
-              </div>
-            )}
-          </div>
-
-          {/* Content */}
+          {/* Content - moved to top for immediate focus */}
           <div>
             <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
-              What happened today? <span className="text-rose">*</span>
+              What happened today?
             </label>
             <textarea
+              ref={textareaRef}
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
-              rows={6}
-              placeholder="Parker said the funniest thing at dinner..."
+              rows={4}
+              placeholder={placeholder}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all resize-none"
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 mt-1">
               Capture the little things - they become the big things
             </p>
+          </div>
+
+          {/* Select Children - Improved */}
+          <div>
+            {children.length > 0 ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-gray-600">About:</span>
+                  {!showChildSelection && (
+                    <div className="flex gap-2 flex-wrap items-center">
+                      {selectedChildren.length === 0 ? (
+                        <span className="px-3 py-1 bg-sage/10 text-sage rounded-full font-medium">
+                          All children
+                        </span>
+                      ) : (
+                        selectedChildren.map((childId) => {
+                          const child = children.find(c => c.id === childId);
+                          return child ? (
+                            <span key={childId} className="px-3 py-1 bg-sage/10 text-sage rounded-full font-medium">
+                              {child.name}
+                            </span>
+                          ) : null;
+                        })
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowChildSelection(true)}
+                        className="px-3 py-1 text-cornflower hover:text-rose transition-colors"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Child Selection Expanded */}
+                {showChildSelection && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {children.map((child) => {
+                        const isSelected = selectedChildren.includes(child.id);
+                        return (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => toggleChild(child.id)}
+                            className={`p-3 border-2 rounded-lg transition-all text-left ${
+                              isSelected
+                                ? 'border-sage bg-sage/10 ring-2 ring-sage/20'
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {child.photo_url ? (
+                                <img
+                                  src={child.photo_url}
+                                  alt={child.name}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <span className="text-sm text-gray-400">
+                                    {child.name.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-900">{child.name}</span>
+                                  {isSelected && (
+                                    <svg className="w-4 h-4 text-sage" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedChildren([]);
+                          setShowChildSelection(false);
+                        }}
+                        className="px-4 py-2 text-sm bg-sage/10 text-sage rounded-lg hover:bg-sage/20 transition-colors"
+                      >
+                        All children
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowChildSelection(false)}
+                        className="flex-1 px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-500">No children added</span>
+            )}
+          </div>
+
+          {/* Date - Quick Buttons */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              When did this happen?
+            </label>
+            {!showDatePicker ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEntryDate(getLocalDateString(new Date()));
+                    setShowDatePicker(false);
+                  }}
+                  className={`flex-1 px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                    entryDate === getLocalDateString(new Date())
+                      ? 'border-sage bg-sage/10 text-sage'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    setEntryDate(getLocalDateString(yesterday));
+                    setShowDatePicker(false);
+                  }}
+                  className={`flex-1 px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                    (() => {
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      return entryDate === getLocalDateString(yesterday);
+                    })()
+                      ? 'border-sage bg-sage/10 text-sage'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDatePicker(true)}
+                  className={`flex-1 px-4 py-3 border-2 rounded-lg font-medium transition-all ${
+                    (() => {
+                      const today = getLocalDateString(new Date());
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      const yesterdayStr = getLocalDateString(yesterday);
+                      return entryDate !== today && entryDate !== yesterdayStr;
+                    })()
+                      ? 'border-sage bg-sage/10 text-sage'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  {(() => {
+                    const today = getLocalDateString(new Date());
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = getLocalDateString(yesterday);
+                    if (entryDate !== today && entryDate !== yesterdayStr) {
+                      // Parse the date locally
+                      const [year, month, day] = entryDate.split('-').map(Number);
+                      const date = new Date(year, month - 1, day);
+                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                    return 'Select date';
+                  })()}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  id="entryDate"
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  max={getLocalDateString(new Date())}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDatePicker(false)}
+                  className="w-full px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Buttons */}
@@ -206,9 +374,9 @@ export default function NewEntryModal({
             </button>
             <button
               type="submit"
-              disabled={loading || !content.trim() || selectedChildren.length === 0}
+              disabled={loading || !content.trim()}
               className={`flex-1 px-4 py-3 rounded-lg font-medium text-white transition-all ${
-                content.trim() && selectedChildren.length > 0 && !loading
+                content.trim() && !loading
                   ? 'bg-sage hover:scale-[1.02]'
                   : 'bg-gray-400 cursor-not-allowed'
               }`}

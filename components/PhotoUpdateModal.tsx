@@ -7,10 +7,12 @@ interface PhotoUpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPhotoSelected: (file: File) => void;
+  onRecropExisting?: () => void;
+  existingPhotoUrl?: string | null;
   childName: string;
 }
 
-export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, childName }: PhotoUpdateModalProps) {
+export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, onRecropExisting, existingPhotoUrl, childName }: PhotoUpdateModalProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -52,6 +54,13 @@ export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, chi
     document.getElementById('file-input')?.click();
   };
 
+  const handleRecropClick = () => {
+    if (onRecropExisting) {
+      onRecropExisting();
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -79,8 +88,16 @@ export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, chi
 
           {/* Example photo circle */}
           <div className="flex justify-center">
-            <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
-              <PhotoIcon className="w-16 h-16 text-gray-400" />
+            <div className="w-32 h-32 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center overflow-hidden">
+              {existingPhotoUrl ? (
+                <img
+                  src={existingPhotoUrl}
+                  alt="Current photo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <PhotoIcon className="w-16 h-16 text-gray-400" />
+              )}
             </div>
           </div>
 
@@ -91,13 +108,31 @@ export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, chi
 
           {/* Action buttons */}
           <div className="space-y-3">
+            {/* Re-crop existing photo option - shown first if photo exists */}
+            {existingPhotoUrl && onRecropExisting && (
+              <button
+                type="button"
+                onClick={handleRecropClick}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-rose text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Re-crop current photo
+              </button>
+            )}
+
             {/* Mobile: Camera first, then Upload */}
             {isMobile ? (
               <>
                 <button
                   type="button"
                   onClick={handleCameraClick}
-                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-rose text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-lg font-medium transition-opacity ${
+                    existingPhotoUrl
+                      ? 'border-2 border-gray-300 text-gray-700 hover:border-gray-400'
+                      : 'bg-rose text-white hover:opacity-90'
+                  }`}
                 >
                   <CameraIcon className="w-5 h-5" />
                   Use camera
@@ -117,7 +152,11 @@ export default function PhotoUpdateModal({ isOpen, onClose, onPhotoSelected, chi
                 <button
                   type="button"
                   onClick={handleUploadClick}
-                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-rose text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-lg font-medium ${
+                    existingPhotoUrl
+                      ? 'border-2 border-gray-300 text-gray-700 hover:border-gray-400 transition-colors'
+                      : 'bg-rose text-white hover:opacity-90 transition-opacity'
+                  }`}
                 >
                   <PhotoIcon className="w-5 h-5" />
                   Upload photo

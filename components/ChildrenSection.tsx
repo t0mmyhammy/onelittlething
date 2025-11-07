@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AddChildModal from './AddChildModal';
 import EditChildModal from './EditChildModal';
 import { calculateAge } from '@/lib/utils/age';
 import { formatHumanDate } from '@/lib/utils/dateFormat';
+import { getColorClasses } from '@/lib/labelColors';
 import { CalendarIcon, CakeIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 
 interface Child {
@@ -13,8 +15,10 @@ interface Child {
   birthdate: string | null;
   gender: string | null;
   photo_url: string | null;
+  label_color?: string | null;
   created_at: string;
   family_id?: string;
+  archived?: boolean | null;
 }
 
 interface ChildrenSectionProps {
@@ -23,19 +27,20 @@ interface ChildrenSectionProps {
 }
 
 export default function ChildrenSection({ initialChildren, familyId }: ChildrenSectionProps) {
+  const router = useRouter();
   const [children, setChildren] = useState<Child[]>(initialChildren);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
 
   const handleChildAdded = () => {
-    // Refresh the page to show new child
-    window.location.reload();
+    // Refresh server data without losing URL hash
+    router.refresh();
   };
 
   const handleChildUpdated = () => {
-    // Refresh the page to show updated child
-    window.location.reload();
+    // Refresh server data without losing URL hash
+    router.refresh();
   };
 
   const handleEditClick = (child: Child) => {
@@ -58,7 +63,7 @@ export default function ChildrenSection({ initialChildren, familyId }: ChildrenS
 
         {children && children.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {children.map((child) => {
+            {children.filter(child => !child.archived).map((child) => {
               // Parse date string directly to avoid timezone issues
               const parseLocalDate = (dateString: string): Date => {
                 const [year, month, day] = dateString.split('-').map(Number);
@@ -70,18 +75,15 @@ export default function ChildrenSection({ initialChildren, familyId }: ChildrenS
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               const isUnborn = birthDate && birthDate > today;
               const age = calculateAge(child.birthdate);
-              
-              // Determine background color based on gender
-              const getBackgroundColor = () => {
-                if (child.gender === 'boy') return 'bg-blue-50';
-                if (child.gender === 'girl') return 'bg-pink-50';
-                return 'bg-white';
-              };
+
+              // Get label color classes
+              const colors = getColorClasses(child.label_color || 'yellow');
 
               return (
                 <div
                   key={child.id}
-                  className={`p-4 border border-sand rounded-lg hover:border-rose transition-colors relative group ${getBackgroundColor()}`}
+                  style={{ backgroundColor: colors.hex }}
+                  className={`p-4 border-2 rounded-lg transition-colors relative group ${colors.border} ${colors.hoverBorder}`}
                 >
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1">

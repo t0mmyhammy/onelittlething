@@ -55,34 +55,53 @@ Tables created and configured:
   - `update_child()` - Update child with security checks
   - `is_family_member()` - Helper function for RLS policies
 
-### 🚧 In Progress
-
-#### Journal Entries
-- Created `NewEntryModal` component
-- Features:
-  - Date selection
-  - Multi-child tagging (select which kids the entry is about)
-  - Text area for content
+#### 5. Journal Entries
+- Full journal entry system with optimized UX
+- `NewEntryModal` component with:
+  - Auto-focus on text field (sub-10-second entry creation)
+  - Rotating placeholder text (10 inspiring examples)
+  - Smart defaults: auto-fills today's date, defaults to all children
+  - Progressive disclosure: collapsed date picker (shows "📅 Today" button)
+  - Simplified child selection with tag display
+  - Multi-child tagging support
   - Saves to `entries` and `entry_children` tables
-- **Next**: Wire up to dashboard "New Entry" button
+- `EntriesSection` component displaying recent moments on dashboard
+- Full integration with dashboard "New Entry" button
+
+#### 6. "On This Day" Feature
+- Nostalgic feature showing memories from same date in previous years
+- Beautiful amber/rose gradient card design
+- Queries entries matching current month-day across all years
+- Shows "X years ago" for each memory
+- Displays child tags and full entry content
+- Limited to 3 entries for focused experience
+- Positioned at top of dashboard for immediate emotional engagement
+
+#### 7. Dashboard Layout
+- Redesigned to "Lead with Memories, Not Admin"
+- Order: Welcome → On This Day → Recent Moments → Your Children
+- Welcome message includes user's display name
+- Children section moved to bottom (admin function)
+- Profile photo and name displayed in header
 
 ### 📋 TODO - MVP Phase 1
 
-1. **Wire up New Entry button** - Connect modal to dashboard
-2. **Display entries on dashboard** - Show recent moments in timeline
-3. **Entry editing/deletion** - Allow users to modify past entries
+1. **Photo attachments to entries** - Allow users to attach photos to moments
+2. **Entry editing/deletion** - Allow users to modify past entries
+3. **Timeline view** - Dedicated page with filters by child
 
 ### 📋 TODO - MVP Phase 2 (Future)
 
-1. **Timeline view** - Dedicated page with filters by child
-2. **AI Chat integration** - OpenAI-powered parenting coach (Love & Logic style)
-3. **AI Insights** - Analyze entries for patterns, milestones
-4. **Photo/audio entries** - Expand beyond text
+1. **AI Chat integration** - OpenAI-powered parenting coach (Love & Logic style)
+2. **AI Insights** - Analyze entries for patterns, milestones
+3. **Voice notes with transcription** - Record moments hands-free
+4. **Smart auto-tagging** - Auto-detect child names in entry text
 5. **Artifact generation** - Create books, letters, calendars from entries
 6. **Re-engagement emails** - 3-day and 7-day reminders
-7. **Notification system** - Daily nudges, snooze/away mode
-8. **Child development tracking** - Milestones, growth charts
-9. **Family member invites** - Allow partners to join and contribute
+7. **Notification system** - Daily nudges (8pm), snooze/away mode
+8. **Monthly recap** - Summary of captured moments
+9. **Child development tracking** - Milestones, growth charts
+10. **Family member invites** - Allow partners to join and contribute
 
 ## Important Files & Locations
 
@@ -92,7 +111,9 @@ Tables created and configured:
 - `/components/ChildrenSection.tsx` - Display children on dashboard
 - `/components/ImageCropper.tsx` - Photo crop/zoom (300px circular)
 - `/components/PhotoUpdateModal.tsx` - Camera/upload chooser
-- `/components/NewEntryModal.tsx` - Create journal entries
+- `/components/NewEntryModal.tsx` - Create journal entries (optimized UX)
+- `/components/EntriesSection.tsx` - Display recent moments on dashboard
+- `/components/OnThisDay.tsx` - Show memories from same date in previous years
 
 ### Pages
 - `/app/page.tsx` - Landing page
@@ -224,8 +245,72 @@ When setting up a new Supabase project:
 - Supabase Support: https://supabase.com/support
 - Next.js Docs: https://nextjs.org/docs
 
+## Recent Updates - 2025-11-07
+
+### ✅ Completed Updates
+
+#### 1. Label Color System (Soft Pastel Palette)
+- Added customizable label colors for children
+- 6 soft pastel color options: mint green, butter yellow, sky blue, blush pink, peach orange, lavender purple
+- Colors appear on:
+  - Child cards in Family tab
+  - Child name labels on entries (dashboard, timeline, "On This Day")
+  - Color picker in Edit Child modal
+- Uses inline styles with hex colors for reliable rendering
+- Database: Added `label_color` column to `children` table (default: 'yellow')
+
+#### 2. Edit Child Modal Redesign
+- **New Layout**: Photo section moved to top of form
+- **Collapsible Sections**: Name, birthdate, and gender fields now show values with edit icons
+  - Click pencil icon to edit each field individually
+  - Cleaner, more focused UI
+- **Dynamic Title**: Modal title shows "Edit [Child's Name]" instead of generic "Edit Child"
+- **Improved Color Picker**: Full color backgrounds with visible selection states
+
+#### 3. Archive Functionality
+- Added `archived` column to `children` table
+- Archive option appears in Edit Child modal when child has associated memories
+- Archived children hidden from normal views but memories preserved
+- Delete option still available (shows Archive + Delete when child has entries)
+- Database migration: `20251107000002_add_archived_to_children.sql`
+
+#### 4. Database Migrations Created
+- `20251107000000_add_label_color_to_children.sql` - Adds label_color column
+- `20251107000001_update_child_function_label_color.sql` - Updates RPC function to handle label colors
+- `20251107000002_add_archived_to_children.sql` - Adds archived column for soft deletes
+
+### 🐛 Known Issues
+
+#### Label Color Persistence Bug
+**Status**: Logged for future fix
+**Symptoms**:
+- Color updates may not immediately reflect on child cards
+- Color selection doesn't always persist after modal close
+**Attempted Fixes**:
+- Updated RPC function to accept `child_label_color` parameter
+- Fixed query filters for archived children
+- Added console logging for debugging
+- Implemented optimistic UI updates
+**Next Steps**: Requires deeper investigation of refresh cycle and state management
+
+### 📋 Updated File Locations
+
+#### New Files
+- `/lib/labelColors.ts` - Color palette definitions (hex values, Tailwind classes)
+
+#### Modified Files
+- `/components/EditChildModal.tsx` - Redesigned with collapsible sections, archive support
+- `/components/ChildrenSection.tsx` - Uses inline styles for label colors
+- `/components/EntriesSection.tsx` - Dynamic label colors for child tags
+- `/components/TimelineView.tsx` - Dynamic label colors for child tags
+- `/components/OnThisDay.tsx` - Dynamic label colors for child tags
+- `/app/dashboard/page.tsx` - Updated children query to fetch label_color and archived
+- `/app/timeline/page.tsx` - Updated children query
+- `/app/settings/page.tsx` - Updated children query
+
 ---
 
-**Last Updated**: 2025-11-06
-**Version**: MVP Phase 1 (90% complete)
-**Next Milestone**: Complete journal entry feature
+**Last Updated**: 2025-11-07
+**Version**: MVP Phase 1 - Core Complete + Polish ✅
+**Completion**: ~95% (main features functional, color persistence bug logged)
+**Next Milestone**: Photo attachments and timeline view, fix color persistence

@@ -8,7 +8,8 @@
       "Bash(supabase migration:*)",
       "Bash(cat:*)",
       "Bash(npm uninstall:*)",
-      "Bash(supabase link:*)"
+      "Bash(supabase link:*)",
+      "Bash(npx supabase migration:*)"
     ],
     "deny": [],
     "ask": []
