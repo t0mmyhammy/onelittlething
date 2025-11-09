@@ -31,6 +31,10 @@ Visit `http://localhost:3000` to see the app.
 
 - 📝 **Quick Entry Creation**: Optimized UX for capturing moments in under 10 seconds
 - 👶 **Child Management**: Add multiple children with photos, birthdates, and custom label colors
+- 📅 **Timeline View**: Enhanced vertical timeline with date grouping and centered nodes
+- 📏 **Sizes & Needs**: Tabbed interface for tracking clothing sizes, inventory, and wishlists
+- 🤖 **AI Parenting Coach "Liv"**: OpenAI-powered advice with customizable parenting styles
+- 🍼 **Baby Countdown**: Pregnancy tracker with week-by-week size comparisons
 - 📅 **On This Day**: See memories from the same date in previous years
 - 🎨 **Soft Pastel Design**: Brand-aligned color palette with cream, sand, rose, and sage tones
 - 🔒 **Secure & Private**: Row-level security, multi-tenancy support
@@ -51,12 +55,23 @@ Visit `http://localhost:3000` to see the app.
 For detailed documentation, see:
 - **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Complete project overview, features, known issues, and development guide
 
-## Recent Updates (2025-11-07)
+## Recent Updates (2025-11-09)
 
+### Major Features Added
+- ✅ **Tabbed Sizes & Needs Interface**: Complete redesign with Sizes, Needs, and Wishlist tabs
+  - Size tracking with current/next sizes, fit notes, and timestamps
+  - Smart inventory with Need/Have/Hide toggles
+  - Wishlist management with Select/Buy/Reserve actions
+- ✅ **Enhanced Timeline View**: Vertical timeline with centered nodes and date grouping
+- ✅ **AI Parenting Coach "Liv"**: Conversational AI with 5 built-in parenting styles + custom styles
+- ✅ **Baby Countdown Card**: Pregnancy progress tracker with week-by-week size comparisons
+- ✅ **Icon System**: Migrated from emojis to Lucide React icons
+- ✅ **TypeScript Improvements**: Fixed type errors in chat API routes
+
+### Previous Updates (2025-11-07)
 - ✅ Added customizable label colors for children (soft pastel palette)
 - ✅ Redesigned Edit Child modal with collapsible sections
 - ✅ Implemented archive functionality for children with memories
-- 🐛 Known issue: Label color persistence (logged for future fix)
 
 ## Environment Setup
 
@@ -65,6 +80,7 @@ Required environment variables in `.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ## Database Setup
@@ -89,5 +105,5 @@ npm run lint         # Run ESLint
 
 ---
 
-**Status**: MVP Phase 1 - Core Complete ✅
-**Last Updated**: 2025-11-07
+**Status**: MVP Phase 1.5 - Advanced Features Complete ✅
+**Last Updated**: 2025-11-09

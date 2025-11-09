@@ -310,7 +310,160 @@ When setting up a new Supabase project:
 
 ---
 
-**Last Updated**: 2025-11-07
-**Version**: MVP Phase 1 - Core Complete + Polish ✅
-**Completion**: ~95% (main features functional, color persistence bug logged)
-**Next Milestone**: Photo attachments and timeline view, fix color persistence
+## Recent Updates - 2025-11-09
+
+### ✅ Major Feature Additions
+
+#### 1. Tabbed Sizes & Needs Interface (Complete Redesign)
+**New Components:**
+- `ChildProfileBar` - Persistent left sidebar showing all children with photos and ages
+- `SizesTab` - Editable size grid for tracking current/next sizes
+- `NeedsTab` - Smart inventory management with Need/Have/Hide toggles
+- `WishlistTab` - Gift management with Select/Buy/Reserve actions
+
+**Features:**
+- **Sizes Tab**:
+  - Editable size cards (Shoes, Pants, Shirts)
+  - Inline editing with save/cancel
+  - Current & Next size tracking
+  - Fit notes field
+  - Last updated timestamps
+  - Smart reminder system (90-day prompts)
+
+- **Needs Tab**:
+  - Accordion-style category grouping
+  - Need/Have/Hide segmented toggle buttons
+  - Auto-populated size chips from Sizes tab
+  - Filter bar: Show All, Only Needs, Next Size Up, Hidden
+  - Smart sorting (Need items float to top)
+  - Category headers show current/next sizes
+
+- **Wishlist Tab**:
+  - Card-based layout with thumbnails
+  - Select (star), Buy, Reserve action buttons
+  - Inline reserve name input
+  - Status badges (Selected, Reserved by X, Purchased)
+  - Filter tabs: Active, Reserved, Purchased
+  - Auto-sorting by status
+
+**Technical:**
+- Installed `lucide-react` for clean iconography (replaced all emojis)
+- Responsive layout (desktop side-by-side, mobile stacks)
+- All data persists to Supabase (`child_sizes`, `inventory_items`, `shopping_list_items`)
+
+#### 2. Enhanced Timeline View
+**Improvements:**
+- Entries grouped by date with vertical timeline line
+- Timeline nodes centered on the line (not beside it)
+- Multiple entries on same day appear side-by-side (desktop) or stacked (mobile)
+- Gradient timeline line (sage color fading to transparent)
+- Shorthand dates (e.g., "Nov 9") on left side
+- Responsive card width for multi-entry days
+
+#### 3. AI Parenting Coach - "Liv"
+**New Feature: `/advice` page**
+- OpenAI-powered conversational parenting coach
+- Parenting style selection:
+  - Taking Cara Babies (sleep training)
+  - Love and Logic (discipline through choices)
+  - Positive Discipline (encouragement-based)
+  - Gentle/Respectful (RIE approach)
+  - Montessori-Informed (independence-focused)
+- Custom style creation and editing
+- Conversation persistence with history
+- Child context awareness (ages, names)
+- Brief, digestible responses (4-6 sentences)
+
+**Components Added:**
+- `AIChat` - Main chat interface with style selector
+- `ParentingStyleSelector` - Style picker with descriptions
+- `CustomStyleModal` - Create/edit custom approaches
+- `SavedAdviceList` - Conversation history
+- `AdvicePageClient` - Client wrapper
+
+**Database:**
+- `parenting_styles` table - Style definitions
+- `user_parenting_styles` table - User's custom styles
+- `chat_conversations` table - Conversation metadata
+- `chat_messages` table - Message history
+
+#### 4. Baby Countdown Card
+**New Component: `BabyCountdownCard`**
+- Shows pregnancy progress for unborn children (future birthdates)
+- Week-by-week size comparisons (e.g., "Size of a mango")
+- Circular progress ring (% to term / % to due date)
+- Toggle between "% to term" (37 weeks) and "% to due" (40 weeks)
+- Cycle button to show alternative size comparisons
+- Days/weeks countdown to term and due date
+- Uses Luxon for accurate date calculations
+
+**Technical:**
+- `/lib/pregnancy.ts` - Pregnancy calculation utilities
+- `/lib/babySizes.ts` - Week-by-week size comparison data
+- Installed `luxon` for timezone-aware date handling
+
+#### 5. Database Migrations
+**New migrations:**
+- `20251107000003_parenting_styles.sql` - AI chat styles tables
+- `20251107000004_chat_persistence.sql` - Conversation storage
+- `20251107000005_sizes_and_needs.sql` - Size tracking tables
+- `20251107000006_enhance_shopping_items.sql` - Shopping list enhancements
+- `20251107000007_inventory_system.sql` - Inventory management
+- `20251107000008_wishlist_status_system.sql` - Wishlist statuses
+- `20251107000009_add_due_date_to_families.sql` - Family due dates
+
+#### 6. TypeScript Improvements
+**Fixed:**
+- Type errors in chat API routes (`ParentingStyle` vs `CustomParentingStyle`)
+- Proper type narrowing in `buildStylePrompt` function
+- Added proper imports and type definitions
+
+### 📋 New File Locations
+
+#### New Pages
+- `/app/advice/page.tsx` - AI parenting coach page
+- `/app/sizes/page.tsx` - Sizes & Needs tabbed interface
+
+#### New API Routes
+- `/app/api/chat/route.ts` - OpenAI streaming chat
+- `/app/api/chat/conversations/route.ts` - Conversation CRUD
+- `/app/api/chat/messages/route.ts` - Message history
+- `/app/api/chat/save/route.ts` - Save conversation
+- `/app/api/chat/saved/route.ts` - Get saved conversations
+- `/app/api/fetch-title/route.ts` - Fetch webpage titles
+
+#### New Components
+- `/components/ChildProfileBar.tsx` - Child selector sidebar
+- `/components/tabs/SizesTab.tsx` - Sizes management
+- `/components/tabs/NeedsTab.tsx` - Needs/inventory management
+- `/components/tabs/WishlistTab.tsx` - Wishlist management
+- `/components/BabyCountdownCard.tsx` - Pregnancy tracker
+- `/components/AIChat.tsx` - Chat interface
+- `/components/AdvicePageClient.tsx` - Advice page wrapper
+- `/components/ParentingStyleSelector.tsx` - Style picker
+- `/components/CustomStyleModal.tsx` - Custom style editor
+- `/components/SavedAdviceList.tsx` - Conversation history
+
+#### New Libraries
+- `/lib/pregnancy.ts` - Pregnancy calculations
+- `/lib/babySizes.ts` - Size comparison data
+- `/lib/parentingStyles.ts` - Parenting style definitions
+
+#### Modified Components
+- `/components/EntriesSection.tsx` - Enhanced timeline layout
+- `/app/dashboard/page.tsx` - Added BabyCountdownCard
+- Navigation tabs updated across all pages
+
+### 📦 Dependencies Added
+- `lucide-react` - Icon library (replaced emojis)
+- `openai` - OpenAI API client
+- `ai` - Vercel AI SDK for streaming
+- `luxon` - Date/time library
+- `@types/luxon` - TypeScript types for Luxon
+
+---
+
+**Last Updated**: 2025-11-09
+**Version**: MVP Phase 1.5 - Advanced Features Complete ✅
+**Completion**: ~98% (all major features functional)
+**Next Milestone**: Photo attachments to entries, export functionality
