@@ -50,7 +50,7 @@ export default function ChildProfileBar({
         <div className="space-y-2">
           {children.map((child) => {
             const isSelected = child.id === selectedChildId;
-            const colors = getColorClasses(child.label_color);
+            const colors = getColorClasses(child.label_color || undefined);
             const age = calculateAge(child.birthdate);
 
             return (

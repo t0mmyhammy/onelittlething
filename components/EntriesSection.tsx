@@ -272,7 +272,7 @@ export default function EntriesSection({
                                 <div className="flex justify-between items-start gap-3 mb-3">
                                   <div className="flex gap-2 flex-wrap">
                                     {entry.entry_children?.map((ec: any) => {
-                                      const colors = getColorClasses(ec.children.label_color);
+                                      const colors = getColorClasses(ec.children.label_color || undefined);
                                       return (
                                         <span
                                           key={ec.children.id}

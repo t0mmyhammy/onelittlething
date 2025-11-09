@@ -51,7 +51,7 @@ export default function OnThisDay({ entries }: OnThisDayProps) {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex gap-2 flex-wrap">
                   {entry.entry_children?.map((ec: any) => {
-                    const colors = getColorClasses(ec.children.label_color);
+                    const colors = getColorClasses(ec.children.label_color || undefined);
                     return (
                       <span
                         key={ec.children.id}

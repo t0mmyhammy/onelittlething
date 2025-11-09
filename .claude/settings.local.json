@@ -9,7 +9,20 @@
       "Bash(cat:*)",
       "Bash(npm uninstall:*)",
       "Bash(supabase link:*)",
-      "Bash(npx supabase migration:*)"
+      "Bash(npx supabase migration:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(lsof:*)",
+      "Bash(npx next build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "Bash(open http://localhost:3000)",
+      "Bash(kill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add tabbed Sizes/Needs/Wishlist interface and timeline view enhancements\n\nMajor Features:\n- Redesigned Sizes & Needs page with clean 3-tab interface (Sizes, Needs, Wishlist)\n- New timeline view for journal entries with vertical line and date nodes\n- AI-powered parenting advice (Liv) with custom style support\n- Baby countdown card with pregnancy progress tracking\n- Enhanced TypeScript typing across all new components\n\nComponents Added:\n- ChildProfileBar: Persistent left sidebar for child selection\n- SizesTab: Editable size grid with current/next sizes and timestamps\n- NeedsTab: Smart inventory with Need/Have/Hide toggles and filtering\n- WishlistTab: Gift management with Select/Buy/Reserve actions\n- BabyCountdownCard: Pregnancy week tracker with size comparisons\n- AIChat: Conversational parenting coach with style selection\n- SavedAdviceList: Persistent conversation history\n\nTimeline Improvements:\n- Entries grouped by date with side-by-side cards for same-day moments\n- Timeline nodes centered on vertical line\n- Responsive layout (desktop side-by-side, mobile stacks)\n- Enhanced search and filtering\n\nTechnical:\n- Installed lucide-react for clean iconography\n- Added OpenAI integration for AI chat\n- Created parenting styles knowledge base\n- Enhanced database schema with new migrations\n- Fixed TypeScript errors in chat API routes\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(vercel)",
+      "Bash(vercel --yes:*)"
     ],
     "deny": [],
     "ask": []
