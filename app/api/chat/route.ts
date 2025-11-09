@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     });
 
     // Convert the response to a streaming text response
-    const stream = OpenAIStream(response);
+    const stream = OpenAIStream(response as any);
     return new StreamingTextResponse(stream);
   } catch (error: any) {
     console.error('Chat API error:', error);
