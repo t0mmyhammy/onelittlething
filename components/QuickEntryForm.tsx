@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { HeartIcon } from '@heroicons/react/24/outline';
 
 interface Child {
   id: string;
@@ -117,7 +118,7 @@ export default function QuickEntryForm({
           className="w-full text-left"
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">✍️</span>
+            <HeartIcon className="w-7 h-7 text-rose" />
             <div className="flex-1">
               <p className="text-lg font-serif text-gray-400">
                 {placeholder}

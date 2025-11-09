@@ -1,14 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import AdvicePageClient from '@/components/AdvicePageClient';
 import { UserCircleIcon, HomeIcon, CalendarDaysIcon, LightBulbIcon, TagIcon } from '@heroicons/react/24/outline';
-import TimelineView from '@/components/TimelineView';
 
 // Disable caching for this page
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function TimelinePage() {
+export default async function AdvicePage() {
   const supabase = await createClient();
 
   const {
@@ -26,36 +26,35 @@ export default async function TimelinePage() {
     .eq('user_id', user.id)
     .single();
 
-  const familyId = familyMember?.family_id || '';
+  if (!familyMember || !familyMember.family_id) {
+    redirect('/dashboard');
+  }
 
-  // Get user preferences for profile
+  // Get children for context (exclude archived)
+  const { data: children } = await supabase
+    .from('children')
+    .select('id, name, birthdate')
+    .eq('family_id', familyMember.family_id)
+    .is('archived', false)
+    .order('created_at', { ascending: true });
+
+  // Get user preferences for profile and parenting style
   const { data: userPrefs } = await supabase
     .from('user_preferences')
-    .select('display_name, profile_photo_url')
+    .select('display_name, profile_photo_url, selected_parenting_style')
     .eq('user_id', user.id)
     .single();
 
+  // Get custom parenting styles
+  const { data: customStyles } = await supabase
+    .from('custom_parenting_styles')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false});
+
   const displayName = userPrefs?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const profilePhotoUrl = userPrefs?.profile_photo_url;
-
-  // Get children (show all except explicitly archived)
-  const { data: children } = await supabase
-    .from('children')
-    .select('id, name, birthdate, gender, photo_url, label_color, created_at, family_id, archived')
-    .eq('family_id', familyId)
-    .order('created_at', { ascending: true });
-
-  // Get ALL entries (not limited like dashboard)
-  const { data: entries } = await supabase
-    .from('entries')
-    .select(`
-      *,
-      entry_children(
-        children(*)
-      )
-    `)
-    .eq('family_id', familyId)
-    .order('entry_date', { ascending: false });
+  const selectedStyle = userPrefs?.selected_parenting_style || 'love-and-logic';
 
   return (
     <div className="min-h-screen bg-cream">
@@ -103,7 +102,7 @@ export default async function TimelinePage() {
             </Link>
             <Link
               href="/timeline"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-sage border-b-2 border-sage"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors"
             >
               <CalendarDaysIcon className="w-4 h-4" />
               Timeline
@@ -117,7 +116,7 @@ export default async function TimelinePage() {
             </Link>
             <Link
               href="/advice"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-sage border-b-2 border-sage"
             >
               <LightBulbIcon className="w-4 h-4" />
               Liv
@@ -126,19 +125,11 @@ export default async function TimelinePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-serif text-gray-900 mb-2">Timeline</h1>
-          <p className="text-gray-600">
-            All your captured moments in one place
-          </p>
-        </div>
-
-        <TimelineView
-          initialEntries={entries || []}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <AdvicePageClient
           children={children || []}
-          familyId={familyId}
-          userId={user.id}
+          initialSelectedStyle={selectedStyle}
+          initialCustomStyles={customStyles || []}
         />
       </main>
     </div>

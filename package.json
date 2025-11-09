@@ -18,14 +18,21 @@
     "@supabase/supabase-js": "^2.80.0",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
+    "ai": "^3.4.33",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
+    "lucide-react": "^0.553.0",
+    "luxon": "^3.7.2",
     "next": "^16.0.1",
+    "openai": "^4.104.0",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwindcss": "^3.4.18",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.1"
   }
 }

@@ -5,7 +5,8 @@ import EntriesSection from '@/components/EntriesSection';
 import OnThisDay from '@/components/OnThisDay';
 import QuickEntryForm from '@/components/QuickEntryForm';
 import StreakWidget from '@/components/StreakWidget';
-import { UserCircleIcon } from '@heroicons/react/24/outline';
+import BabyCountdownCard from '@/components/BabyCountdownCard';
+import { UserCircleIcon, HomeIcon, CalendarDaysIcon, LightBulbIcon, TagIcon } from '@heroicons/react/24/outline';
 
 // Disable caching for this page
 export const dynamic = 'force-dynamic';
@@ -153,6 +154,13 @@ export default async function DashboardPage() {
       .eq('family_id', familyId)
       .order('created_at', { ascending: true });
 
+  // Find a child with a future birthdate to use as due date
+  const todayStr = new Date().toISOString().split('T')[0];
+  const expectedChild = children?.find(child =>
+    child.birthdate && child.birthdate > todayStr
+  );
+  const dueDate = expectedChild?.birthdate || null;
+
   // Get all entries
   const { data: entries } = await supabase
     .from('entries')
@@ -188,7 +196,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-cream">
       <header className="bg-white border-b border-sand">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-serif text-gray-900">OneLittleThing</h1>
             <div className="flex items-center gap-6">
               <Link
@@ -218,6 +226,38 @@ export default async function DashboardPage() {
               </form>
             </div>
           </div>
+
+          {/* Navigation Tabs */}
+          <nav className="flex gap-1 border-b border-gray-200">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-sage border-b-2 border-sage"
+            >
+              <HomeIcon className="w-4 h-4" />
+              Home
+            </Link>
+            <Link
+              href="/timeline"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors"
+            >
+              <CalendarDaysIcon className="w-4 h-4" />
+              Timeline
+            </Link>
+            <Link
+              href="/sizes"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors"
+            >
+              <TagIcon className="w-4 h-4" />
+              Sizes & Needs
+            </Link>
+            <Link
+              href="/advice"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors"
+            >
+              <LightBulbIcon className="w-4 h-4" />
+              Liv
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -233,6 +273,16 @@ export default async function DashboardPage() {
           </p>
         </div>
 
+        {/* Baby Countdown Card */}
+        {dueDate && expectedChild && (
+          <div className="mb-8">
+            <BabyCountdownCard
+              dueDateISO={dueDate}
+              babyName={expectedChild.name}
+            />
+          </div>
+        )}
+
         {/* Quick Entry Form - Primary Action */}
         <div className="mb-8">
           <QuickEntryForm
@@ -242,15 +292,15 @@ export default async function DashboardPage() {
           />
         </div>
 
+        {/* Weekly Progress & Streak Widget */}
+        <StreakWidget entries={entries || []} children={children || []} />
+
         {/* On This Day */}
         {onThisDayEntries && onThisDayEntries.length > 0 && (
           <div className="mb-8">
             <OnThisDay entries={onThisDayEntries} />
           </div>
         )}
-
-        {/* Streak Widget */}
-        <StreakWidget entries={entries || []} children={children || []} />
 
         {/* Recent Entries */}
         <EntriesSection

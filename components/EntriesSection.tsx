@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import NewEntryModal from './NewEntryModal';
 import EditEntryModal from './EditEntryModal';
-import { PencilIcon, FunnelIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, BarsArrowUpIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { getColorClasses } from '@/lib/labelColors';
 
 // Helper to parse date string without timezone conversion
@@ -51,7 +51,8 @@ export default function EntriesSection({
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [selectedChildFilter, setSelectedChildFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOption>('newest');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleEntryCreated = () => {
     // Refresh the page to show new entry
@@ -68,9 +69,17 @@ export default function EntriesSection({
     setIsEditModalOpen(true);
   };
 
-  // Filter and sort entries
-  const filteredAndSortedEntries = useMemo(() => {
+  // Filter and sort entries, then group by date
+  const groupedEntries = useMemo(() => {
     let entries = [...initialEntries];
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      entries = entries.filter((entry) =>
+        entry.content.toLowerCase().includes(query)
+      );
+    }
 
     // Filter by child
     if (selectedChildFilter) {
@@ -88,8 +97,21 @@ export default function EntriesSection({
       return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
     });
 
-    return entries;
-  }, [initialEntries, selectedChildFilter, sortOrder]);
+    // Group entries by date
+    const grouped: { [date: string]: Entry[] } = {};
+    entries.forEach((entry) => {
+      if (!grouped[entry.entry_date]) {
+        grouped[entry.entry_date] = [];
+      }
+      grouped[entry.entry_date].push(entry);
+    });
+
+    return grouped;
+  }, [initialEntries, selectedChildFilter, sortOrder, searchQuery]);
+
+  const filteredAndSortedEntries = useMemo(() => {
+    return Object.values(groupedEntries).flat();
+  }, [groupedEntries]);
 
   return (
     <>
@@ -102,13 +124,41 @@ export default function EntriesSection({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="p-2 text-gray-600 hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
-              aria-label="Toggle filters"
-            >
-              <FunnelIcon className="w-5 h-5" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="p-2 text-gray-600 hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
+                aria-label="Sort by"
+              >
+                <BarsArrowUpIcon className="w-5 h-5" />
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                  <button
+                    onClick={() => {
+                      setSortOrder('newest');
+                      setShowSortMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                      sortOrder === 'newest' ? 'text-sage font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    Newest first
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortOrder('oldest');
+                      setShowSortMenu(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                      sortOrder === 'oldest' ? 'text-sage font-medium' : 'text-gray-700'
+                    }`}
+                  >
+                    Oldest first
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setIsModalOpen(true)}
               className="bg-sage text-white p-2 rounded-lg hover:opacity-90 transition-opacity"
@@ -119,143 +169,159 @@ export default function EntriesSection({
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="mb-4 pb-4 border-b border-gray-200">
-          {(selectedChildFilter || sortOrder !== 'newest') && (
-            <div className="mb-4">
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search moments..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all"
+            />
+            {searchQuery && (
               <button
-                onClick={() => {
-                  setSelectedChildFilter(null);
-                  setSortOrder('newest');
-                }}
-                className="text-sm text-gray-600 hover:text-gray-900"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Clear search"
               >
-                Clear all filters
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-            </div>
-          )}
-
-          {/* Filter Options */}
-          {showFilters && (
-            <div className="mt-4 space-y-4 pt-4 border-t border-gray-200">
-              {/* Child Filter */}
-              {children.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filter by child:
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => setSelectedChildFilter(null)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        selectedChildFilter === null
-                          ? 'bg-sage text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      All children
-                    </button>
-                    {children.map((child) => (
-                      <button
-                        key={child.id}
-                        onClick={() => setSelectedChildFilter(child.id)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          selectedChildFilter === child.id
-                            ? 'bg-sage text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {child.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Sort Order */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sort by date:
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSortOrder('newest')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      sortOrder === 'newest'
-                        ? 'bg-sage text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Newest first
-                  </button>
-                  <button
-                    onClick={() => setSortOrder('oldest')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      sortOrder === 'oldest'
-                        ? 'bg-sage text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Oldest first
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {filteredAndSortedEntries.length > 0 ? (
-          <div className="space-y-4">
-            {filteredAndSortedEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="p-4 border border-sand rounded-lg hover:border-sage transition-colors group relative"
+        {/* Child Filter Buttons - Always Visible */}
+        {children.length > 0 && (
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setSelectedChildFilter(null)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedChildFilter === null
+                    ? 'bg-sage text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex gap-2 flex-wrap">
-                    {entry.entry_children?.map((ec: any) => {
-                      const colors = getColorClasses(ec.children.label_color);
-                      return (
-                        <span
-                          key={ec.children.id}
-                          style={{ backgroundColor: colors.hex }}
-                          className={`text-xs px-2 py-1 rounded-full ${colors.text}`}
-                        >
-                          {ec.children.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      {parseLocalDate(entry.entry_date).toLocaleDateString()}
-                    </span>
-                    <button
-                      onClick={() => handleEditClick(entry)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sage"
-                      aria-label="Edit moment"
-                    >
-                      <PencilIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-gray-700">{entry.content}</p>
-              </div>
-            ))}
+                All kids
+              </button>
+              {children.map((child) => (
+                <button
+                  key={child.id}
+                  onClick={() => setSelectedChildFilter(child.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedChildFilter === child.id
+                      ? 'bg-sage text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {child.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {filteredAndSortedEntries.length > 0 ? (
+          <div className="relative">
+            {/* Timeline vertical line */}
+            <div className="absolute left-[94px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
+
+            {/* Timeline entries grouped by date */}
+            <div className="space-y-8">
+              {Object.entries(groupedEntries)
+                .sort((a, b) => {
+                  const dateA = parseLocalDate(a[0]).getTime();
+                  const dateB = parseLocalDate(b[0]).getTime();
+                  return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+                })
+                .map(([dateStr, dateEntries]) => {
+                  const date = parseLocalDate(dateStr);
+                  const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const fullDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                  const hasMultiple = dateEntries.length > 1;
+
+                  return (
+                    <div key={dateStr} className="relative flex gap-4">
+                      {/* Date on the left */}
+                      <div className="flex-shrink-0 w-20 pt-1 text-right">
+                        <div className="text-sm font-medium text-gray-700">{shortDate}</div>
+                      </div>
+
+                      {/* Timeline node - perfectly centered on the line */}
+                      <div className="flex-shrink-0 relative z-10 -ml-1.5">
+                        <div className="w-3 h-3 rounded-full bg-sage ring-4 ring-cream mt-1.5 shadow-sm" />
+                      </div>
+
+                      {/* Entry content(s) */}
+                      <div className="flex-1 pb-2 min-w-0">
+                        <div className={`flex flex-wrap gap-3 ${hasMultiple ? '' : ''}`}>
+                          {dateEntries.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className={`group ${
+                                hasMultiple
+                                  ? 'w-full sm:flex-1 sm:min-w-[280px] sm:max-w-[calc(50%-0.375rem)]'
+                                  : 'w-full'
+                              }`}
+                            >
+                              <div className="bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all h-full">
+                                <div className="flex justify-between items-start gap-3 mb-3">
+                                  <div className="flex gap-2 flex-wrap">
+                                    {entry.entry_children?.map((ec: any) => {
+                                      const colors = getColorClasses(ec.children.label_color);
+                                      return (
+                                        <span
+                                          key={ec.children.id}
+                                          style={{ backgroundColor: colors.hex }}
+                                          className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
+                                        >
+                                          {ec.children.name}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                  <button
+                                    onClick={() => handleEditClick(entry)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sage flex-shrink-0"
+                                    aria-label="Edit moment"
+                                    title={fullDate}
+                                  >
+                                    <PencilIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                                <p className="text-gray-800 leading-relaxed">{entry.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-2">
               {initialEntries.length === 0
                 ? 'No moments captured yet. Start your journey today!'
+                : searchQuery
+                ? `No moments found matching "${searchQuery}"`
                 : 'No moments found'}
             </p>
-            {selectedChildFilter && initialEntries.length > 0 && (
+            {(selectedChildFilter || searchQuery) && initialEntries.length > 0 && (
               <button
-                onClick={() => setSelectedChildFilter(null)}
+                onClick={() => {
+                  setSelectedChildFilter(null);
+                  setSearchQuery('');
+                }}
                 className="text-sm text-sage hover:underline"
               >
-                Clear filter to see all moments
+                Clear filters to see all moments
               </button>
             )}
           </div>

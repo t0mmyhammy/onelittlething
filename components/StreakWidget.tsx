@@ -174,12 +174,17 @@ export default function StreakWidget({ entries, children }: StreakWidgetProps) {
     return 'Capture a moment today';
   };
 
+  // Calculate weekly count for progress bar
+  const weeklyCount = overallStreakData.last7Days.filter(day => day.hasEntry).length;
+  const goal = 7;
+  const progress = Math.min((weeklyCount / goal) * 100, 100);
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm mb-6">
+    <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <FireIcon className="w-6 h-6 text-orange-500" />
-          <h3 className="text-lg font-serif text-gray-900">Weekly Progress</h3>
+        <div className="flex items-center gap-2">
+          <FireIcon className="w-5 h-5 text-amber-500" />
+          <h3 className="text-lg font-serif text-gray-900">This Week's Progress</h3>
         </div>
         {children.length > 0 && (
           <button
@@ -196,13 +201,39 @@ export default function StreakWidget({ entries, children }: StreakWidgetProps) {
         )}
       </div>
 
-      {/* Overall Week View */}
-      {renderWeekView(overallStreakData)}
+      <div className="space-y-4">
+        {/* Progress bar with count */}
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-2xl font-bold text-gray-900">{weeklyCount}</span>
+            <span className="text-sm text-gray-500">out of {goal} moments</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-sage to-rose h-full rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
 
-      {/* Motivational message */}
-      <p className="text-xs text-gray-500 text-center mt-4">
-        {getMotivationalMessage()}
-      </p>
+        {/* Overall Week View */}
+        {renderWeekView(overallStreakData)}
+
+        {/* Motivational message with streak info */}
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-sm text-gray-600 text-center">
+            {weeklyCount === 0 && "Start your week off strong! 💪"}
+            {weeklyCount > 0 && weeklyCount < 4 && "Great start! Keep the momentum going 🌟"}
+            {weeklyCount >= 4 && weeklyCount < 7 && "You're on fire this week! 🔥"}
+            {weeklyCount >= 7 && "Amazing! You've captured every day this week! 🎉"}
+          </p>
+          {overallStreakData.currentStreak > 1 && (
+            <p className="text-xs text-gray-500 text-center mt-1">
+              Current streak: {overallStreakData.currentStreak} days
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Children Breakdown */}
       {showChildrenBreakdown && children.length > 0 && (

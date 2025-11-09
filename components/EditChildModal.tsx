@@ -284,7 +284,7 @@ export default function EditChildModal({ isOpen, onClose, onChildUpdated, child 
 
       // Use RPC function to update child (bypasses RLS issues)
       console.log('Updating child with label color:', labelColor);
-      const { error: updateError } = await supabase.rpc('update_child', {
+      console.log('Full update params:', {
         child_id: child.id,
         child_name: name.trim(),
         child_birthdate: birthdate || null,
@@ -292,7 +292,18 @@ export default function EditChildModal({ isOpen, onClose, onChildUpdated, child 
         child_photo_url: photoUrl,
         child_label_color: labelColor,
       });
-      console.log('Update result:', updateError ? 'ERROR: ' + updateError.message : 'SUCCESS');
+
+      const { error: updateError, data: updateData } = await supabase.rpc('update_child', {
+        child_id: child.id,
+        child_name: name.trim(),
+        child_birthdate: birthdate || null,
+        child_gender: gender || null,
+        child_photo_url: photoUrl,
+        child_label_color: labelColor,
+      });
+
+      console.log('Update result:', updateError ? 'ERROR: ' + JSON.stringify(updateError) : 'SUCCESS');
+      console.log('Update data:', updateData);
 
       if (updateError) {
         console.error('Update error:', updateError);
