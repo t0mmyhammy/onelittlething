@@ -35,7 +35,9 @@
       "Bash(vercel pull:*)",
       "Bash(vercel build:*)",
       "Bash(vercel deploy:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(tee:*)",
+      "Bash(README.md)"
     ],
     "deny": [],
     "ask": []
