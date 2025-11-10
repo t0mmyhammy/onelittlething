@@ -227,8 +227,8 @@ export default function EntriesSection({
 
         {filteredAndSortedEntries.length > 0 ? (
           <div className="relative">
-            {/* Timeline vertical line - hidden on mobile */}
-            <div className="hidden md:block absolute left-[94px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
+            {/* Timeline vertical line - mobile: thin line on left, desktop: centered */}
+            <div className="absolute left-2.5 md:left-[94px] top-3 bottom-3 w-[1px] md:w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
 
             {/* Timeline entries grouped by date */}
             <div className="space-y-6 md:space-y-8">
@@ -246,9 +246,13 @@ export default function EntriesSection({
 
                   return (
                     <div key={dateStr} className="relative">
-                      {/* Mobile: Date header above content */}
-                      <div className="md:hidden mb-3">
-                        <div className="text-sm font-semibold text-gray-700 bg-sand/30 inline-block px-3 py-1 rounded-full">
+                      {/* Mobile: Timeline node + date on left side */}
+                      <div className="md:hidden flex items-start gap-3 mb-3">
+                        {/* Timeline node on the line */}
+                        <div className="flex-shrink-0 relative z-10 mt-1">
+                          <div className="w-2 h-2 rounded-full bg-sage ring-2 ring-cream shadow-sm" />
+                        </div>
+                        <div className="text-sm font-semibold text-gray-700 pt-0.5">
                           {shortDate}
                         </div>
                       </div>
@@ -310,8 +314,8 @@ export default function EntriesSection({
                         </div>
                       </div>
 
-                      {/* Mobile: Full-width entries */}
-                      <div className="md:hidden space-y-3">
+                      {/* Mobile: Full-width entries with left padding for timeline */}
+                      <div className="md:hidden space-y-3 pl-7">
                           {dateEntries.map((entry) => (
                             <div
                               key={entry.id}
