@@ -5,6 +5,7 @@ import OnThisDay from '@/components/OnThisDay';
 import QuickEntryForm from '@/components/QuickEntryForm';
 import StreakWidget from '@/components/StreakWidget';
 import BabyCountdownCard from '@/components/BabyCountdownCard';
+import DailyAnchor from '@/components/DailyAnchor';
 import MobileNav from '@/components/MobileNav';
 
 // Disable caching for this page
@@ -139,12 +140,13 @@ export default async function DashboardPage() {
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
     .from('user_preferences')
-    .select('display_name, profile_photo_url')
+    .select('display_name, profile_photo_url, daily_mantra')
     .eq('user_id', user.id)
     .single();
 
   const displayName = userPrefs?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const profilePhotoUrl = userPrefs?.profile_photo_url;
+  const dailyMantra = userPrefs?.daily_mantra;
 
   // Get children (show all except explicitly archived)
     const { data: children } = await supabase
@@ -219,6 +221,14 @@ export default async function DashboardPage() {
             />
           </div>
         )}
+
+        {/* Daily Anchor */}
+        <div className="mb-8">
+          <DailyAnchor
+            userId={user.id}
+            initialMantra={dailyMantra}
+          />
+        </div>
 
         {/* Quick Entry Form - Primary Action */}
         <div className="mb-8">
