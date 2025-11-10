@@ -123,7 +123,7 @@ export default function SettingsTabs({
         )}
 
         {activeTab === 'family' && (
-          <FamilySettings familyId={familyId} initialChildren={initialChildren} />
+          <FamilySettings familyId={familyId} initialChildren={initialChildren} userId={user.id} />
         )}
       </main>
     </div>

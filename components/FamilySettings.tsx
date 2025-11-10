@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import ChildrenSection from './ChildrenSection';
-import { UserPlusIcon } from '@heroicons/react/24/outline';
+import FamilyManagement from './FamilyManagement';
 
 interface Child {
   id: string;
@@ -16,9 +18,51 @@ interface Child {
 interface FamilySettingsProps {
   familyId: string;
   initialChildren: Child[];
+  userId: string;
 }
 
-export default function FamilySettings({ familyId, initialChildren }: FamilySettingsProps) {
+export default function FamilySettings({ familyId, initialChildren, userId }: FamilySettingsProps) {
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    loadFamilyMembers();
+  }, [familyId]);
+
+  const loadFamilyMembers = async () => {
+    const { data: members } = await supabase
+      .from('family_members')
+      .select('id, user_id, role')
+      .eq('family_id', familyId);
+
+    if (members) {
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const membersWithInfo = members.map((member) => {
+        if (member.user_id === user?.id) {
+          return {
+            ...member,
+            user: {
+              email: user.email || '',
+              user_metadata: user.user_metadata || {}
+            }
+          };
+        }
+        return {
+          ...member,
+          user: {
+            email: 'Family Member',
+            user_metadata: { full_name: 'Family Member' }
+          }
+        };
+      });
+      setFamilyMembers(membersWithInfo);
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="space-y-8">
       {/* Children Section */}
@@ -34,27 +78,17 @@ export default function FamilySettings({ familyId, initialChildren }: FamilySett
         />
       </div>
 
-      {/* Family Members Section - Coming Soon */}
-      <div className="bg-white rounded-2xl shadow-sm p-8 border-2 border-dashed border-gray-200">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <UserPlusIcon className="w-8 h-8 text-gray-400" />
-          </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-serif text-gray-900 mb-2">Invite Family Members</h2>
-            <p className="text-gray-600 mb-4">
-              Share your family's moments with your partner. Invite up to 2 parents to collaborate on capturing memories.
-            </p>
-            <div className="bg-amber/10 border border-amber/30 rounded-lg p-4">
-              <p className="text-sm text-amber-900 font-medium">
-                🚧 Coming Soon
-              </p>
-              <p className="text-sm text-amber-800 mt-1">
-                This feature is currently in development. You'll soon be able to invite a co-parent to view and add moments together.
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Family Members Section */}
+      <div className="bg-white rounded-2xl shadow-sm p-8">
+        {loading ? (
+          <div className="text-center py-4 text-gray-500">Loading...</div>
+        ) : (
+          <FamilyManagement
+            familyId={familyId}
+            members={familyMembers}
+            currentUserId={userId}
+          />
+        )}
       </div>
     </div>
   );
