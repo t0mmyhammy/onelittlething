@@ -231,7 +231,7 @@ export default function EntriesSection({
             <div className="absolute left-2.5 md:left-[94px] top-3 bottom-3 w-[1px] md:w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
 
             {/* Timeline entries grouped by date */}
-            <div className="space-y-6 md:space-y-8">
+            <div className="space-y-4 md:space-y-8">
               {Object.entries(groupedEntries)
                 .sort((a, b) => {
                   const dateA = parseLocalDate(a[0]).getTime();
@@ -247,7 +247,7 @@ export default function EntriesSection({
                   return (
                     <div key={dateStr} className="relative">
                       {/* Mobile: Timeline node + date on left side */}
-                      <div className="md:hidden flex items-start gap-3 mb-3">
+                      <div className="md:hidden flex items-start gap-3 mb-2">
                         {/* Timeline node on the line */}
                         <div className="flex-shrink-0 relative z-10 mt-1">
                           <div className="w-2 h-2 rounded-full bg-sage ring-2 ring-cream shadow-sm" />
@@ -315,21 +315,21 @@ export default function EntriesSection({
                       </div>
 
                       {/* Mobile: Full-width entries with left padding for timeline */}
-                      <div className="md:hidden space-y-3 pl-7">
+                      <div className="md:hidden space-y-2 pl-7">
                           {dateEntries.map((entry) => (
                             <div
                               key={entry.id}
-                              className="group bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all"
+                              className="group bg-white border border-sand rounded-lg p-3 hover:border-sage hover:shadow-sm transition-all"
                             >
-                              <div className="flex justify-between items-start gap-3 mb-3">
-                                <div className="flex gap-2 flex-wrap">
+                              <div className="flex justify-between items-start gap-2 mb-2">
+                                <div className="flex gap-1.5 flex-wrap">
                                   {entry.entry_children?.map((ec: any) => {
                                     const colors = getColorClasses(ec.children.label_color || undefined);
                                     return (
                                       <span
                                         key={ec.children.id}
                                         style={{ backgroundColor: colors.hex }}
-                                        className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
+                                        className={`text-xs px-2 py-0.5 rounded-full ${colors.text} font-medium`}
                                       >
                                         {ec.children.name}
                                       </span>
