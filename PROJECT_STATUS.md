@@ -463,7 +463,43 @@ When setting up a new Supabase project:
 
 ---
 
-**Last Updated**: 2025-11-09
+## Recent Updates - 2025-11-10
+
+### ✅ Mobile-First Navigation
+
+**Challenge Solved:**
+Users reported poor mobile UX with desktop navigation tabs showing on iPhones. The issue was that larger/higher-resolution iPhones were being detected as "medium" screens (>768px), triggering the desktop navigation view.
+
+**Solution Implemented:**
+- **Removed all desktop-specific navigation**: Eliminated `md:` breakpoint conditionals
+- **Hamburger menu for ALL devices**: 3-line icon now appears on all screen sizes
+- **Consistent mobile experience**: No more confusion between tab navigation and hamburger menu
+- **Slide-out panel**: User profile, navigation links, and sign-out accessible from menu
+
+**Component Changes:**
+- `/components/MobileNav.tsx` - Simplified to mobile-only navigation
+  - Removed desktop tab navigation (lines 59-79)
+  - Removed `md:hidden` conditionals from hamburger button and slide-out menu
+  - Now displays hamburger icon and slide-out panel on ALL screen sizes
+
+**Deployment Configuration:**
+- Updated Supabase redirect URLs to support:
+  - Production: `https://littlevictors.com/*`
+  - Local testing: `http://localhost:3000/*` and `http://10.0.0.17:3000/*`
+- Deployed to Vercel with domain alias: `littlevictors.com`
+
+**User Impact:**
+- ✅ Consistent navigation across all devices
+- ✅ No more unexpected desktop tabs on mobile
+- ✅ Clean, mobile-first interface as originally intended
+- ✅ Easier access to user profile and sign-out
+
+**Commits:**
+- `93775e6` - "fix: Make navigation mobile-first with hamburger menu for all devices"
+
+---
+
+**Last Updated**: 2025-11-10
 **Version**: MVP Phase 1.5 - Advanced Features Complete ✅
 **Completion**: ~98% (all major features functional)
 **Next Milestone**: Photo attachments to entries, export functionality
