@@ -101,9 +101,9 @@ export default function SizesPageNew({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Left sidebar - Child Profile Bar - Desktop only */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <ChildProfileBar
           children={children}
           selectedChildId={selectedChildId}
@@ -114,7 +114,7 @@ export default function SizesPageNew({
       {/* Main content area */}
       <div className="flex-1 min-w-0">
         {/* Mobile: Child selector dropdown */}
-        <div className="md:hidden mb-4">
+        <div className="lg:hidden mb-4">
           <div className="bg-white rounded-xl border border-sand p-3">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
               Child
@@ -143,14 +143,14 @@ export default function SizesPageNew({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
                     isActive
                       ? 'bg-white text-sage border-t-2 border-x-2 border-sage -mb-px'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -158,7 +158,7 @@ export default function SizesPageNew({
         </div>
 
         {/* Tab content */}
-        <div className="bg-white rounded-b-2xl shadow-sm border border-sand border-t-0 p-4 md:p-6">
+        <div className="bg-white rounded-b-2xl shadow-sm border border-sand border-t-0 p-4 lg:p-6">
           {activeTab === 'sizes' && (
             <SizesTab
               childId={selectedChildId}
