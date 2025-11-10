@@ -305,48 +305,48 @@ export default function EntriesSection({
                                 <p className="text-gray-800 leading-relaxed">{entry.content}</p>
                               </div>
                             </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Mobile: Full-width entries */}
+                        <div className="md:hidden space-y-3">
+                          {dateEntries.map((entry) => (
+                            <div
+                              key={entry.id}
+                              className="group bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all"
+                            >
+                              <div className="flex justify-between items-start gap-3 mb-3">
+                                <div className="flex gap-2 flex-wrap">
+                                  {entry.entry_children?.map((ec: any) => {
+                                    const colors = getColorClasses(ec.children.label_color || undefined);
+                                    return (
+                                      <span
+                                        key={ec.children.id}
+                                        style={{ backgroundColor: colors.hex }}
+                                        className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
+                                      >
+                                        {ec.children.name}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                                <button
+                                  onClick={() => handleEditClick(entry)}
+                                  className="text-gray-400 hover:text-sage flex-shrink-0"
+                                  aria-label="Edit moment"
+                                  title={fullDate}
+                                >
+                                  <PencilIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                              <p className="text-gray-800 leading-relaxed">{entry.content}</p>
+                            </div>
                           ))}
                         </div>
                       </div>
-
-                      {/* Mobile: Full-width entries */}
-                      <div className="md:hidden space-y-3">
-                        {dateEntries.map((entry) => (
-                          <div
-                            key={entry.id}
-                            className="group bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all"
-                          >
-                            <div className="flex justify-between items-start gap-3 mb-3">
-                              <div className="flex gap-2 flex-wrap">
-                                {entry.entry_children?.map((ec: any) => {
-                                  const colors = getColorClasses(ec.children.label_color || undefined);
-                                  return (
-                                    <span
-                                      key={ec.children.id}
-                                      style={{ backgroundColor: colors.hex }}
-                                      className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
-                                    >
-                                      {ec.children.name}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                              <button
-                                onClick={() => handleEditClick(entry)}
-                                className="text-gray-400 hover:text-sage flex-shrink-0"
-                                aria-label="Edit moment"
-                                title={fullDate}
-                              >
-                                <PencilIcon className="w-5 h-5" />
-                              </button>
-                            </div>
-                            <p className="text-gray-800 leading-relaxed">{entry.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
             </div>
           </div>
         ) : (
