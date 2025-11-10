@@ -120,10 +120,10 @@ export default function QuickEntryForm({
           <div className="flex items-center gap-3">
             <HeartIcon className="w-7 h-7 text-rose" />
             <div className="flex-1">
-              <p className="text-lg font-serif text-gray-400">
+              <p className="text-lg font-serif font-bold text-gray-900">
                 {placeholder}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Click to capture a moment
               </p>
             </div>

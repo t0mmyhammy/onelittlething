@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { PencilSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, ArrowPathIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { BABY_SIZES } from "@/lib/babySizes";
 import { calcFromDueDate } from "@/lib/pregnancy";
 
@@ -16,6 +16,7 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
   const weekData = BABY_SIZES.find(w => w.week === meta.week);
   const [idx, setIdx] = useState<number>(0);
   const [showMode, setShowMode] = useState<'term' | 'due'>('term'); // Toggle between % to term and % to due
+  const [showInfo, setShowInfo] = useState(false);
 
   // Remember last picked comparison per week
   useEffect(() => {
@@ -81,11 +82,50 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
       : `${babyName} is the size of ${item?.name || "something adorable"}`;
 
   return (
-    <div
-      role="region"
-      aria-label="Baby countdown"
-      className="rounded-xl p-4 shadow-sm border border-sand bg-white flex items-center gap-4"
-    >
+    <>
+      {/* Info Modal */}
+      {showInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowInfo(false)}>
+          <div className="bg-white rounded-xl p-6 max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-serif text-gray-900">Pregnancy Term Timeline</h3>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3 text-sm text-gray-700">
+              <div>
+                <strong className="text-gray-900">Before 37 weeks (Preterm):</strong>
+                <p className="mt-1">If your baby arrives before 37 weeks, they're considered preterm — and while that can sound scary, most preemies do beautifully with a little extra care and time in the NICU.</p>
+              </div>
+              <div>
+                <strong className="text-gray-900">37-38 weeks (Early Term):</strong>
+                <p className="mt-1">Once they reach 37 weeks, they're early term — healthy, safe, and almost fully ready.</p>
+              </div>
+              <div>
+                <strong className="text-gray-900">39-40 weeks (Full Term):</strong>
+                <p className="mt-1">By 39 to 40 weeks, they're full term and perfectly developed for life outside the womb.</p>
+              </div>
+              <div>
+                <strong className="text-gray-900">After 41 weeks (Late Term):</strong>
+                <p className="mt-1">After 41 weeks, doctors may suggest a gentle nudge to help things along, since the placenta's support naturally starts to slow down.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        role="region"
+        aria-label="Baby countdown"
+        className="rounded-xl p-4 shadow-sm border border-sand bg-white flex items-center gap-4"
+      >
       <ProgressRing
         percent={displayPercent}
         icon={item?.icon}
@@ -98,9 +138,18 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <div>
-            <div className="text-xs text-gray-500">Pregnancy progress</div>
-            <div className="text-lg font-serif text-gray-900">{headline}</div>
+          <div className="flex items-center gap-1.5">
+            <div>
+              <div className="text-xs text-gray-500">Pregnancy progress</div>
+              <div className="text-lg font-serif text-gray-900">{headline}</div>
+            </div>
+            <button
+              onClick={() => setShowInfo(true)}
+              className="text-gray-400 hover:text-sage transition-colors p-0.5"
+              aria-label="Pregnancy term information"
+            >
+              <InformationCircleIcon className="w-4 h-4" />
+            </button>
           </div>
           <Link
             href="/settings#family"
@@ -136,6 +185,7 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
 
       </div>
     </div>
+    </>
   );
 }
 
@@ -215,7 +265,7 @@ function ProgressRing({
                 y="50%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="24"
+                fontSize="18"
                 className="transform rotate-90"
                 style={{ transformOrigin: 'center' }}
                 role="img"

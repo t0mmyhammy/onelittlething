@@ -21,22 +21,22 @@ export function calcFromDueDate(dueISO: string): PregnancyMeta {
   const now = getNowDetroit().startOf("day");
   const due = DateTime.fromISO(dueISO, { zone: "America/Detroit" }).endOf("day");
 
-  // Find the Monday of the week when pregnancy started (280 days before due date)
-  const conceptionStart = due.minus({ days: GESTATION_DAYS });
-  const pregnancyStartMonday = conceptionStart.startOf("week"); // Monday by default in Luxon
-
-  // Find the most recent Monday (start of current pregnancy week)
-  const currentMonday = now.startOf("week");
-
-  // Calculate elapsed weeks from pregnancy start Monday to current Monday
-  const elapsedWeeks = Math.floor(currentMonday.diff(pregnancyStartMonday, "weeks").weeks);
-  const clampedWeeks = Math.min(40, Math.max(0, elapsedWeeks));
-
-  // Calculate week (1-40) - week 0 becomes week 1
-  const week = Math.min(40, Math.max(1, clampedWeeks + 1));
-
   // Days until due date (can be negative if past due)
   const daysUntilDue = Math.ceil(due.diff(now, "days").days);
+
+  // Calculate days elapsed in pregnancy (280 days total - days until due)
+  const daysElapsed = GESTATION_DAYS - daysUntilDue;
+
+  // Calculate completed weeks (how many full 7-day periods have passed)
+  const completedWeeks = Math.floor(daysElapsed / 7);
+
+  // Current week is completedWeeks + 1 (you're IN the week after completing N weeks)
+  // Clamp between 1 and 40
+  const week = Math.min(40, Math.max(1, completedWeeks + 1));
+
+  // For percentage calculation, use actual elapsed weeks (can include partial week)
+  const elapsedWeeks = daysElapsed / 7;
+  const clampedWeeks = Math.min(40, Math.max(0, elapsedWeeks));
 
   // Weeks until due date (based on actual calendar weeks remaining)
   const weeksUntilDue = Math.ceil(daysUntilDue / 7);
