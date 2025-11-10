@@ -162,13 +162,18 @@ export default async function DashboardPage() {
   );
   const dueDate = expectedChild?.birthdate || null;
 
-  // Get all entries
+  // Get all entries with creator info
   const { data: entries } = await supabase
     .from('entries')
     .select(`
       *,
       entry_children(
         children(*)
+      ),
+      creator:created_by (
+        id,
+        email,
+        user_metadata
       )
     `)
     .eq('family_id', familyId)
@@ -185,6 +190,11 @@ export default async function DashboardPage() {
       *,
       entry_children(
         children(*)
+      ),
+      creator:created_by (
+        id,
+        email,
+        user_metadata
       )
     `)
     .eq('family_id', familyId)

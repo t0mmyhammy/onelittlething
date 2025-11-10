@@ -8,6 +8,13 @@ const parseLocalDate = (dateStr: string): Date => {
   return new Date(year, month - 1, day);
 };
 
+// Helper to get creator's initial
+const getCreatorInitial = (creator?: { email: string; user_metadata?: { full_name?: string } }): string => {
+  if (!creator) return '?';
+  const name = creator.user_metadata?.full_name || creator.email?.split('@')[0] || 'User';
+  return name.charAt(0).toUpperCase();
+};
+
 interface Entry {
   id: string;
   content: string;
@@ -19,6 +26,13 @@ interface Entry {
       label_color?: string | null;
     };
   }>;
+  creator?: {
+    id: string;
+    email: string;
+    user_metadata?: {
+      full_name?: string;
+    };
+  };
 }
 
 interface OnThisDayProps {
@@ -49,7 +63,14 @@ export default function OnThisDay({ entries }: OnThisDayProps) {
           return (
             <div key={entry.id} className="bg-white/80 p-4 rounded-lg">
               <div className="flex justify-between items-start mb-2">
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2 flex-wrap items-center">
+                  {/* Creator Initial Badge */}
+                  {entry.creator && (
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                      {getCreatorInitial(entry.creator)}
+                    </div>
+                  )}
+                  {/* Child Tags */}
                   {entry.entry_children?.map((ec: any) => {
                     const colors = getColorClasses(ec.children.label_color || undefined);
                     return (

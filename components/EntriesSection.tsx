@@ -12,6 +12,13 @@ const parseLocalDate = (dateStr: string): Date => {
   return new Date(year, month - 1, day);
 };
 
+// Helper to get creator's initial
+const getCreatorInitial = (creator?: { email: string; user_metadata?: { full_name?: string } }): string => {
+  if (!creator) return '?';
+  const name = creator.user_metadata?.full_name || creator.email?.split('@')[0] || 'User';
+  return name.charAt(0).toUpperCase();
+};
+
 interface Child {
   id: string;
   name: string;
@@ -29,6 +36,13 @@ interface Entry {
       label_color?: string | null;
     };
   }>;
+  creator?: {
+    id: string;
+    email: string;
+    user_metadata?: {
+      full_name?: string;
+    };
+  };
 }
 
 interface EntriesSectionProps {
@@ -283,7 +297,14 @@ export default function EntriesSection({
                             >
                               <div className="bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all h-full">
                                 <div className="flex justify-between items-start gap-3 mb-3">
-                                  <div className="flex gap-2 flex-wrap">
+                                  <div className="flex gap-2 flex-wrap items-center">
+                                    {/* Creator Initial Badge */}
+                                    {entry.creator && (
+                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                                        {getCreatorInitial(entry.creator)}
+                                      </div>
+                                    )}
+                                    {/* Child Tags */}
                                     {entry.entry_children?.map((ec: any) => {
                                       const colors = getColorClasses(ec.children.label_color || undefined);
                                       return (
@@ -322,7 +343,14 @@ export default function EntriesSection({
                               className="group bg-white border border-sand rounded-lg p-3 hover:border-sage hover:shadow-sm transition-all"
                             >
                               <div className="flex justify-between items-start gap-2 mb-2">
-                                <div className="flex gap-1.5 flex-wrap">
+                                <div className="flex gap-1.5 flex-wrap items-center">
+                                  {/* Creator Initial Badge */}
+                                  {entry.creator && (
+                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                                      {getCreatorInitial(entry.creator)}
+                                    </div>
+                                  )}
+                                  {/* Child Tags */}
                                   {entry.entry_children?.map((ec: any) => {
                                     const colors = getColorClasses(ec.children.label_color || undefined);
                                     return (

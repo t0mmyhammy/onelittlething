@@ -44,13 +44,18 @@ export default async function TimelinePage() {
     .eq('family_id', familyId)
     .order('created_at', { ascending: true });
 
-  // Get ALL entries (not limited like dashboard)
+  // Get ALL entries (not limited like dashboard) with creator info
   const { data: entries } = await supabase
     .from('entries')
     .select(`
       *,
       entry_children(
         children(*)
+      ),
+      creator:created_by (
+        id,
+        email,
+        user_metadata
       )
     `)
     .eq('family_id', familyId)

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ImageCropper from '@/components/ImageCropper';
 import PhotoUpdateModal from '@/components/PhotoUpdateModal';
+import FamilyManagement from '@/components/FamilyManagement';
 import { UserCircleIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -23,6 +24,8 @@ export default function ProfilePage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const router = useRouter();
   const supabase = createClient();
 
@@ -53,6 +56,35 @@ export default function ProfilePage() {
         setDisplayName(prefs.display_name || '');
         setPhotoUrl(prefs.profile_photo_url || null);
         setPhotoPreview(prefs.profile_photo_url || null);
+      }
+
+      // Load family data
+      const { data: familyMember } = await supabase
+        .from('family_members')
+        .select('family_id')
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (familyMember) {
+        setFamilyId(familyMember.family_id);
+
+        // Load all family members with user details
+        const { data: members } = await supabase
+          .from('family_members')
+          .select(`
+            id,
+            user_id,
+            role,
+            user:user_id (
+              email,
+              user_metadata
+            )
+          `)
+          .eq('family_id', familyMember.family_id);
+
+        if (members) {
+          setFamilyMembers(members);
+        }
       }
     } catch (err: any) {
       setError('Failed to load profile');
@@ -310,6 +342,17 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Family Management */}
+        {familyId && user && (
+          <div className="bg-white rounded-2xl shadow-sm p-8 mt-6">
+            <FamilyManagement
+              familyId={familyId}
+              members={familyMembers}
+              currentUserId={user.id}
+            />
+          </div>
+        )}
       </main>
 
       {/* Photo Update Modal */}
