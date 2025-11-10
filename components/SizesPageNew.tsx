@@ -101,19 +101,41 @@ export default function SizesPageNew({
   ];
 
   return (
-    <div className="flex gap-6">
-      {/* Left sidebar - Child Profile Bar */}
-      <ChildProfileBar
-        children={children}
-        selectedChildId={selectedChildId}
-        onSelectChild={setSelectedChildId}
-      />
+    <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+      {/* Left sidebar - Child Profile Bar - Desktop only */}
+      <div className="hidden md:block">
+        <ChildProfileBar
+          children={children}
+          selectedChildId={selectedChildId}
+          onSelectChild={setSelectedChildId}
+        />
+      </div>
 
       {/* Main content area */}
       <div className="flex-1 min-w-0">
+        {/* Mobile: Child selector dropdown */}
+        <div className="md:hidden mb-4">
+          <div className="bg-white rounded-xl border border-sand p-3">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+              Child
+            </label>
+            <select
+              value={selectedChildId}
+              onChange={(e) => setSelectedChildId(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 border border-sand rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-sage"
+            >
+              {children.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="bg-white rounded-t-2xl border-b border-sand">
-          <div className="flex gap-1 px-2 pt-2">
+          <div className="flex gap-1 px-2 pt-2 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -121,14 +143,14 @@ export default function SizesPageNew({
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
                     isActive
                       ? 'bg-white text-sage border-t-2 border-x-2 border-sage -mb-px'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
@@ -136,7 +158,7 @@ export default function SizesPageNew({
         </div>
 
         {/* Tab content */}
-        <div className="bg-white rounded-b-2xl shadow-sm border border-sand border-t-0 p-6">
+        <div className="bg-white rounded-b-2xl shadow-sm border border-sand border-t-0 p-4 md:p-6">
           {activeTab === 'sizes' && (
             <SizesTab
               childId={selectedChildId}

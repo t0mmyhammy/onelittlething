@@ -50,17 +50,17 @@ export default function AdvicePageClient({
 
   return (
     <>
-      <div className="mb-6">
-        <h2 className="text-3xl font-serif text-gray-900 mb-2">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-2xl md:text-3xl font-serif text-gray-900 mb-2">
           Chat with Liv
         </h2>
-        <p className="text-gray-600">
+        <p className="text-sm md:text-base text-gray-600">
           Your wise older sister who's been there. Get personalized advice for those everyday moments that matter.
         </p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Chat takes up 2 columns */}
+        {/* Chat takes up 2 columns on desktop, full width on mobile */}
         <div className="lg:col-span-2">
           <AIChat
             key={chatKey}
@@ -72,8 +72,8 @@ export default function AdvicePageClient({
           />
         </div>
 
-        {/* Saved advice takes up 1 column */}
-        <div className="lg:col-span-1">
+        {/* Saved advice - Hidden on mobile */}
+        <div className="hidden lg:block lg:col-span-1">
           <SavedAdviceList />
         </div>
       </div>

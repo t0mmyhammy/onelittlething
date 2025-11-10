@@ -159,9 +159,9 @@ export default function AIChat({ children, selectedStyle, customStyles, onStyleC
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] bg-white rounded-2xl shadow-sm border border-sand">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-sand">
+    <div className="flex flex-col h-[calc(100vh-300px)] md:h-[calc(100vh-200px)] bg-white rounded-2xl shadow-sm border border-sand">
+      {/* Header - Compact on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 md:p-6 border-b border-sand">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sage to-rose flex items-center justify-center">
             <SparklesIcon className="w-6 h-6 text-white" />
@@ -172,12 +172,12 @@ export default function AIChat({ children, selectedStyle, customStyles, onStyleC
           </div>
         </div>
 
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {messages.length > 0 && (
             <button
               onClick={handleSaveConversation}
               disabled={isSaving || !conversationId}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all text-sm ${
                 isSaved
                   ? 'bg-green-50 text-green-700 border-2 border-green-300'
                   : 'bg-white text-gray-700 border-2 border-sand hover:border-sage hover:text-sage'
@@ -187,12 +187,12 @@ export default function AIChat({ children, selectedStyle, customStyles, onStyleC
               {isSaved ? (
                 <>
                   <BookmarkSolidIcon className="w-5 h-5" />
-                  <span className="text-sm">Saved!</span>
+                  <span className="hidden sm:inline">Saved!</span>
                 </>
               ) : (
                 <>
                   <BookmarkIcon className="w-5 h-5" />
-                  <span className="text-sm">Save</span>
+                  <span className="hidden sm:inline">Save</span>
                 </>
               )}
             </button>
@@ -208,7 +208,7 @@ export default function AIChat({ children, selectedStyle, customStyles, onStyleC
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="w-16 h-16 rounded-full bg-sage/10 flex items-center justify-center mb-4">

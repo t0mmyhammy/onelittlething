@@ -227,11 +227,11 @@ export default function EntriesSection({
 
         {filteredAndSortedEntries.length > 0 ? (
           <div className="relative">
-            {/* Timeline vertical line */}
-            <div className="absolute left-[94px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
+            {/* Timeline vertical line - hidden on mobile */}
+            <div className="hidden md:block absolute left-[94px] top-3 bottom-3 w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
 
             {/* Timeline entries grouped by date */}
-            <div className="space-y-8">
+            <div className="space-y-6 md:space-y-8">
               {Object.entries(groupedEntries)
                 .sort((a, b) => {
                   const dateA = parseLocalDate(a[0]).getTime();
@@ -245,21 +245,30 @@ export default function EntriesSection({
                   const hasMultiple = dateEntries.length > 1;
 
                   return (
-                    <div key={dateStr} className="relative flex gap-4">
-                      {/* Date on the left */}
-                      <div className="flex-shrink-0 w-20 pt-1 text-right">
-                        <div className="text-sm font-medium text-gray-700">{shortDate}</div>
+                    <div key={dateStr} className="relative">
+                      {/* Mobile: Date header above content */}
+                      <div className="md:hidden mb-3">
+                        <div className="text-sm font-semibold text-gray-700 bg-sand/30 inline-block px-3 py-1 rounded-full">
+                          {shortDate}
+                        </div>
                       </div>
 
-                      {/* Timeline node - perfectly centered on the line */}
-                      <div className="flex-shrink-0 relative z-10 -ml-1.5">
-                        <div className="w-3 h-3 rounded-full bg-sage ring-4 ring-cream mt-1.5 shadow-sm" />
-                      </div>
+                      {/* Desktop: Date + Timeline layout */}
+                      <div className="hidden md:flex gap-4">
+                        {/* Date on the left */}
+                        <div className="flex-shrink-0 w-20 pt-1 text-right">
+                          <div className="text-sm font-medium text-gray-700">{shortDate}</div>
+                        </div>
 
-                      {/* Entry content(s) */}
-                      <div className="flex-1 pb-2 min-w-0">
-                        <div className={`flex flex-wrap gap-3 ${hasMultiple ? '' : ''}`}>
-                          {dateEntries.map((entry) => (
+                        {/* Timeline node - perfectly centered on the line */}
+                        <div className="flex-shrink-0 relative z-10 -ml-1.5">
+                          <div className="w-3 h-3 rounded-full bg-sage ring-4 ring-cream mt-1.5 shadow-sm" />
+                        </div>
+
+                        {/* Entry content(s) */}
+                        <div className="flex-1 pb-2 min-w-0">
+                          <div className={`flex flex-wrap gap-3 ${hasMultiple ? '' : ''}`}>
+                            {dateEntries.map((entry) => (
                             <div
                               key={entry.id}
                               className={`group ${
@@ -298,6 +307,42 @@ export default function EntriesSection({
                             </div>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Mobile: Full-width entries */}
+                      <div className="md:hidden space-y-3">
+                        {dateEntries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="group bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all"
+                          >
+                            <div className="flex justify-between items-start gap-3 mb-3">
+                              <div className="flex gap-2 flex-wrap">
+                                {entry.entry_children?.map((ec: any) => {
+                                  const colors = getColorClasses(ec.children.label_color || undefined);
+                                  return (
+                                    <span
+                                      key={ec.children.id}
+                                      style={{ backgroundColor: colors.hex }}
+                                      className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
+                                    >
+                                      {ec.children.name}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                              <button
+                                onClick={() => handleEditClick(entry)}
+                                className="text-gray-400 hover:text-sage flex-shrink-0"
+                                aria-label="Edit moment"
+                                title={fullDate}
+                              >
+                                <PencilIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                            <p className="text-gray-800 leading-relaxed">{entry.content}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
