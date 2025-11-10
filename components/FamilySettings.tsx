@@ -41,7 +41,7 @@ export default function FamilySettings({ familyId, initialChildren, userId }: Fa
       const { data: { user } } = await supabase.auth.getUser();
 
       const membersWithInfo = members.map((member) => {
-        if (member.user_id === user?.id) {
+        if (user && member.user_id === user.id) {
           return {
             ...member,
             user: {
