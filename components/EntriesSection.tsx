@@ -308,9 +308,10 @@ export default function EntriesSection({
                             ))}
                           </div>
                         </div>
+                      </div>
 
-                        {/* Mobile: Full-width entries */}
-                        <div className="md:hidden space-y-3">
+                      {/* Mobile: Full-width entries */}
+                      <div className="md:hidden space-y-3">
                           {dateEntries.map((entry) => (
                             <div
                               key={entry.id}
