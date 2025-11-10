@@ -68,22 +68,36 @@ export default function ProfilePage() {
       if (familyMember) {
         setFamilyId(familyMember.family_id);
 
-        // Load all family members with user details
+        // Load all family members
         const { data: members } = await supabase
           .from('family_members')
-          .select(`
-            id,
-            user_id,
-            role,
-            user:user_id (
-              email,
-              user_metadata
-            )
-          `)
+          .select('id, user_id, role')
           .eq('family_id', familyMember.family_id);
 
         if (members) {
-          setFamilyMembers(members);
+          // Build member list with current user's info
+          const membersWithUserInfo = members.map((member) => {
+            if (member.user_id === authUser.id) {
+              // Current user - we have their info
+              return {
+                ...member,
+                user: {
+                  email: authUser.email || '',
+                  user_metadata: authUser.user_metadata || {}
+                }
+              };
+            } else {
+              // Other family members - show placeholder for now
+              return {
+                ...member,
+                user: {
+                  email: 'Family Member',
+                  user_metadata: { full_name: 'Family Member' }
+                }
+              };
+            }
+          });
+          setFamilyMembers(membersWithUserInfo);
         }
       }
     } catch (err: any) {
