@@ -130,22 +130,22 @@ export default function SizesTab({ childId, childName, childSizes }: SizesTabPro
         </button>
       </div>
 
-      {/* Size Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Size List - Mobile optimized */}
+      <div className="space-y-3">
         {sizes.map((category) => {
           const isEditing = editingId === category.id;
 
           return (
             <div
               key={category.id}
-              className="bg-white border border-sand rounded-xl p-5 hover:border-sage transition-all group"
+              className="bg-white border border-sand rounded-xl p-4 hover:border-sage transition-all"
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-900">{category.label}</h3>
                 {!isEditing ? (
                   <button
                     onClick={() => handleEdit(category.id)}
-                    className="text-gray-400 hover:text-sage transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-gray-400 hover:text-sage transition-colors p-1"
                     aria-label="Edit"
                   >
                     <Pencil className="w-4 h-4" />
@@ -154,14 +154,14 @@ export default function SizesTab({ childId, childName, childSizes }: SizesTabPro
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleSave(category)}
-                      className="text-sage hover:text-sage/80 transition-colors"
+                      className="text-sage hover:text-sage/80 transition-colors p-1"
                       aria-label="Save"
                     >
                       <Check className="w-5 h-5" />
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      className="text-gray-400 hover:text-gray-600 transition-colors p-1"
                       aria-label="Cancel"
                     >
                       <X className="w-5 h-5" />
@@ -170,57 +170,58 @@ export default function SizesTab({ childId, childName, childSizes }: SizesTabPro
                 )}
               </div>
 
-              <div className="space-y-3">
+              {/* Mobile: Side-by-side layout for Current/Next */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Current</label>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Current</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={category.current}
                       onChange={(e) => updateSize(category.id, 'current', e.target.value)}
-                      className="mt-1 w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
-                      placeholder="e.g., 7"
+                      className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none text-center"
+                      placeholder="7"
                     />
                   ) : (
-                    <div className="mt-1 px-3 py-2 bg-gray-50 rounded-lg text-gray-900 font-medium">
+                    <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-900 font-semibold text-center">
                       {category.current || '—'}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Next</label>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Next</label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={category.next}
                       onChange={(e) => updateSize(category.id, 'next', e.target.value)}
-                      className="mt-1 w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
-                      placeholder="e.g., 8"
+                      className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none text-center"
+                      placeholder="8"
                     />
                   ) : (
-                    <div className="mt-1 px-3 py-2 bg-gray-50 rounded-lg text-gray-600">
+                    <div className="px-3 py-2 bg-gray-50 rounded-lg text-gray-600 font-medium text-center">
                       {category.next || '—'}
                     </div>
                   )}
                 </div>
-
-                {isEditing && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Fit Notes</label>
-                    <input
-                      type="text"
-                      value={category.fitNotes}
-                      onChange={(e) => updateSize(category.id, 'fitNotes', e.target.value)}
-                      className="mt-1 w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
-                      placeholder="e.g., Runs small"
-                    />
-                  </div>
-                )}
               </div>
 
+              {isEditing && (
+                <div className="mb-3">
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Fit Notes</label>
+                  <input
+                    type="text"
+                    value={category.fitNotes}
+                    onChange={(e) => updateSize(category.id, 'fitNotes', e.target.value)}
+                    className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                    placeholder="e.g., Runs small"
+                  />
+                </div>
+              )}
+
               {category.updatedAt && (
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-1.5 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 pt-3 border-t border-gray-100">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{formatTimestamp(category.updatedAt)}</span>
                 </div>
