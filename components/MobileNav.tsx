@@ -37,11 +37,6 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
       {/* Sticky Mobile Header */}
       <header className="sticky top-0 z-50 bg-white border-b border-sand shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-lg font-serif text-gray-900">OneLittleThing</span>
-          </Link>
-
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -54,6 +49,14 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
               <Bars3Icon className="w-6 h-6 text-gray-700" />
             )}
           </button>
+
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="text-lg font-serif text-gray-900">OneLittleThing</span>
+          </Link>
+
+          {/* Spacer to keep logo centered */}
+          <div className="w-10"></div>
         </div>
 
       </header>
@@ -68,7 +71,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
           />
 
           {/* Menu Panel */}
-          <div className="fixed top-[57px] right-0 bottom-0 w-64 bg-white shadow-2xl z-50 overflow-y-auto">
+          <div className="fixed top-[57px] left-0 bottom-0 w-64 bg-white shadow-2xl z-50 overflow-y-auto">
             {/* User Info */}
             <div className="p-4 border-b border-sand bg-cream/30">
               <Link

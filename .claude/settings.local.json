@@ -26,7 +26,16 @@
       "Bash(vercel inspect:*)",
       "Bash(vercel ls:*)",
       "Bash(echo:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(vercel domains:*)",
+      "Bash(dig:*)",
+      "Bash(vercel project:*)",
+      "Bash(vercel alias set:*)",
+      "Bash(xargs kill:*)",
+      "Bash(vercel pull:*)",
+      "Bash(vercel build:*)",
+      "Bash(vercel deploy:*)",
+      "Bash(vercel:*)"
     ],
     "deny": [],
     "ask": []
