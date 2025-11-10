@@ -258,23 +258,17 @@ function ProgressRing({
               strokeLinecap="round"
               className="transition-all duration-500"
             />
-            {/* Icon in center */}
-            {icon && (
-              <text
-                x="50%"
-                y="50%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fontSize="18"
-                className="transform rotate-90"
-                style={{ transformOrigin: 'center' }}
-                role="img"
-                aria-label={iconAlt}
-              >
-                {icon}
-              </text>
-            )}
           </svg>
+          {/* Icon overlaid in center */}
+          {icon && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none text-xl"
+              role="img"
+              aria-label={iconAlt}
+            >
+              {icon}
+            </div>
+          )}
         </button>
         {/* Cycle button overlapping top-right */}
         {showCycleButton && onCycle && (
