@@ -56,26 +56,6 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
           </button>
         </div>
 
-        {/* Desktop Navigation (hidden on mobile) */}
-        <nav className="hidden md:flex gap-1 px-4 border-t border-gray-100">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  isActive(link.href)
-                    ? 'text-sage border-sage'
-                    : 'text-gray-600 hover:text-gray-900 border-transparent hover:border-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
       </header>
 
       {/* Mobile Slide-out Menu */}
@@ -83,12 +63,12 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40"
             onClick={() => setIsOpen(false)}
           />
 
           {/* Menu Panel */}
-          <div className="fixed top-[57px] right-0 bottom-0 w-64 bg-white shadow-2xl z-50 md:hidden overflow-y-auto">
+          <div className="fixed top-[57px] right-0 bottom-0 w-64 bg-white shadow-2xl z-50 overflow-y-auto">
             {/* User Info */}
             <div className="p-4 border-b border-sand bg-cream/30">
               <Link
