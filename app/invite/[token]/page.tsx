@@ -14,10 +14,10 @@ export default async function InvitePage({ params }: PageProps) {
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Get invite
+  // Get invite (without families join to avoid RLS issues for anonymous users)
   const { data: invite, error: inviteError } = await supabase
     .from('family_invites')
-    .select('*, families(name)')
+    .select('*')
     .eq('token', params.token)
     .eq('status', 'pending')
     .single();
@@ -103,9 +103,7 @@ export default async function InvitePage({ params }: PageProps) {
           You're Invited!
         </h1>
         <p className="text-gray-600 mb-6 text-center">
-          You've been invited to join{' '}
-          <span className="font-medium">{(invite.families as any)?.name || 'a family'}</span>{' '}
-          on OneLittleThing
+          You've been invited to join a family on OneLittleThing
         </p>
 
         <div className="space-y-4">
