@@ -9,6 +9,8 @@ interface SizeCategory {
   category: string;
   current_size: string | null;
   next_size: string | null;
+  fit_notes: string | null;
+  need_status: string | null;
 }
 
 interface ShoppingItem {
