@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ShoppingItem {
@@ -19,6 +19,7 @@ interface ShoppingItem {
   price: number | null;
   status?: 'idle' | 'selected' | 'reserved' | 'purchased';
   reserved_by?: string | null;
+  archived?: boolean;
 }
 
 interface WishlistTabProps {
@@ -28,7 +29,7 @@ interface WishlistTabProps {
   familyId: string;
 }
 
-type FilterType = 'active' | 'reserved' | 'purchased';
+type FilterType = 'active' | 'reserved' | 'purchased' | 'archived';
 
 export default function WishlistTab({ childId, childName, shoppingItems, familyId }: WishlistTabProps) {
   const supabase = createClient();
@@ -37,9 +38,27 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     shoppingItems.map(item => ({
       ...item,
       status: item.is_completed ? 'purchased' : (item.status || 'idle'),
+      archived: item.archived || false,
     }))
   );
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValues, setEditingValues] = useState<{
+    item_name: string;
+    url: string;
+    price: string;
+    notes: string;
+    brand: string;
+    size: string;
+    color: string;
+  }>({
+    item_name: '',
+    url: '',
+    price: '',
+    notes: '',
+    brand: '',
+    size: '',
+    color: '',
+  });
   const [reservingId, setReservingId] = useState<string | null>(null);
   const [reservedByInput, setReservedByInput] = useState('');
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -47,6 +66,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
   const [newItemUrl, setNewItemUrl] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemNotes, setNewItemNotes] = useState('');
+  const [showActionsId, setShowActionsId] = useState<string | null>(null);
 
   // Sort items by status
   const sortedItems = useMemo(() => {
@@ -60,13 +80,20 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
   // Filter items
   const filteredItems = useMemo(() => {
-    if (filter === 'active') {
-      return sortedItems.filter(item => item.status !== 'reserved' && item.status !== 'purchased');
-    } else if (filter === 'reserved') {
-      return sortedItems.filter(item => item.status === 'reserved');
-    } else {
-      return sortedItems.filter(item => item.status === 'purchased');
+    if (filter === 'archived') {
+      return sortedItems.filter(item => item.archived);
     }
+    // Hide archived items from other views
+    const nonArchived = sortedItems.filter(item => !item.archived);
+
+    if (filter === 'active') {
+      return nonArchived.filter(item => item.status !== 'reserved' && item.status !== 'purchased');
+    } else if (filter === 'reserved') {
+      return nonArchived.filter(item => item.status === 'reserved');
+    } else if (filter === 'purchased') {
+      return nonArchived.filter(item => item.status === 'purchased');
+    }
+    return nonArchived;
   }, [sortedItems, filter]);
 
   const updateStatus = async (itemId: string, newStatus: 'idle' | 'selected' | 'reserved' | 'purchased') => {
@@ -114,6 +141,95 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     }
   };
 
+  const handleEdit = (item: ShoppingItem) => {
+    setEditingId(item.id);
+    setEditingValues({
+      item_name: item.item_name,
+      url: item.url || '',
+      price: item.price?.toString() || '',
+      notes: item.notes || '',
+      brand: item.brand || '',
+      size: item.size || '',
+      color: item.color || '',
+    });
+    setShowActionsId(null);
+  };
+
+  const handleSaveEdit = async (itemId: string) => {
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .update({
+        item_name: editingValues.item_name,
+        url: editingValues.url || null,
+        price: editingValues.price ? parseFloat(editingValues.price) : null,
+        notes: editingValues.notes || null,
+        brand: editingValues.brand || null,
+        size: editingValues.size || null,
+        color: editingValues.color || null,
+      })
+      .eq('id', itemId);
+
+    if (!error) {
+      setItems(prev => prev.map(item =>
+        item.id === itemId ? {
+          ...item,
+          item_name: editingValues.item_name,
+          url: editingValues.url || null,
+          price: editingValues.price ? parseFloat(editingValues.price) : null,
+          notes: editingValues.notes || null,
+          brand: editingValues.brand || null,
+          size: editingValues.size || null,
+          color: editingValues.color || null,
+        } : item
+      ));
+      setEditingId(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingValues({
+      item_name: '',
+      url: '',
+      price: '',
+      notes: '',
+      brand: '',
+      size: '',
+      color: '',
+    });
+  };
+
+  const handleDelete = async (itemId: string) => {
+    if (!confirm('Delete this item permanently?')) return;
+
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (!error) {
+      setItems(prev => prev.filter(item => item.id !== itemId));
+      setShowActionsId(null);
+    }
+  };
+
+  const handleArchive = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    const newArchivedState = !item?.archived;
+
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .update({ archived: newArchivedState })
+      .eq('id', itemId);
+
+    if (!error) {
+      setItems(prev => prev.map(item =>
+        item.id === itemId ? { ...item, archived: newArchivedState } : item
+      ));
+      setShowActionsId(null);
+    }
+  };
+
   const handleAddItem = async () => {
     if (!newItemName.trim()) return;
 
@@ -127,13 +243,14 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
         price: newItemPrice ? parseFloat(newItemPrice) : null,
         notes: newItemNotes.trim() || null,
         is_completed: false,
-        status: 'idle'
+        status: 'idle',
+        archived: false,
       })
       .select()
       .single();
 
     if (!error && data) {
-      setItems(prev => [...prev, { ...data, status: 'idle' }]);
+      setItems(prev => [...prev, { ...data, status: 'idle', archived: false }]);
       setNewItemName('');
       setNewItemUrl('');
       setNewItemPrice('');
@@ -146,17 +263,8 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     { id: 'active', label: 'Active' },
     { id: 'reserved', label: 'Reserved' },
     { id: 'purchased', label: 'Purchased' },
+    { id: 'archived', label: 'Archived' },
   ];
-
-  const getThumbnail = (item: ShoppingItem) => {
-    if (item.url) {
-      // Simple heuristic to extract image from URL
-      return item.url.includes('amazon.com') || item.url.includes('target.com')
-        ? '/placeholder-product.png'
-        : null;
-    }
-    return null;
-  };
 
   return (
     <div className="space-y-6">
@@ -168,12 +276,12 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto">
         {filterButtons.map(btn => (
           <button
             key={btn.id}
             onClick={() => setFilter(btn.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
               filter === btn.id
                 ? 'bg-sage text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -184,7 +292,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
         ))}
       </div>
 
-      {/* Add Item Form (Pinned at top) */}
+      {/* Add Item Form */}
       <div className="border-2 border-dashed border-sand rounded-xl p-5 hover:border-sage transition-colors">
         {!isAddingItem ? (
           <button
@@ -273,6 +381,8 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           const isReserved = item.status === 'reserved';
           const isPurchased = item.status === 'purchased';
           const isReserving = reservingId === item.id;
+          const isEditing = editingId === item.id;
+          const showActions = showActionsId === item.id;
 
           return (
             <div
@@ -285,135 +395,281 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                   : 'border-sand hover:border-sage hover:shadow-sm'
               }`}
             >
-              <div className="flex gap-4">
-                {/* Thumbnail placeholder */}
-                <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                  {getThumbnail(item) ? (
-                    <img src={getThumbnail(item)!} alt={item.item_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-gray-300" />
-                  )}
-                </div>
-
-                {/* Item Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {item.brand && (
-                          <span className="text-sm text-gray-600">{item.brand}</span>
-                        )}
-                        {item.size && (
-                          <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
-                            Size {item.size}
-                          </span>
-                        )}
-                        {item.color && (
-                          <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
-                            {item.color}
-                          </span>
-                        )}
-                      </div>
+              {isEditing ? (
+                /* Edit Mode */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900">Edit Item</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveEdit(item.id)}
+                        className="text-sage hover:text-sage/80 p-1"
+                      >
+                        <Check className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    {item.price && (
-                      <div className="flex items-center gap-1 text-gray-700 font-semibold">
-                        <DollarSign className="w-4 h-4" />
-                        {item.price.toFixed(2)}
-                      </div>
-                    )}
                   </div>
+                  <input
+                    type="text"
+                    value={editingValues.item_name}
+                    onChange={(e) => setEditingValues({ ...editingValues, item_name: e.target.value })}
+                    placeholder="Item name"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                  />
+                  <input
+                    type="url"
+                    value={editingValues.url}
+                    onChange={(e) => setEditingValues({ ...editingValues, url: e.target.value })}
+                    placeholder="Product URL"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editingValues.price}
+                      onChange={(e) => setEditingValues({ ...editingValues, price: e.target.value })}
+                      placeholder="Price"
+                      className="px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={editingValues.brand}
+                      onChange={(e) => setEditingValues({ ...editingValues, brand: e.target.value })}
+                      placeholder="Brand"
+                      className="px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      value={editingValues.size}
+                      onChange={(e) => setEditingValues({ ...editingValues, size: e.target.value })}
+                      placeholder="Size"
+                      className="px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={editingValues.color}
+                      onChange={(e) => setEditingValues({ ...editingValues, color: e.target.value })}
+                      placeholder="Color"
+                      className="px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <textarea
+                    value={editingValues.notes}
+                    onChange={(e) => setEditingValues({ ...editingValues, notes: e.target.value })}
+                    placeholder="Notes"
+                    rows={2}
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none resize-none"
+                  />
+                </div>
+              ) : (
+                /* View Mode */
+                <>
+                  <div className="flex gap-4">
+                    {/* Thumbnail placeholder */}
+                    <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                      <ImageIcon className="w-8 h-8 text-gray-300" />
+                    </div>
 
-                  {item.notes && (
-                    <p className="text-sm text-gray-600 mb-3">{item.notes}</p>
-                  )}
+                    {/* Item Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {item.brand && (
+                              <span className="text-sm text-gray-600">{item.brand}</span>
+                            )}
+                            {item.size && (
+                              <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
+                                Size {item.size}
+                              </span>
+                            )}
+                            {item.color && (
+                              <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
+                                {item.color}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {item.price && (
+                          <div className="flex items-center gap-1 text-gray-900 font-bold text-lg">
+                            <DollarSign className="w-5 h-5" />
+                            {item.price.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
 
-                  {item.url && (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-sage hover:text-rose mb-3"
-                    >
-                      <LinkIcon className="w-3.5 h-3.5" />
-                      View product
-                    </a>
-                  )}
-
-                  {/* Action Buttons */}
-                  {!isPurchased && (
-                    <div className="flex flex-wrap items-center gap-2 mt-3">
-                      <button
-                        onClick={() => handleSelect(item.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                          isSelected
-                            ? 'bg-sage text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Star className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
-                        {isSelected ? 'Selected' : 'Select'}
-                      </button>
-
-                      <button
-                        onClick={() => handleBuy(item.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all whitespace-nowrap"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Buy
-                      </button>
-
-                      {!isReserved && !isReserving && (
-                        <button
-                          onClick={() => handleReserve(item.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all whitespace-nowrap"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Reserve
-                        </button>
+                      {item.notes && (
+                        <p className="text-sm text-gray-600 mb-3">{item.notes}</p>
                       )}
 
-                      {isReserving && (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={reservedByInput}
-                            onChange={(e) => setReservedByInput(e.target.value)}
-                            placeholder="Reserved by..."
-                            className="px-3 py-1.5 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
-                          />
+                      {item.url && (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-sage hover:text-rose font-medium mb-3"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          View product
+                        </a>
+                      )}
+
+                      {/* Action Buttons */}
+                      {!isPurchased && !isEditing && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3">
                           <button
-                            onClick={() => handleReserve(item.id)}
-                            className="p-1.5 text-sage hover:bg-sage/10 rounded"
+                            onClick={() => handleSelect(item.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                              isSelected
+                                ? 'bg-sage text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                           >
-                            <Check className="w-4 h-4" />
+                            <Star className={`w-4 h-4 ${isSelected ? 'fill-current' : ''}`} />
+                            {isSelected ? 'Selected' : 'Select'}
                           </button>
+
                           <button
-                            onClick={() => setReservingId(null)}
-                            className="p-1.5 text-gray-400 hover:bg-gray-100 rounded"
+                            onClick={() => handleBuy(item.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all whitespace-nowrap"
                           >
-                            <X className="w-4 h-4" />
+                            <ShoppingCart className="w-4 h-4" />
+                            Buy
                           </button>
+
+                          {!isReserved && !isReserving && (
+                            <button
+                              onClick={() => handleReserve(item.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all whitespace-nowrap"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              Reserve
+                            </button>
+                          )}
+
+                          {isReserving && (
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <input
+                                type="text"
+                                value={reservedByInput}
+                                onChange={(e) => setReservedByInput(e.target.value)}
+                                placeholder="Reserved by..."
+                                className="flex-1 px-3 py-1.5 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                              />
+                              <button
+                                onClick={() => handleReserve(item.id)}
+                                className="p-1.5 text-sage hover:bg-sage/10 rounded"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setReservingId(null)}
+                                className="p-1.5 text-gray-400 hover:bg-gray-100 rounded"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+
+                          {isReserved && item.reserved_by && (
+                            <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
+                              <UserPlus className="w-4 h-4" />
+                              Reserved by {item.reserved_by}
+                            </span>
+                          )}
+
+                          {/* More Actions Menu */}
+                          <div className="relative ml-auto">
+                            <button
+                              onClick={() => setShowActionsId(showActions ? null : item.id)}
+                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {showActions && (
+                              <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
+                                <button
+                                  onClick={() => handleEdit(item)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleArchive(item.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                  {item.archived ? 'Unarchive' : 'Archive'}
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
 
-                      {isReserved && item.reserved_by && (
-                        <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
-                          <UserPlus className="w-4 h-4" />
-                          Reserved by {item.reserved_by}
-                        </span>
+                      {isPurchased && (
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg inline-flex items-center gap-1.5">
+                            <Check className="w-4 h-4" />
+                            Purchased
+                          </div>
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowActionsId(showActions ? null : item.id)}
+                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {showActions && (
+                              <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
+                                <button
+                                  onClick={() => handleEdit(item)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleArchive(item.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                  {item.archived ? 'Unarchive' : 'Archive'}
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id)}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {isPurchased && (
-                    <div className="mt-3 px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg inline-flex items-center gap-1.5">
-                      <Check className="w-4 h-4" />
-                      Purchased
-                    </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
@@ -424,14 +680,6 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           </div>
         )}
       </div>
-
-      {/* Completed Section */}
-      {filter === 'active' && items.filter(i => i.status === 'purchased').length > 0 && (
-        <div className="pt-6 border-t border-sand">
-          <h3 className="text-lg font-serif text-gray-900 mb-4">Completed</h3>
-          <p className="text-sm text-gray-500">{items.filter(i => i.status === 'purchased').length} items purchased</p>
-        </div>
-      )}
     </div>
   );
 }
