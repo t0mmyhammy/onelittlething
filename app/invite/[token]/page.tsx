@@ -11,8 +11,11 @@ interface PageProps {
 export default async function InvitePage({ params }: PageProps) {
   const supabase = await createClient();
 
+  console.log('Invite page - token from URL:', params.token);
+
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
+  console.log('Current user:', user?.email || 'not logged in');
 
   // Get invite (without families join to avoid RLS issues for anonymous users)
   const { data: invite, error: inviteError } = await supabase
@@ -23,6 +26,7 @@ export default async function InvitePage({ params }: PageProps) {
     .single();
 
   // Log for debugging
+  console.log('Invite query result:', { invite, inviteError });
   if (inviteError) {
     console.error('Invite lookup error:', inviteError);
   }
