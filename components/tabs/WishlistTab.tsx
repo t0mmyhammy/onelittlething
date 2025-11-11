@@ -289,37 +289,54 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     }
   };
 
-  const filterButtons: { id: FilterType; label: string }[] = [
-    { id: 'active', label: 'Active' },
-    { id: 'reserved', label: 'Reserved' },
-    { id: 'purchased', label: 'Purchased' },
-    { id: 'archived', label: 'Archived' },
+  const filterButtons: { id: FilterType; label: string; icon: string }[] = [
+    { id: 'active', label: 'Active', icon: '📋' },
+    { id: 'reserved', label: 'Reserved', icon: '🔖' },
+    { id: 'purchased', label: 'Purchased', icon: '✅' },
+    { id: 'archived', label: 'Archived', icon: '📦' },
   ];
+
+  // Calculate counts for each filter
+  const filterCounts = {
+    active: sortedItems.filter(item => !item.archived && item.status !== 'reserved' && item.status !== 'purchased').length,
+    reserved: sortedItems.filter(item => !item.archived && item.status === 'reserved').length,
+    purchased: sortedItems.filter(item => !item.archived && item.status === 'purchased').length,
+    archived: sortedItems.filter(item => item.archived).length,
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-serif text-gray-900">{childName}'s Wishlist</h2>
-          <p className="text-sm text-gray-600 mt-1">Gifts or planned purchases</p>
+          <h2 className="text-[22px] font-semibold text-gray-900 mb-1">{childName}'s Wishlist</h2>
+          <p className="text-[15px] text-gray-600 leading-relaxed">Gifts or planned purchases</p>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto">
-        {filterButtons.map(btn => (
-          <button
-            key={btn.id}
-            onClick={() => setFilter(btn.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-              filter === btn.id
-                ? 'bg-sage text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {btn.label}
-          </button>
-        ))}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {filterButtons.map(btn => {
+          const count = filterCounts[btn.id];
+          return (
+            <button
+              key={btn.id}
+              onClick={() => setFilter(btn.id)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+                filter === btn.id
+                  ? 'bg-sage text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
+              }`}
+            >
+              <span>{btn.icon}</span>
+              <span>{btn.label}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                filter === btn.id ? 'bg-white/20' : 'bg-gray-200'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Add Item Form */}
@@ -529,10 +546,12 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                 /* View Mode */
                 <>
                   <div className="flex gap-4">
-                    {/* Thumbnail placeholder */}
-                    <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    </div>
+                    {/* Thumbnail - only show if image exists */}
+                    {item.url && item.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
+                      <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src={item.url} alt={item.item_name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
 
                     {/* Item Details */}
                     <div className="flex-1 min-w-0">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface IdeaItem {
@@ -61,7 +61,19 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     item: IdeaItem | null;
     loading: boolean;
     research: string;
-  }>({ isOpen: false, item: null, loading: false, research: '' });
+    products: Array<{
+      name: string;
+      brand?: string;
+      price: string;
+      features: string[];
+      url?: string;
+    }>;
+  }>({ isOpen: false, item: null, loading: false, research: '', products: [] });
+  const [aiPromptModal, setAiPromptModal] = useState<{
+    isOpen: boolean;
+    item: IdeaItem | null;
+    additionalContext: string;
+  }>({ isOpen: false, item: null, additionalContext: '' });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -213,12 +225,29 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     showToast('Idea deleted');
   };
 
-  const handleAIResearch = async (item: IdeaItem) => {
+  const handleAIResearch = (item: IdeaItem) => {
+    // Show prompt modal first
+    setAiPromptModal({
+      isOpen: true,
+      item,
+      additionalContext: '',
+    });
+  };
+
+  const startAIResearch = async () => {
+    const item = aiPromptModal.item;
+    const additionalContext = aiPromptModal.additionalContext;
+
+    if (!item) return;
+
+    // Close prompt modal and open research modal with loading
+    setAiPromptModal({ isOpen: false, item: null, additionalContext: '' });
     setAiModal({
       isOpen: true,
       item,
       loading: true,
       research: '',
+      products: [],
     });
 
     try {
@@ -231,6 +260,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
           size: item.size,
           brand: item.brand,
           existingNotes: item.notes,
+          additionalContext,
           childName,
         }),
       });
@@ -242,6 +272,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
         ...prev,
         loading: false,
         research: data.research || 'Unable to generate research.',
+        products: data.products || [],
       }));
     } catch (error) {
       console.error('AI research error:', error);
@@ -249,6 +280,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
         ...prev,
         loading: false,
         research: 'Unable to generate research. Please try again.',
+        products: [],
       }));
     }
   };
@@ -267,8 +299,36 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
       setItems(prev => prev.map(i =>
         i.id === aiModal.item?.id ? { ...i, notes: aiModal.research } : i
       ));
-      setAiModal({ isOpen: false, item: null, loading: false, research: '' });
+      setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [] });
       showToast('Research added to notes!');
+    }
+  };
+
+  const handleSelectProduct = async (product: { name: string; brand?: string; price: string; features: string[] }) => {
+    if (!aiModal.item) return;
+
+    // Build a formatted notes string from the product
+    const productNotes = `${product.name}${product.brand ? ` by ${product.brand}` : ''}
+
+Price: ${product.price}
+
+Key Features:
+${product.features.map(f => `• ${f}`).join('\n')}`;
+
+    const { error } = await supabase
+      .from('inventory_items')
+      .update({
+        notes: productNotes,
+        brand: product.brand || null,
+      })
+      .eq('id', aiModal.item.id);
+
+    if (!error) {
+      setItems(prev => prev.map(i =>
+        i.id === aiModal.item?.id ? { ...i, notes: productNotes, brand: product.brand || i.brand } : i
+      ));
+      setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [] });
+      showToast('Product added to idea!');
     }
   };
 
@@ -476,10 +536,10 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                               e.stopPropagation();
                               handleAIResearch(item);
                             }}
-                            className="p-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                            title="AI research"
+                            className="p-2 bg-[#F5F4FD] text-[#7B6CF6] rounded-lg hover:bg-[#ECE9FC] hover:text-[#6759F5] hover:scale-105 transition-all duration-200"
+                            title="Get AI ideas"
                           >
-                            <Sparkles className="w-3.5 h-3.5" />
+                            <Wand2 className="w-4 h-4" />
                           </button>
                           {/* Delete Button */}
                           <button
@@ -657,19 +717,74 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
         </div>
       )}
 
+      {/* AI Prompt Modal */}
+      {aiPromptModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '' })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-[#F5F4FD] rounded-lg">
+                <Wand2 className="w-6 h-6 text-[#7B6CF6]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif text-gray-900">
+                  AI Research
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {aiPromptModal.item?.item_name}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-4">
+              Is there anything I should take into consideration as I do this research?
+            </p>
+
+            <textarea
+              value={aiPromptModal.additionalContext}
+              onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
+              placeholder="e.g., Looking for eco-friendly options, budget under $50, specific colors, etc."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={startAIResearch}
+                className="flex-1 px-4 py-2.5 bg-[#7B6CF6] text-white rounded-lg hover:bg-[#6759F5] font-medium transition-all flex items-center justify-center gap-2"
+              >
+                <Brain className="w-4 h-4" />
+                Go Research
+              </button>
+              <button
+                onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '' })}
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* AI Research Modal */}
       {aiModal.isOpen && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, item: null, loading: false, research: '' })}
+          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [] })}
         >
           <div
             className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="p-3 bg-[#F5F4FD] rounded-lg">
+                <Wand2 className="w-6 h-6 text-[#7B6CF6]" />
               </div>
               <div>
                 <h3 className="text-xl font-serif text-gray-900">
@@ -683,29 +798,64 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
 
             {aiModal.loading ? (
               <div className="py-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#7B6CF6] mb-4"></div>
                 <p className="text-gray-600">Researching and generating recommendations...</p>
               </div>
             ) : (
               <>
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                    {aiModal.research}
-                  </p>
-                </div>
+                {/* TLDR Summary */}
+                {aiModal.research && (
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">TLDR</h4>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {aiModal.research}
+                    </p>
+                  </div>
+                )}
+
+                {/* Product SKUs */}
+                {aiModal.products && aiModal.products.length > 0 && (
+                  <div className="space-y-3 mb-6">
+                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Recommended Products</h4>
+                    {aiModal.products.map((product, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelectProduct(product)}
+                        className="w-full text-left border-2 border-gray-200 rounded-xl p-4 hover:border-purple-500 hover:bg-purple-50 transition-all group"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-gray-900 text-base group-hover:text-purple-700">
+                              {product.name}
+                            </h5>
+                            {product.brand && (
+                              <p className="text-xs text-gray-500 mt-0.5">{product.brand}</p>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-sage ml-3">{product.price}</span>
+                        </div>
+                        <ul className="space-y-1">
+                          {product.features.map((feature, fIndex) => (
+                            <li key={fIndex} className="text-xs text-gray-600 flex items-start gap-1.5">
+                              <span className="text-purple-500 mt-0.5">•</span>
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-xs text-purple-600 font-medium mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          Click to add this product to your idea
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button
-                    onClick={applyAIResearch}
-                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 font-medium transition-all"
+                    onClick={() => setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [] })}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                   >
-                    Add to Notes
-                  </button>
-                  <button
-                    onClick={() => setAiModal({ isOpen: false, item: null, loading: false, research: '' })}
-                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                  >
-                    Cancel
+                    Close
                   </button>
                 </div>
               </>
