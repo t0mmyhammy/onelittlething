@@ -10,6 +10,7 @@ interface SizeCategory {
   current_size: string | null;
   next_size: string | null;
   fit_notes: string | null;
+  need_status: string | null;
   updated_at: string;
 }
 
@@ -17,6 +18,7 @@ interface SizesTabProps {
   childId: string;
   childName: string;
   childSizes: any; // Legacy prop, not used anymore
+  familyId: string;
 }
 
 // Common size categories parents might want to track
@@ -35,7 +37,7 @@ const COMMON_CATEGORIES = [
   'Swimsuit',
 ];
 
-export default function SizesTab({ childId, childName }: SizesTabProps) {
+export default function SizesTab({ childId, childName, familyId }: SizesTabProps) {
   const supabase = createClient();
   const [categories, setCategories] = useState<SizeCategory[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,7 +45,8 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
     current: string;
     next: string;
     fitNotes: string;
-  }>({ current: '', next: '', fitNotes: '' });
+    needStatus: string;
+  }>({ current: '', next: '', fitNotes: '', needStatus: 'have_enough' });
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +76,7 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
         current_size: editingValues.current || null,
         next_size: editingValues.next || null,
         fit_notes: editingValues.fitNotes || null,
+        need_status: editingValues.needStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('id', categoryId);
@@ -89,12 +93,13 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
       current: category.current_size || '',
       next: category.next_size || '',
       fitNotes: category.fit_notes || '',
+      needStatus: category.need_status || 'have_enough',
     });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditingValues({ current: '', next: '', fitNotes: '' });
+    setEditingValues({ current: '', next: '', fitNotes: '', needStatus: 'have_enough' });
   };
 
   const handleAddCategory = async () => {
@@ -126,6 +131,29 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
 
     if (!error) {
       await loadCategories();
+    }
+  };
+
+  const handleAddToWishlist = async (category: SizeCategory) => {
+    const itemName = `${category.category} - Size ${category.next_size || category.current_size || '?'}`;
+    const notes = category.fit_notes ? `Fit notes: ${category.fit_notes}` : null;
+
+    const { error } = await supabase
+      .from('shopping_list_items')
+      .insert({
+        child_id: childId,
+        family_id: familyId,
+        item_name: itemName,
+        category: category.category,
+        size: category.next_size || category.current_size,
+        notes: notes,
+        is_completed: false,
+        status: 'idle',
+        archived: false,
+      });
+
+    if (!error) {
+      alert(`Added "${itemName}" to wishlist!`);
     }
   };
 
@@ -325,31 +353,72 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
                   </div>
                 </div>
 
-                {/* Fit Notes */}
+                {/* Fit Notes & Need Status */}
                 {isEditing && (
-                  <div className="mb-3">
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Fit Notes</label>
-                    <input
-                      type="text"
-                      value={editingValues.fitNotes}
-                      onChange={(e) => setEditingValues({ ...editingValues, fitNotes: e.target.value })}
-                      className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
-                      placeholder="e.g., Runs small"
-                    />
+                  <div className="space-y-3 mb-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Need Status</label>
+                      <select
+                        value={editingValues.needStatus}
+                        onChange={(e) => setEditingValues({ ...editingValues, needStatus: e.target.value })}
+                        className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                      >
+                        <option value="have_enough">Have Enough</option>
+                        <option value="need_next_size">Need Next Size Up</option>
+                        <option value="need_now">Need Now</option>
+                        <option value="dont_need">Don't Need</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Fit Notes</label>
+                      <input
+                        type="text"
+                        value={editingValues.fitNotes}
+                        onChange={(e) => setEditingValues({ ...editingValues, fitNotes: e.target.value })}
+                        className="w-full px-3 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                        placeholder="e.g., Runs small"
+                      />
+                    </div>
                   </div>
                 )}
 
-                {!isEditing && category.fit_notes && (
-                  <div className="mb-3 text-sm text-gray-600 italic">
-                    {category.fit_notes}
+                {!isEditing && (
+                  <div className="mb-3 space-y-2">
+                    {category.need_status && category.need_status !== 'have_enough' && (
+                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        category.need_status === 'need_now' ? 'bg-rose/20 text-rose' :
+                        category.need_status === 'need_next_size' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {category.need_status === 'need_now' ? '⚠️ Need Now' :
+                         category.need_status === 'need_next_size' ? '📏 Need Next Size' :
+                         category.need_status === 'dont_need' ? '✓ Don\'t Need' : ''}
+                      </div>
+                    )}
+                    {category.fit_notes && (
+                      <div className="text-sm text-gray-600 italic">
+                        {category.fit_notes}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Timestamp */}
-                {category.updated_at && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-400 pt-3 border-t border-gray-100">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{formatTimestamp(category.updated_at)}</span>
+                {/* Actions & Timestamp */}
+                {!isEditing && (
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      onClick={() => handleAddToWishlist(category)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-sage hover:bg-sage/10 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add to Wishlist
+                    </button>
+                    {category.updated_at && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatTimestamp(category.updated_at)}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

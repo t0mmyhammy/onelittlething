@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Ruler, ClipboardList, Gift, Share2 } from 'lucide-react';
+import { Ruler, Lightbulb, Gift, Share2 } from 'lucide-react';
 import ChildProfileBar from './ChildProfileBar';
 import SizesTab from './tabs/SizesTab';
-import NeedsTab from './tabs/NeedsTab';
+import IdeasTab from './tabs/IdeasTab';
 import WishlistTab from './tabs/WishlistTab';
 import ShareModal from './ShareModal';
 
@@ -66,7 +66,7 @@ interface SizesPageNewProps {
   familyId: string;
 }
 
-type TabType = 'sizes' | 'needs' | 'wishlist';
+type TabType = 'sizes' | 'ideas' | 'wishlist';
 
 export default function SizesPageNew({
   children,
@@ -98,7 +98,7 @@ export default function SizesPageNew({
 
   const tabs = [
     { id: 'sizes' as TabType, label: 'Sizes', icon: Ruler },
-    { id: 'needs' as TabType, label: 'Needs', icon: ClipboardList },
+    { id: 'ideas' as TabType, label: 'Ideas', icon: Lightbulb },
     { id: 'wishlist' as TabType, label: 'Wishlist', icon: Gift },
   ];
 
@@ -179,14 +179,16 @@ export default function SizesPageNew({
               childId={selectedChildId}
               childSizes={childSizes}
               childName={selectedChild?.name || ''}
+              familyId={familyId}
             />
           )}
-          {activeTab === 'needs' && (
-            <NeedsTab
+          {activeTab === 'ideas' && (
+            <IdeasTab
               childId={selectedChildId}
               childName={selectedChild?.name || ''}
               inventoryItems={childInventory}
               childSizes={childSizes}
+              familyId={familyId}
             />
           )}
           {activeTab === 'wishlist' && (
