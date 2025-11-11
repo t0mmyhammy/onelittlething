@@ -218,7 +218,7 @@ export default function QuickEntryForm({
           </div>
         </button>
       ) : (
-        /* Expanded State - Full form with reordered fields */}
+        /* Expanded State - Full form with reordered fields */
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
