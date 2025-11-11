@@ -36,7 +36,7 @@ interface InventoryItem {
   size: string | null;
   fit_notes: string | null;
   brand: string | null;
-  state: 'need_it' | 'dont_need_it' | 'hidden';
+  state: 'idea' | 'discussing' | 'approved';
   next_size_up: boolean;
   photo_url: string | null;
 }
