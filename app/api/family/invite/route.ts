@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
     try {
       const { data: emailData, error: emailError } = await resend.emails.send({
-        from: 'OneLittleThing <invites@littlevictors.com>',
+        from: 'OneLittleThing <onboarding@resend.dev>',
         to: email,
         subject: `${userName} invited you to join their family on OneLittleThing`,
         html: `
