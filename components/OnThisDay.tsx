@@ -22,6 +22,7 @@ interface Entry {
   content: string;
   entry_date: string;
   created_by: string;
+  photo_url?: string | null;
   entry_children?: Array<{
     children: {
       id: string;
@@ -121,6 +122,15 @@ export default function OnThisDay({ entries }: OnThisDayProps) {
                 </span>
               </div>
               <p className="text-gray-700 leading-relaxed">{entry.content}</p>
+              {entry.photo_url && (
+                <div className="mt-3">
+                  <img
+                    src={entry.photo_url}
+                    alt="Moment photo"
+                    className="rounded-lg max-w-full h-auto max-h-96 object-cover"
+                  />
+                </div>
+              )}
             </div>
           );
         })}
