@@ -63,7 +63,13 @@ export default function EntriesSection({
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [creatorInfo, setCreatorInfo] = useState<Record<string, { email: string; full_name: string }>>({});
+  const [mounted, setMounted] = useState(false);
   const supabase = createClient();
+
+  // Mark as mounted to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch creator information for all entries
   useEffect(() => {
@@ -321,7 +327,7 @@ export default function EntriesSection({
                                 <div className="flex justify-between items-start gap-3 mb-3">
                                   <div className="flex gap-2 flex-wrap items-center">
                                     {/* Creator Initial Badge */}
-                                    {creatorInfo[entry.created_by] && (
+                                    {mounted && creatorInfo[entry.created_by] && (
                                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
                                         {getCreatorInitial(creatorInfo[entry.created_by])}
                                       </div>
