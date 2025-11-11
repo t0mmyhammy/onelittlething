@@ -249,7 +249,7 @@ export default function QuickEntryForm({
             {children.length > 0 ? (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Who is this about?</label>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-3 flex-wrap">
                   {children.map((child) => {
                     const isSelected = selectedChildren.includes(child.id);
                     return (
@@ -257,13 +257,30 @@ export default function QuickEntryForm({
                         key={child.id}
                         type="button"
                         onClick={() => toggleChild(child.id)}
-                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all ${
                           isSelected
-                            ? 'border-sage bg-sage/10 text-sage'
-                            : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                            ? 'border-sage bg-sage/10 ring-2 ring-sage/20'
+                            : 'border-gray-300 hover:border-gray-400'
                         }`}
                       >
-                        {child.name}
+                        <div className="flex items-center gap-2">
+                          {child.photo_url ? (
+                            <img
+                              src={child.photo_url}
+                              alt={child.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                              <span className="text-lg font-semibold text-gray-400">
+                                {child.name.charAt(0)}
+                              </span>
+                            </div>
+                          )}
+                          <span className={isSelected ? 'text-sage font-semibold' : 'text-gray-700'}>
+                            {child.name}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
@@ -293,7 +310,7 @@ export default function QuickEntryForm({
                       : 'border-gray-300 text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  📅 Today
+                  Today
                 </button>
                 <button
                   type="button"
@@ -319,7 +336,7 @@ export default function QuickEntryForm({
                   onClick={() => setShowDatePicker(true)}
                   className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 hover:border-gray-400 rounded-lg text-sm font-medium transition-all"
                 >
-                  📆 Pick Date
+                  Pick Date
                 </button>
               </div>
             ) : (
