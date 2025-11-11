@@ -3,15 +3,16 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }
 
 export default async function InvitePage({ params }: PageProps) {
   const supabase = await createClient();
+  const { token } = await params;
 
-  console.log('Invite page - token from URL:', params.token);
+  console.log('Invite page - token from URL:', token);
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
@@ -21,7 +22,7 @@ export default async function InvitePage({ params }: PageProps) {
   const { data: invite, error: inviteError } = await supabase
     .from('family_invites')
     .select('*')
-    .eq('token', params.token)
+    .eq('token', token)
     .eq('status', 'pending')
     .single();
 
@@ -116,14 +117,14 @@ export default async function InvitePage({ params }: PageProps) {
           </p>
           
           <Link
-            href={`/login?invite=${params.token}`}
+            href={`/login?invite=${token}`}
             className="block w-full text-center bg-rose text-white px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
             Sign In
           </Link>
 
           <Link
-            href={`/signup?invite=${params.token}`}
+            href={`/signup?invite=${token}`}
             className="block w-full text-center bg-sand text-gray-800 px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
           >
             Create Account
