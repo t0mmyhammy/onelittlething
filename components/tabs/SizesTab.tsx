@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Plus, Clock, Check } from 'lucide-react';
+import { Star, Plus, Clock, Check, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface SizeCategory {
@@ -63,12 +63,26 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
   }>({ current: '', next: '', fitNotes: '', needStatus: 'have_enough', hideFromSharing: false });
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [showCustomNameInput, setShowCustomNameInput] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sizeSelectionModal, setSizeSelectionModal] = useState<{
     isOpen: boolean;
     category: SizeCategory | null;
   }>({ isOpen: false, category: null });
   const [wishlistCheckStates, setWishlistCheckStates] = useState<Record<string, boolean>>({});
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    categoryId: string | null;
+    categoryName: string | null;
+  }>({ isOpen: false, categoryId: null, categoryName: null });
+  const [customCategoryName, setCustomCategoryName] = useState('');
+  const [aiModal, setAiModal] = useState<{
+    isOpen: boolean;
+    category: SizeCategory | null;
+    loading: boolean;
+    recommendations: string[];
+    selectedRecommendations: Set<number>;
+  }>({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() });
 
   useEffect(() => {
     loadCategories();
@@ -146,16 +160,37 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     }
   };
 
-  const handleDelete = async (categoryId: string) => {
-    if (!confirm('Remove this size category?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirmModal.categoryId) return;
 
     const { error } = await supabase
       .from('child_size_categories')
       .delete()
-      .eq('id', categoryId);
+      .eq('id', deleteConfirmModal.categoryId);
 
     if (!error) {
       await loadCategories();
+      setDeleteConfirmModal({ isOpen: false, categoryId: null, categoryName: null });
+    }
+  };
+
+  const handleAddCustomCategory = async () => {
+    if (!customCategoryName.trim()) return;
+
+    const { error } = await supabase
+      .from('child_size_categories')
+      .insert({
+        child_id: childId,
+        category: customCategoryName.trim(),
+        current_size: null,
+        next_size: null,
+      });
+
+    if (!error) {
+      await loadCategories();
+      setCustomCategoryName('');
+      setShowCustomNameInput(false);
+      setIsAddingCategory(false);
     }
   };
 
@@ -189,6 +224,90 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     if (!error) {
       alert(`Added "${itemName}" to wishlist!`);
       setSizeSelectionModal({ isOpen: false, category: null });
+    }
+  };
+
+  const handleAIRecommendations = async (category: SizeCategory) => {
+    setAiModal({
+      isOpen: true,
+      category,
+      loading: true,
+      recommendations: [],
+      selectedRecommendations: new Set(),
+    });
+
+    try {
+      // Calculate child's age for context
+      const { data: child } = await supabase
+        .from('children')
+        .select('birthdate, name')
+        .eq('id', childId)
+        .single();
+
+      let ageContext = '';
+      if (child?.birthdate) {
+        const birth = new Date(child.birthdate);
+        const today = new Date();
+        const diffMs = today.getTime() - birth.getTime();
+        const ageDate = new Date(diffMs);
+        const years = Math.abs(ageDate.getUTCFullYear() - 1970);
+        const months = ageDate.getUTCMonth();
+        ageContext = years > 0 ? `${years} year${years > 1 ? 's' : ''} old` : `${months} month${months > 1 ? 's' : ''} old`;
+      }
+
+      const response = await fetch('/api/size-recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: category.category,
+          currentSize: category.current_size,
+          nextSize: category.next_size,
+          childAge: ageContext,
+          childName: child?.name || childName,
+          existingNotes: category.notes,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get recommendations');
+
+      const data = await response.json();
+      setAiModal(prev => ({
+        ...prev,
+        loading: false,
+        recommendations: data.recommendations || [],
+      }));
+    } catch (error) {
+      console.error('AI recommendations error:', error);
+      setAiModal(prev => ({
+        ...prev,
+        loading: false,
+        recommendations: ['Unable to generate recommendations. Please try again.'],
+      }));
+    }
+  };
+
+  const applyAIRecommendations = async () => {
+    if (!aiModal.category) return;
+
+    const selectedTexts = Array.from(aiModal.selectedRecommendations)
+      .map(index => aiModal.recommendations[index])
+      .join(' • ');
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from('child_size_categories')
+      .update({
+        notes: selectedTexts,
+        updated_at: new Date().toISOString(),
+        modified_by: user?.id,
+        modified_at: new Date().toISOString(),
+      })
+      .eq('id', aiModal.category.id);
+
+    if (!error) {
+      await loadCategories();
+      setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() });
     }
   };
 
@@ -294,7 +413,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
       </div>
 
       {/* Add Category Modal */}
-      {isAddingCategory && (
+      {isAddingCategory && !showCustomNameInput && (
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="mb-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Add Category</h3>
@@ -305,13 +424,21 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {items.map(item => {
                       const exists = categories.find(c => c.category === item.name);
+                      const isOther = item.name === 'Other';
                       return (
                         <button
                           key={item.name}
                           onClick={() => {
                             if (!exists) {
-                              setNewCategoryName(item.name);
-                              handleAddCategory();
+                              if (isOther) {
+                                // Show custom name input for "Other"
+                                setShowCustomNameInput(true);
+                                setCustomCategoryName('');
+                              } else {
+                                // Add predefined category immediately
+                                setNewCategoryName(item.name);
+                                handleAddCategory();
+                              }
                             }
                           }}
                           disabled={!!exists}
@@ -332,11 +459,59 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
             </div>
           </div>
           <button
-            onClick={() => setIsAddingCategory(false)}
+            onClick={() => {
+              setIsAddingCategory(false);
+              setShowCustomNameInput(false);
+            }}
             className="w-full px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
           >
             Cancel
           </button>
+        </div>
+      )}
+
+      {/* Custom Category Name Input Modal */}
+      {showCustomNameInput && (
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Name Your Category</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            What type of clothing or accessory would you like to track?
+          </p>
+          <input
+            type="text"
+            value={customCategoryName}
+            onChange={(e) => setCustomCategoryName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && customCategoryName.trim()) {
+                handleAddCustomCategory();
+              }
+            }}
+            placeholder="e.g., Backpack, Belt, Scarf..."
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none mb-4"
+            autoFocus
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={handleAddCustomCategory}
+              disabled={!customCategoryName.trim()}
+              className={`flex-1 py-2.5 rounded-lg font-medium transition-all ${
+                customCategoryName.trim()
+                  ? 'bg-sage text-white hover:opacity-90'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              Add Category
+            </button>
+            <button
+              onClick={() => {
+                setShowCustomNameInput(false);
+                setCustomCategoryName('');
+              }}
+              className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Back
+            </button>
+          </div>
         </div>
       )}
 
@@ -378,26 +553,43 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                     </div>
                   </div>
                   {!isEditing && (
-                    <button
-                      onClick={() => {
-                        handleAddToWishlist(category);
-                        setWishlistCheckStates(prev => ({ ...prev, [category.id]: true }));
-                        setTimeout(() => {
-                          setWishlistCheckStates(prev => ({ ...prev, [category.id]: false }));
-                        }, 2000);
-                      }}
-                      className="text-amber-500 hover:text-amber-600 transition-all duration-200 p-2 hover:scale-110 relative group"
-                      title="Add to wishlist"
-                    >
-                      {showWishlistCheck ? (
-                        <Check className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <Star className="w-5 h-5 group-hover:fill-amber-500" />
-                      )}
-                      <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                        Add to wishlist
-                      </span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* AI Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAIRecommendations(category);
+                        }}
+                        className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg relative group/ai"
+                        title="Get AI recommendations"
+                      >
+                        <Sparkles className="w-4 h-4 group-hover/ai:animate-pulse" />
+                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/ai:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                          AI recommendations
+                        </span>
+                      </button>
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={() => {
+                          handleAddToWishlist(category);
+                          setWishlistCheckStates(prev => ({ ...prev, [category.id]: true }));
+                          setTimeout(() => {
+                            setWishlistCheckStates(prev => ({ ...prev, [category.id]: false }));
+                          }, 2000);
+                        }}
+                        className="text-amber-500 hover:text-amber-600 transition-all duration-200 p-2 hover:scale-110 relative group"
+                        title="Add to wishlist"
+                      >
+                        {showWishlistCheck ? (
+                          <Check className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <Star className="w-5 h-5 group-hover:fill-amber-500" />
+                        )}
+                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                          Add to wishlist
+                        </span>
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -479,7 +671,11 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                         Cancel
                       </button>
                       <button
-                        onClick={() => handleDelete(category.id)}
+                        onClick={() => setDeleteConfirmModal({
+                          isOpen: true,
+                          categoryId: category.id,
+                          categoryName: category.category
+                        })}
                         className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
                       >
                         Delete
@@ -566,6 +762,135 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setDeleteConfirmModal({ isOpen: false, categoryId: null, categoryName: null })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-serif text-gray-900 mb-2">
+              Remove Size Category?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to remove <span className="font-semibold">{deleteConfirmModal.categoryName}</span> from {childName}'s sizes? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirmModal({ isOpen: false, categoryId: null, categoryName: null })}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Recommendations Modal */}
+      {aiModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif text-gray-900">
+                  AI Size Recommendations
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {aiModal.category?.category} for {childName}
+                </p>
+              </div>
+            </div>
+
+            {aiModal.loading ? (
+              <div className="py-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p className="text-gray-600">Analyzing size data and generating recommendations...</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select the recommendations you'd like to add to your notes:
+                </p>
+                <div className="space-y-3 mb-6">
+                  {aiModal.recommendations.map((rec, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        const newSelected = new Set(aiModal.selectedRecommendations);
+                        if (newSelected.has(index)) {
+                          newSelected.delete(index);
+                        } else {
+                          newSelected.add(index);
+                        }
+                        setAiModal(prev => ({ ...prev, selectedRecommendations: newSelected }));
+                      }}
+                      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                        aiModal.selectedRecommendations.has(index)
+                          ? 'border-purple-500 bg-purple-50 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-all ${
+                          aiModal.selectedRecommendations.has(index)
+                            ? 'bg-purple-600 border-purple-600'
+                            : 'border-gray-300'
+                        } flex items-center justify-center`}>
+                          {aiModal.selectedRecommendations.has(index) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 flex-1">{rec}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={applyAIRecommendations}
+                    disabled={aiModal.selectedRecommendations.size === 0}
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                      aiModal.selectedRecommendations.size > 0
+                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Apply {aiModal.selectedRecommendations.size > 0 && `(${aiModal.selectedRecommendations.size})`}
+                  </button>
+                  <button
+                    onClick={() => setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() })}
+                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

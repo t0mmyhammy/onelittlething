@@ -73,6 +73,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemNotes, setNewItemNotes] = useState('');
   const [showActionsId, setShowActionsId] = useState<string | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    itemId: string | null;
+    itemName: string | null;
+  }>({ isOpen: false, itemId: null, itemName: null });
 
   // Sort items by status
   const sortedItems = useMemo(() => {
@@ -223,17 +228,18 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     });
   };
 
-  const handleDelete = async (itemId: string) => {
-    if (!confirm('Delete this item permanently?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirmModal.itemId) return;
 
     const { error } = await supabase
       .from('shopping_list_items')
       .delete()
-      .eq('id', itemId);
+      .eq('id', deleteConfirmModal.itemId);
 
     if (!error) {
-      setItems(prev => prev.filter(item => item.id !== itemId));
+      setItems(prev => prev.filter(item => item.id !== deleteConfirmModal.itemId));
       setShowActionsId(null);
+      setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null });
     }
   };
 
@@ -582,7 +588,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                                     {item.archived ? 'Unarchive' : 'Archive'}
                                   </button>
                                   <button
-                                    onClick={() => handleDelete(item.id)}
+                                    onClick={() => setDeleteConfirmModal({
+                                      isOpen: true,
+                                      itemId: item.id,
+                                      itemName: item.item_name
+                                    })}
                                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -719,7 +729,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                                   {item.archived ? 'Unarchive' : 'Archive'}
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(item.id)}
+                                  onClick={() => setDeleteConfirmModal({
+                                    isOpen: true,
+                                    itemId: item.id,
+                                    itemName: item.item_name
+                                  })}
                                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -744,6 +758,41 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-serif text-gray-900 mb-2">
+              Delete Wishlist Item?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to permanently delete <span className="font-semibold">{deleteConfirmModal.itemName}</span>? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null })}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

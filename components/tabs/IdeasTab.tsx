@@ -37,7 +37,8 @@ interface IdeasTabProps {
 export default function IdeasTab({ childId, childName, inventoryItems, childSizes, familyId, onSwitchToWishlist }: IdeasTabProps) {
   const supabase = createClient();
   const [items, setItems] = useState<IdeaItem[]>(inventoryItems);
-  const [userEmail, setUserEmail] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [userInfo, setUserInfo] = useState<Record<string, { email: string; full_name: string }>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<IdeaItem>>({});
@@ -50,22 +51,54 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     size: '',
     notes: '',
   });
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    isOpen: boolean;
+    itemId: string | null;
+    itemName: string | null;
+  }>({ isOpen: false, itemId: null, itemName: null });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
     setItems(inventoryItems);
   }, [inventoryItems, childId]);
 
-  // Get current user email
+  // Get current user ID
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email) {
-        setUserEmail(user.email);
+      if (user?.id) {
+        setCurrentUserId(user.id);
       }
     };
     getUser();
   }, []);
+
+  // Fetch user info for all creators
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (!items || items.length === 0) return;
+
+      const uniqueUserIds = [...new Set(items.map(item => item.created_by).filter(Boolean))] as string[];
+      if (uniqueUserIds.length === 0) return;
+
+      const { data, error } = await supabase.rpc('get_user_info', {
+        user_ids: uniqueUserIds
+      });
+
+      if (data && !error) {
+        const infoMap: Record<string, { email: string; full_name: string }> = {};
+        data.forEach((user: any) => {
+          infoMap[user.id] = {
+            email: user.email,
+            full_name: user.full_name
+          };
+        });
+        setUserInfo(infoMap);
+      }
+    };
+
+    fetchUserInfo();
+  }, [items]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -77,6 +110,18 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
 
   const showToast = (message: string) => {
     setToast(message);
+  };
+
+  const getCreatorName = (createdBy: string | null): string => {
+    if (!createdBy) return 'Unknown';
+    if (createdBy === currentUserId) return 'you';
+
+    const creator = userInfo[createdBy];
+    if (creator) {
+      // Use full_name if available, otherwise use first part of email
+      return creator.full_name || creator.email.split('@')[0];
+    }
+    return 'Unknown';
   };
 
   const handleCardClick = (itemId: string) => {
@@ -149,15 +194,16 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     }
   };
 
-  const handleDelete = async (itemId: string) => {
-    if (!confirm('Delete this idea?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirmModal.itemId) return;
 
     await supabase
       .from('inventory_items')
       .delete()
-      .eq('id', itemId);
+      .eq('id', deleteConfirmModal.itemId);
 
-    setItems(prev => prev.filter(i => i.id !== itemId));
+    setItems(prev => prev.filter(i => i.id !== deleteConfirmModal.itemId));
+    setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null });
     showToast('Idea deleted');
   };
 
@@ -361,7 +407,11 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(item.id);
+                            setDeleteConfirmModal({
+                              isOpen: true,
+                              itemId: item.id,
+                              itemName: item.item_name
+                            });
                           }}
                           className="text-gray-400 hover:text-red-600 transition-colors"
                           title="Delete idea"
@@ -378,9 +428,11 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md font-medium">
-                      {item.category}
-                    </span>
+                    {item.category && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md font-medium">
+                        {item.category}
+                      </span>
+                    )}
                     {item.size && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
                         Size {item.size}
@@ -460,7 +512,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                         {item.created_by && (
                           <div className="flex items-center gap-1.5 text-xs text-gray-500">
                             <User className="w-3.5 h-3.5" />
-                            <span>Added by {item.created_by === userEmail ? 'you' : 'your partner'}</span>
+                            <span>Added by {getCreatorName(item.created_by)}</span>
                           </div>
                         )}
 
@@ -488,6 +540,41 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-serif text-gray-900 mb-2">
+              Delete Idea?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-semibold">{deleteConfirmModal.itemName}</span>? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null })}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
