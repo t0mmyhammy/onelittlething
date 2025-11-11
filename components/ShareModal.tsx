@@ -11,6 +11,7 @@ interface SizeCategory {
   next_size: string | null;
   notes: string | null;
   need_status: string | null;
+  hide_from_sharing: boolean;
 }
 
 interface ShoppingItem {
@@ -50,12 +51,18 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
     loadData();
   }, [childId]);
 
+  // Also reload when modal first opens to ensure fresh data
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const loadData = async () => {
-    // Load sizes
+    // Load sizes (exclude those hidden from sharing)
     const { data: sizesData } = await supabase
       .from('child_size_categories')
       .select('*')
       .eq('child_id', childId)
+      .eq('hide_from_sharing', false)
       .order('created_at', { ascending: true });
 
     if (sizesData) {

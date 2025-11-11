@@ -201,20 +201,22 @@ export default async function DashboardPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+        <div className="mb-6 animate-fadeSlideIn">
           <h2 className="text-3xl font-serif text-gray-900 mb-2">
-            Welcome back, {displayName}!
-          </h2>
-          <p className="text-gray-600">
             {children && children.length > 0
-              ? `Capturing moments for ${children.map(c => c.name).join(', ')}`
+              ? `Capturing life with ${children.map(c => c.name).join(' & ')}`
+              : `Welcome back, ${displayName}!`}
+          </h2>
+          <p className="text-gray-600 text-sm">
+            {children && children.length > 0
+              ? `${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} — One little thing at a time`
               : 'Add your first child to start capturing moments'}
           </p>
         </div>
 
         {/* Baby Countdown Card */}
         {dueDate && expectedChild && (
-          <div className="mb-8">
+          <div className="mb-8 animate-card-1">
             <BabyCountdownCard
               dueDateISO={dueDate}
               babyName={expectedChild.name}
@@ -223,7 +225,7 @@ export default async function DashboardPage() {
         )}
 
         {/* Daily Anchor */}
-        <div className="mb-8">
+        <div className="mb-8 animate-card-2">
           <DailyAnchor
             userId={user.id}
             initialMantra={dailyMantra}
@@ -231,7 +233,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Quick Entry Form - Primary Action */}
-        <div className="mb-8">
+        <div className="mb-8 animate-card-3">
           <QuickEntryForm
             children={children || []}
             familyId={familyId}
@@ -240,22 +242,26 @@ export default async function DashboardPage() {
         </div>
 
         {/* Weekly Progress & Streak Widget */}
-        <StreakWidget entries={entries || []} children={children || []} />
+        <div className="animate-card-4">
+          <StreakWidget entries={entries || []} children={children || []} />
+        </div>
 
         {/* On This Day */}
         {onThisDayEntries && onThisDayEntries.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-8 animate-card-5">
             <OnThisDay entries={onThisDayEntries} />
           </div>
         )}
 
         {/* Recent Entries */}
-        <EntriesSection
-          initialEntries={entries || []}
-          children={children || []}
-          familyId={familyId}
-          userId={user.id}
-        />
+        <div className="animate-fadeSlideIn" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+          <EntriesSection
+            initialEntries={entries || []}
+            children={children || []}
+            familyId={familyId}
+            userId={user.id}
+          />
+        </div>
       </main>
     </div>
   );

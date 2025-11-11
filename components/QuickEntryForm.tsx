@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { HeartIcon } from '@heroicons/react/24/outline';
+import { Mic, Camera, X } from 'lucide-react';
 
 interface Child {
   id: string;
@@ -36,11 +37,15 @@ export default function QuickEntryForm({
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   // Fixed placeholder to avoid hydration mismatch
-  const placeholder = "What moment do you want to remember?";
+  const placeholder = "What stood out today?";
 
   const toggleChild = (childId: string) => {
     setSelectedChildren((prev) =>
@@ -57,6 +62,60 @@ export default function QuickEntryForm({
     }, 100);
   };
 
+  const handleVoiceCapture = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice recognition is not supported in your browser.');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setContent(prev => prev ? `${prev} ${transcript}` : transcript);
+      setIsRecording(false);
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+      alert('Voice recognition failed. Please try again.');
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -69,6 +128,25 @@ export default function QuickEntryForm({
 
       const childrenToTag = selectedChildren;
 
+      // Upload photo if selected
+      let photoUrl = null;
+      if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('entry-photos')
+          .upload(fileName, photoFile);
+
+        if (uploadError) {
+          console.error('Photo upload error:', uploadError);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('entry-photos')
+            .getPublicUrl(fileName);
+          photoUrl = publicUrl;
+        }
+      }
+
       const { data: entry, error: entryError } = await supabase
         .from('entries')
         .insert({
@@ -76,6 +154,7 @@ export default function QuickEntryForm({
           created_by: userId,
           content: content.trim(),
           entry_date: entryDate,
+          photo_url: photoUrl,
         })
         .select()
         .single();
@@ -99,6 +178,7 @@ export default function QuickEntryForm({
       setSelectedChildren([]);
       setIsExpanded(false);
       setShowDatePicker(false);
+      removePhoto();
 
       // Refresh page
       window.location.reload();
@@ -164,17 +244,65 @@ export default function QuickEntryForm({
             </button>
           </div>
 
-          {/* Content */}
-          <div>
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-              rows={3}
-              placeholder={placeholder}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all resize-none"
+          {/* Content with Voice/Photo Actions */}
+          <div className="space-y-2">
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+                rows={4}
+                placeholder={placeholder}
+                className="w-full px-4 py-3 pr-24 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all resize-none"
+              />
+              <div className="absolute bottom-3 right-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleVoiceCapture}
+                  disabled={isRecording}
+                  className={`p-2 rounded-lg transition-all ${
+                    isRecording
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Voice capture"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Add photo"
+                >
+                  <Camera className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              className="hidden"
             />
+            {photoPreview && (
+              <div className="relative inline-block">
+                <img
+                  src={photoPreview}
+                  alt="Preview"
+                  className="w-24 h-24 object-cover rounded-lg border-2 border-sage"
+                />
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Child Selection - Simple Buttons */}

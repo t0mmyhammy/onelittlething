@@ -66,11 +66,22 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
 
   const displayPercent = showMode === 'term' ? meta.pctComplete : pctToDue;
 
+  const getProgressContext = () => {
+    if (meta.week === 20) return " — halfway there!";
+    if (meta.week === 30) return " — entering the home stretch!";
+    if (meta.week === 35) return " — almost time to meet!";
+    if (meta.week >= 37 && meta.week < 39) return " — early term, baby is ready!";
+    if (meta.week >= 39) return " — full term!";
+    if (meta.week >= 13 && meta.week < 14) return " — entering second trimester!";
+    if (meta.week >= 27 && meta.week < 28) return " — entering third trimester!";
+    return "";
+  };
+
   const headline =
     meta.status === "post" ? "Any day now" :
     meta.status === "pre" ? "Getting started" :
     meta.status === "term" ? "Full term" :
-    `Week ${meta.week}`;
+    `Week ${meta.week}${getProgressContext()}`;
 
   const sub =
     meta.status === "post"
@@ -262,7 +273,7 @@ function ProgressRing({
           {/* Icon overlaid in center */}
           {icon && (
             <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none text-xl"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none text-xl animate-subtle-bounce"
               role="img"
               aria-label={iconAlt}
             >

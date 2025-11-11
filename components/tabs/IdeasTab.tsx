@@ -42,6 +42,14 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<IdeaItem>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newIdeaForm, setNewIdeaForm] = useState({
+    item_name: '',
+    category: '',
+    brand: '',
+    size: '',
+    notes: '',
+  });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -153,6 +161,55 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     showToast('Idea deleted');
   };
 
+  const handleAddNewIdea = async () => {
+    if (!newIdeaForm.item_name.trim()) {
+      alert('Please enter an item name');
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert({
+        child_id: childId,
+        item_name: newIdeaForm.item_name.trim(),
+        category: newIdeaForm.category.trim() || 'General',
+        brand: newIdeaForm.brand.trim() || null,
+        size: newIdeaForm.size.trim() || null,
+        notes: newIdeaForm.notes.trim() || null,
+        state: 'idea',
+        next_size_up: false,
+        created_by: user?.id,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setItems(prev => [data, ...prev]);
+      setNewIdeaForm({
+        item_name: '',
+        category: '',
+        brand: '',
+        size: '',
+        notes: '',
+      });
+      setIsAddingNew(false);
+      showToast('Idea added!');
+    }
+  };
+
+  const handleCancelNewIdea = () => {
+    setIsAddingNew(false);
+    setNewIdeaForm({
+      item_name: '',
+      category: '',
+      brand: '',
+      size: '',
+      notes: '',
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Toast notification */}
@@ -170,7 +227,96 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
           <h2 className="text-2xl font-serif text-gray-900">{childName}'s Ideas</h2>
           <p className="text-sm text-gray-600 mt-1">Click any card to expand and edit details</p>
         </div>
+        {!isAddingNew && (
+          <button
+            onClick={() => setIsAddingNew(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            Add Idea
+          </button>
+        )}
       </div>
+
+      {/* Add New Idea Form */}
+      {isAddingNew && (
+        <div className="border-2 border-sage rounded-2xl bg-white shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Idea</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Item Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newIdeaForm.item_name}
+                onChange={(e) => setNewIdeaForm({ ...newIdeaForm, item_name: e.target.value })}
+                placeholder="e.g., Winter Jacket, Rain Boots, etc."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <input
+                  type="text"
+                  value={newIdeaForm.category}
+                  onChange={(e) => setNewIdeaForm({ ...newIdeaForm, category: e.target.value })}
+                  placeholder="e.g., Clothing, Shoes"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                <input
+                  type="text"
+                  value={newIdeaForm.size}
+                  onChange={(e) => setNewIdeaForm({ ...newIdeaForm, size: e.target.value })}
+                  placeholder="e.g., 3T, 7"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+              <input
+                type="text"
+                value={newIdeaForm.brand}
+                onChange={(e) => setNewIdeaForm({ ...newIdeaForm, brand: e.target.value })}
+                placeholder="e.g., Nike, Carter's"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea
+                value={newIdeaForm.notes}
+                onChange={(e) => setNewIdeaForm({ ...newIdeaForm, notes: e.target.value })}
+                placeholder="Add details, links, or thoughts..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddNewIdea}
+                className="flex-1 px-4 py-2 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Add Idea
+              </button>
+              <button
+                onClick={handleCancelNewIdea}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Items Grid */}
       {items.length === 0 ? (

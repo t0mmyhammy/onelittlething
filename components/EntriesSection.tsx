@@ -64,6 +64,7 @@ export default function EntriesSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [creatorInfo, setCreatorInfo] = useState<Record<string, { email: string; full_name: string }>>({});
   const [mounted, setMounted] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(10); // Show first 10 entries by default
   const supabase = createClient();
 
   // Mark as mounted to prevent hydration mismatch
@@ -154,6 +155,25 @@ export default function EntriesSection({
   const filteredAndSortedEntries = useMemo(() => {
     return Object.values(groupedEntries).flat();
   }, [groupedEntries]);
+
+  // Limit entries shown based on visibleCount
+  const visibleEntries = useMemo(() => {
+    return filteredAndSortedEntries.slice(0, visibleCount);
+  }, [filteredAndSortedEntries, visibleCount]);
+
+  // Group visible entries by date for rendering
+  const visibleGroupedEntries = useMemo(() => {
+    const grouped: { [date: string]: Entry[] } = {};
+    visibleEntries.forEach((entry) => {
+      if (!grouped[entry.entry_date]) {
+        grouped[entry.entry_date] = [];
+      }
+      grouped[entry.entry_date].push(entry);
+    });
+    return grouped;
+  }, [visibleEntries]);
+
+  const hasMoreEntries = visibleCount < filteredAndSortedEntries.length;
 
   return (
     <>
@@ -274,7 +294,7 @@ export default function EntriesSection({
 
             {/* Timeline entries grouped by date */}
             <div className="space-y-4 md:space-y-8">
-              {Object.entries(groupedEntries)
+              {Object.entries(visibleGroupedEntries)
                 .sort((a, b) => {
                   const dateA = parseLocalDate(a[0]).getTime();
                   const dateB = parseLocalDate(b[0]).getTime();
@@ -409,6 +429,18 @@ export default function EntriesSection({
                     );
                   })}
             </div>
+
+            {/* Load More Button */}
+            {hasMoreEntries && (
+              <div className="flex justify-center mt-8 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 10)}
+                  className="px-6 py-3 bg-white text-sage border-2 border-sage rounded-lg font-medium hover:bg-sage hover:text-white transition-all duration-200"
+                >
+                  Load More Moments ({filteredAndSortedEntries.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">

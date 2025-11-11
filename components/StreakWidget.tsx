@@ -138,9 +138,9 @@ export default function StreakWidget({ entries, children }: StreakWidgetProps) {
                 </>
               )}
               {day.hasEntry ? (
-                <CheckCircleIcon className={`w-6 h-6 text-sage ${isChildRow ? 'mt-1' : ''}`} />
+                <CheckCircleIcon className={`w-6 h-6 text-sage ${isChildRow ? 'mt-1' : ''} animate-pulse-once`} />
               ) : (
-                <div className={`w-6 h-6 rounded-full border-2 border-gray-200 ${isChildRow ? 'mt-1' : ''}`} />
+                <div className={`w-6 h-6 rounded-full border-2 border-gray-200 ${isChildRow ? 'mt-1' : ''} hover:border-sage/30 transition-colors`} />
               )}
             </div>
           );
@@ -221,15 +221,19 @@ export default function StreakWidget({ entries, children }: StreakWidgetProps) {
 
         {/* Motivational message with streak info */}
         <div className="pt-2 border-t border-gray-100">
-          <p className="text-sm text-gray-600 text-center">
-            {weeklyCount === 0 && "Start your week off strong! 💪"}
-            {weeklyCount > 0 && weeklyCount < 4 && "Great start! Keep the momentum going 🌟"}
-            {weeklyCount >= 4 && weeklyCount < 7 && "You're on fire this week! 🔥"}
-            {weeklyCount >= 7 && "Amazing! You've captured every day this week! 🎉"}
+          <p className="text-sm text-gray-700 text-center font-medium">
+            {weeklyCount === 0 && "🌤 You're building a beautiful rhythm"}
+            {weeklyCount === 1 && "✨ Great start! One moment at a time"}
+            {weeklyCount === 2 && "🌱 You're growing something meaningful"}
+            {weeklyCount === 3 && "🌟 Keep the momentum going — you're doing great"}
+            {weeklyCount === 4 && "🔥 You're on fire this week!"}
+            {weeklyCount === 5 && "💫 Almost there — what a week this has been"}
+            {weeklyCount === 6 && "🌈 One more day to complete your week!"}
+            {weeklyCount >= 7 && "🎉 Amazing! You've captured every day this week"}
           </p>
           {overallStreakData.currentStreak > 1 && (
-            <p className="text-xs text-gray-500 text-center mt-1">
-              Current streak: {overallStreakData.currentStreak} days
+            <p className="text-xs text-sage font-semibold text-center mt-1.5 animate-fade-in">
+              {overallStreakData.currentStreak} day streak — Keep it going!
             </p>
           )}
         </div>
