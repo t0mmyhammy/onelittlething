@@ -27,14 +27,22 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
+interface Child {
+  id: string;
+  name: string;
+  family_id: string;
+}
+
 export default function ShareModal({ childId, childName, onClose }: ShareModalProps) {
   const supabase = createClient();
   const [sizes, setSizes] = useState<SizeCategory[]>([]);
   const [wishlistItems, setWishlistItems] = useState<ShoppingItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [includeSizes, setIncludeSizes] = useState(true);
+  const [selectedSizes, setSelectedSizes] = useState<Set<string>>(new Set());
   const [generatedText, setGeneratedText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [allChildren, setAllChildren] = useState<Child[]>([]);
+  const [duplicateToChildId, setDuplicateToChildId] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -64,6 +72,27 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
     if (wishlistData) {
       setWishlistItems(wishlistData);
     }
+
+    // Load all children in the same family
+    const { data: childData } = await supabase
+      .from('children')
+      .select('id, name, family_id')
+      .eq('id', childId)
+      .single();
+
+    if (childData) {
+      const { data: siblingsData } = await supabase
+        .from('children')
+        .select('id, name, family_id')
+        .eq('family_id', childData.family_id)
+        .neq('id', childId)
+        .is('archived', false)
+        .order('created_at', { ascending: true });
+
+      if (siblingsData) {
+        setAllChildren(siblingsData);
+      }
+    }
   };
 
   const toggleItem = (itemId: string) => {
@@ -78,12 +107,25 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
     });
   };
 
+  const toggleSize = (sizeId: string) => {
+    setSelectedSizes(prev => {
+      const next = new Set(prev);
+      if (next.has(sizeId)) {
+        next.delete(sizeId);
+      } else {
+        next.add(sizeId);
+      }
+      return next;
+    });
+  };
+
   const generateText = () => {
     let text = `${childName}'s Sizes & Wishlist\n\n`;
 
-    if (includeSizes && sizes.length > 0) {
+    const selectedSizesList = sizes.filter(size => selectedSizes.has(size.id));
+    if (selectedSizesList.length > 0) {
       text += `SIZES:\n`;
-      sizes.forEach(size => {
+      selectedSizesList.forEach(size => {
         if (size.current_size || size.next_size) {
           text += `• ${size.category}: `;
           if (size.current_size) {
@@ -131,6 +173,65 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDuplicate = async () => {
+    if (!duplicateToChildId) return;
+
+    const targetChild = allChildren.find(c => c.id === duplicateToChildId);
+    if (!targetChild) return;
+
+    try {
+      // Duplicate selected sizes
+      const selectedSizesList = sizes.filter(size => selectedSizes.has(size.id));
+      if (selectedSizesList.length > 0) {
+        const sizesToInsert = selectedSizesList.map(size => ({
+          child_id: duplicateToChildId,
+          category: size.category,
+          current_size: size.current_size,
+          next_size: size.next_size,
+          fit_notes: size.fit_notes,
+          need_status: size.need_status,
+        }));
+
+        await supabase
+          .from('child_size_categories')
+          .upsert(sizesToInsert, {
+            onConflict: 'child_id,category',
+            ignoreDuplicates: false
+          });
+      }
+
+      // Duplicate selected wishlist items
+      const selectedWishlist = wishlistItems.filter(item => selectedItems.has(item.id));
+      if (selectedWishlist.length > 0) {
+        const itemsToInsert = selectedWishlist.map(item => ({
+          child_id: duplicateToChildId,
+          family_id: targetChild.family_id,
+          item_name: item.item_name,
+          url: item.url,
+          price: item.price,
+          brand: item.brand,
+          size: item.size,
+          color: item.color,
+          is_completed: false,
+          status: 'idle',
+          archived: false,
+        }));
+
+        await supabase
+          .from('shopping_list_items')
+          .insert(itemsToInsert);
+      }
+
+      alert(`Successfully duplicated ${selectedSizes.size} sizes and ${selectedItems.size} items to ${targetChild.name}!`);
+      setDuplicateToChildId('');
+      setSelectedSizes(new Set());
+      setSelectedItems(new Set());
+    } catch (error) {
+      alert('Error duplicating items. Please try again.');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
       <div
@@ -153,18 +254,36 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Include Sizes Toggle */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="include-sizes"
-              checked={includeSizes}
-              onChange={(e) => setIncludeSizes(e.target.checked)}
-              className="w-4 h-4 text-sage border-sand rounded focus:ring-sage"
-            />
-            <label htmlFor="include-sizes" className="font-medium text-gray-900">
-              Include sizes ({sizes.length})
-            </label>
+          {/* Size Selection */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3">Select sizes to share:</h3>
+            {sizes.length === 0 ? (
+              <p className="text-sm text-gray-500">No sizes tracked yet</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {sizes.map(size => (
+                  <label
+                    key={size.id}
+                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedSizes.has(size.id)}
+                      onChange={() => toggleSize(size.id)}
+                      className="mt-0.5 w-4 h-4 text-sage border-sand rounded focus:ring-sage"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900">{size.category}</div>
+                      <div className="text-sm text-gray-600">
+                        {size.current_size && `Current: ${size.current_size}`}
+                        {size.current_size && size.next_size && ' • '}
+                        {size.next_size && `Next: ${size.next_size}`}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Wishlist Items Selection */}
@@ -202,11 +321,42 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
           {/* Generate Button */}
           <button
             onClick={generateText}
-            disabled={!includeSizes && selectedItems.size === 0}
+            disabled={selectedSizes.size === 0 && selectedItems.size === 0}
             className="w-full px-4 py-3 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Generate Share Text
           </button>
+
+          {/* Duplicate Section */}
+          {allChildren.length > 0 && (selectedSizes.size > 0 || selectedItems.size > 0) && (
+            <div className="border-t border-sand pt-6">
+              <h3 className="font-semibold text-gray-900 mb-3">Duplicate to another child:</h3>
+              <div className="flex gap-2">
+                <select
+                  value={duplicateToChildId}
+                  onChange={(e) => setDuplicateToChildId(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                >
+                  <option value="">Select child...</option>
+                  {allChildren.map(child => (
+                    <option key={child.id} value={child.id}>
+                      {child.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleDuplicate}
+                  disabled={!duplicateToChildId}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Duplicate
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Will copy {selectedSizes.size} sizes and {selectedItems.size} items to the selected child
+              </p>
+            </div>
+          )}
 
           {/* Generated Text */}
           {generatedText && (
