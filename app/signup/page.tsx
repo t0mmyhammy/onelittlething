@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SignupPage() {
@@ -13,6 +13,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
   const supabase = createClient();
 
   // Calculate form validity and button opacity
@@ -77,7 +79,12 @@ export default function SignupPage() {
         }
       }
 
-      router.push('/dashboard');
+      // Redirect to invite page if there's an invite token, otherwise dashboard
+      if (inviteToken) {
+        router.push(`/invite/${inviteToken}`);
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'An error occurred during signup');
@@ -88,10 +95,15 @@ export default function SignupPage() {
 
   const handleSocialSignup = async (provider: 'google' | 'facebook') => {
     try {
+      // Build redirect URL with invite token if present
+      const redirectUrl = inviteToken
+        ? `${window.location.origin}/auth/callback?invite=${inviteToken}`
+        : `${window.location.origin}/auth/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       });
 
