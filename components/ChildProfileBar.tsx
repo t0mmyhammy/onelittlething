@@ -27,6 +27,12 @@ export default function ChildProfileBar({
     if (!birthdate) return null;
     const birth = new Date(birthdate);
     const today = new Date();
+
+    // Check if birthdate is in the future (unborn baby)
+    if (birth > today) {
+      return 'Due soon';
+    }
+
     const diffMs = today.getTime() - birth.getTime();
     const ageDate = new Date(diffMs);
     const years = Math.abs(ageDate.getUTCFullYear() - 1970);

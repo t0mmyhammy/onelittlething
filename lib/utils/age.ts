@@ -18,11 +18,15 @@ export function calculateAge(birthdate: string | null): string | null {
 
   const birth = parseLocalDate(birthdate);
   const now = new Date();
-  
+
+  // Normalize both dates to midnight for accurate comparison
+  const birthMidnight = new Date(birth.getFullYear(), birth.getMonth(), birth.getDate());
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   // Check if the birthdate is in the future (baby not born yet)
-  if (birth > now) {
+  if (birthMidnight > todayMidnight) {
     // Calculate days until due date
-    const diffTime = birth.getTime() - now.getTime();
+    const diffTime = birthMidnight.getTime() - todayMidnight.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {

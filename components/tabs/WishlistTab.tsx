@@ -549,12 +549,50 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                             )}
                           </div>
                         </div>
-                        {item.price && (
-                          <div className="flex items-center gap-1 text-gray-900 font-bold text-lg">
-                            <DollarSign className="w-5 h-5" />
-                            {item.price.toFixed(2)}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {item.price && (
+                            <div className="flex items-center gap-1 text-gray-900 font-bold text-lg">
+                              <DollarSign className="w-5 h-5" />
+                              {item.price.toFixed(2)}
+                            </div>
+                          )}
+                          {/* More Actions Menu */}
+                          {!isPurchased && !isEditing && (
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowActionsId(showActions ? null : item.id)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              {showActions && (
+                                <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
+                                  <button
+                                    onClick={() => handleEdit(item)}
+                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleArchive(item.id)}
+                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Archive className="w-4 h-4" />
+                                    {item.archived ? 'Unarchive' : 'Archive'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(item.id)}
+                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {item.notes && (
@@ -648,41 +686,6 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                               Reserved by {item.reserved_by}
                             </span>
                           )}
-
-                          {/* More Actions Menu */}
-                          <div className="relative ml-auto">
-                            <button
-                              onClick={() => setShowActionsId(showActions ? null : item.id)}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                            {showActions && (
-                              <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
-                                <button
-                                  onClick={() => handleEdit(item)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleArchive(item.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Archive className="w-4 h-4" />
-                                  {item.archived ? 'Unarchive' : 'Archive'}
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(item.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
                         </div>
                       )}
 

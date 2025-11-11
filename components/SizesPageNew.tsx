@@ -34,11 +34,13 @@ interface InventoryItem {
   category: string;
   item_name: string;
   size: string | null;
-  fit_notes: string | null;
+  notes: string | null;
   brand: string | null;
-  state: 'idea' | 'discussing' | 'approved';
+  state: 'idea' | 'research';
   next_size_up: boolean;
   photo_url: string | null;
+  created_by: string | null;
+  created_at: string;
 }
 
 interface ShoppingItem {

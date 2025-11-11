@@ -69,11 +69,14 @@ export default function ChildrenSection({ initialChildren, familyId }: ChildrenS
                 const [year, month, day] = dateString.split('-').map(Number);
                 return new Date(year, month - 1, day);
               };
-              
+
               const birthDate = child.birthdate ? parseLocalDate(child.birthdate) : null;
               const now = new Date();
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              const isUnborn = birthDate && birthDate > today;
+              // Set both to midnight for accurate comparison
+              today.setHours(0, 0, 0, 0);
+              if (birthDate) birthDate.setHours(0, 0, 0, 0);
+              const isUnborn = birthDate && birthDate >= today;
               const age = calculateAge(child.birthdate);
 
               // Get label color classes

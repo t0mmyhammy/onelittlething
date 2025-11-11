@@ -9,7 +9,7 @@ interface SizeCategory {
   category: string;
   current_size: string | null;
   next_size: string | null;
-  fit_notes: string | null;
+  notes: string | null;
   need_status: string | null;
 }
 
@@ -190,7 +190,7 @@ export default function ShareModal({ childId, childName, onClose }: ShareModalPr
           category: size.category,
           current_size: size.current_size,
           next_size: size.next_size,
-          fit_notes: size.fit_notes,
+          notes: size.notes,
           need_status: size.need_status,
         }));
 
