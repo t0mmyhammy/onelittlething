@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Check, X, Plus, Clock } from 'lucide-react';
+import { Pencil, Check, X, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ChildSize {
@@ -119,15 +119,9 @@ export default function SizesTab({ childId, childName, childSizes }: SizesTabPro
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-serif text-gray-900">{childName}'s Sizes</h2>
-          <p className="text-sm text-gray-600 mt-1">Keep current and next sizes up to date</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-sage hover:text-rose transition-colors">
-          <Plus className="w-4 h-4" />
-          Add Category
-        </button>
+      <div>
+        <h2 className="text-2xl font-serif text-gray-900">{childName}'s Sizes</h2>
+        <p className="text-sm text-gray-600 mt-1">Keep current and next sizes up to date</p>
       </div>
 
       {/* Size List - Mobile optimized */}

@@ -121,7 +121,11 @@ export default function SizesPageNew({
             </label>
             <select
               value={selectedChildId}
-              onChange={(e) => setSelectedChildId(e.target.value)}
+              onChange={(e) => {
+                setSelectedChildId(e.target.value);
+                // Close dropdown on mobile after selection
+                e.currentTarget.blur();
+              }}
               className="w-full px-3 py-2 bg-gray-50 border border-sand rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-sage"
             >
               {children.map((child) => (

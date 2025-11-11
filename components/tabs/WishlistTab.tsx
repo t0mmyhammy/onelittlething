@@ -42,6 +42,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
   const [editingId, setEditingId] = useState<string | null>(null);
   const [reservingId, setReservingId] = useState<string | null>(null);
   const [reservedByInput, setReservedByInput] = useState('');
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemUrl, setNewItemUrl] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemNotes, setNewItemNotes] = useState('');
 
   // Sort items by status
   const sortedItems = useMemo(() => {
@@ -109,6 +114,34 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     }
   };
 
+  const handleAddItem = async () => {
+    if (!newItemName.trim()) return;
+
+    const { data, error } = await supabase
+      .from('shopping_list_items')
+      .insert({
+        child_id: childId,
+        family_id: familyId,
+        item_name: newItemName.trim(),
+        url: newItemUrl.trim() || null,
+        price: newItemPrice ? parseFloat(newItemPrice) : null,
+        notes: newItemNotes.trim() || null,
+        is_completed: false,
+        status: 'idle'
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setItems(prev => [...prev, { ...data, status: 'idle' }]);
+      setNewItemName('');
+      setNewItemUrl('');
+      setNewItemPrice('');
+      setNewItemNotes('');
+      setIsAddingItem(false);
+    }
+  };
+
   const filterButtons: { id: FilterType; label: string }[] = [
     { id: 'active', label: 'Active' },
     { id: 'reserved', label: 'Reserved' },
@@ -153,10 +186,84 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
       {/* Add Item Form (Pinned at top) */}
       <div className="border-2 border-dashed border-sand rounded-xl p-5 hover:border-sage transition-colors">
-        <button className="flex items-center gap-2 text-sage hover:text-rose font-medium">
-          <Plus className="w-5 h-5" />
-          Add wishlist item
-        </button>
+        {!isAddingItem ? (
+          <button
+            onClick={() => setIsAddingItem(true)}
+            className="flex items-center gap-2 text-sage hover:text-rose font-medium"
+          >
+            <Plus className="w-5 h-5" />
+            Add wishlist item
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900">Add New Item</h3>
+              <button
+                onClick={() => {
+                  setIsAddingItem(false);
+                  setNewItemName('');
+                  setNewItemUrl('');
+                  setNewItemPrice('');
+                  setNewItemNotes('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder="Item name *"
+              className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+              autoFocus
+            />
+            <input
+              type="url"
+              value={newItemUrl}
+              onChange={(e) => setNewItemUrl(e.target.value)}
+              placeholder="Product URL (optional)"
+              className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+            />
+            <input
+              type="number"
+              step="0.01"
+              value={newItemPrice}
+              onChange={(e) => setNewItemPrice(e.target.value)}
+              placeholder="Price (optional)"
+              className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+            />
+            <textarea
+              value={newItemNotes}
+              onChange={(e) => setNewItemNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              rows={2}
+              className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none resize-none"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setIsAddingItem(false);
+                  setNewItemName('');
+                  setNewItemUrl('');
+                  setNewItemPrice('');
+                  setNewItemNotes('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddItem}
+                disabled={!newItemName.trim()}
+                className="px-4 py-2 text-sm font-medium bg-sage text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add Item
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Wishlist Items */}
@@ -235,10 +342,10 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
                   {/* Action Buttons */}
                   {!isPurchased && (
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
                       <button
                         onClick={() => handleSelect(item.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                           isSelected
                             ? 'bg-sage text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -250,7 +357,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
                       <button
                         onClick={() => handleBuy(item.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all whitespace-nowrap"
                       >
                         <ShoppingCart className="w-4 h-4" />
                         Buy
@@ -259,7 +366,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                       {!isReserved && !isReserving && (
                         <button
                           onClick={() => handleReserve(item.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all whitespace-nowrap"
                         >
                           <UserPlus className="w-4 h-4" />
                           Reserve
