@@ -218,7 +218,7 @@ export default function QuickEntryForm({
           </div>
         </button>
       ) : (
-        /* Expanded State - Full form */
+        /* Expanded State - Full form with reordered fields */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
@@ -244,8 +244,107 @@ export default function QuickEntryForm({
             </button>
           </div>
 
-          {/* Content with Voice/Photo Actions */}
+          {/* STEP 1: Child Selection - WHO */}
+          <div>
+            {children.length > 0 ? (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Who is this about?</label>
+                <div className="flex gap-2 flex-wrap">
+                  {children.map((child) => {
+                    const isSelected = selectedChildren.includes(child.id);
+                    return (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => toggleChild(child.id)}
+                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                          isSelected
+                            ? 'border-sage bg-sage/10 text-sage'
+                            : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {child.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedChildren.length === 0 && (
+                  <p className="text-xs text-gray-500">Select at least one child</p>
+                )}
+              </div>
+            ) : (
+              <span className="text-sm text-gray-500">No children added</span>
+            )}
+          </div>
+
+          {/* STEP 2: Date Selection - WHEN */}
           <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">When did this happen?</label>
+            {!showDatePicker ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEntryDate(getLocalDateString(new Date()));
+                  }}
+                  className={`flex-1 px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                    entryDate === getLocalDateString(new Date())
+                      ? 'border-sage bg-sage/10 text-sage'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  📅 Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    setEntryDate(getLocalDateString(yesterday));
+                  }}
+                  className={`flex-1 px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                    (() => {
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      return entryDate === getLocalDateString(yesterday);
+                    })()
+                      ? 'border-sage bg-sage/10 text-sage'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDatePicker(true)}
+                  className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 hover:border-gray-400 rounded-lg text-sm font-medium transition-all"
+                >
+                  📆 Pick Date
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  max={getLocalDateString(new Date())}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDatePicker(false)}
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Use quick buttons instead
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* STEP 3: Content with Voice/Photo Actions - WHAT */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">What happened?</label>
             <div className="relative">
               <textarea
                 ref={textareaRef}
@@ -305,130 +404,7 @@ export default function QuickEntryForm({
             )}
           </div>
 
-          {/* Child Selection - Simple Buttons */}
-          <div>
-            {children.length > 0 ? (
-              <div className="space-y-2">
-                <label className="block text-sm text-gray-600">About:</label>
-                <div className="flex gap-2 flex-wrap">
-                  {children.map((child) => {
-                    const isSelected = selectedChildren.includes(child.id);
-                    return (
-                      <button
-                        key={child.id}
-                        type="button"
-                        onClick={() => toggleChild(child.id)}
-                        className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
-                          isSelected
-                            ? 'border-sage bg-sage/10 text-sage'
-                            : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                        }`}
-                      >
-                        {child.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-gray-500">
-                  {selectedChildren.length === 0
-                    ? 'Select which kid(s) this is related to'
-                    : `${selectedChildren.length} selected`}
-                </p>
-              </div>
-            ) : (
-              <span className="text-sm text-gray-500">No children added</span>
-            )}
-          </div>
-
-          {/* Date Quick Buttons */}
-          <div className="space-y-2">
-            <label className="block text-sm text-gray-600">When:</label>
-            {!showDatePicker ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEntryDate(getLocalDateString(new Date()));
-                  }}
-                  className={`flex-1 px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
-                    entryDate === getLocalDateString(new Date())
-                      ? 'border-sage bg-sage/10 text-sage'
-                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  Today
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    setEntryDate(getLocalDateString(yesterday));
-                  }}
-                  className={`flex-1 px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
-                    (() => {
-                      const yesterday = new Date();
-                      yesterday.setDate(yesterday.getDate() - 1);
-                      return entryDate === getLocalDateString(yesterday);
-                    })()
-                      ? 'border-sage bg-sage/10 text-sage'
-                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  Yesterday
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDatePicker(true)}
-                  className={`flex-1 px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
-                    (() => {
-                      const today = getLocalDateString(new Date());
-                      const yesterday = new Date();
-                      yesterday.setDate(yesterday.getDate() - 1);
-                      const yesterdayStr = getLocalDateString(yesterday);
-                      return entryDate !== today && entryDate !== yesterdayStr;
-                    })()
-                      ? 'border-sage bg-sage/10 text-sage'
-                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                  }`}
-                >
-                  {(() => {
-                    const today = getLocalDateString(new Date());
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    const yesterdayStr = getLocalDateString(yesterday);
-                    if (entryDate !== today && entryDate !== yesterdayStr) {
-                      // Parse the date locally
-                      const [year, month, day] = entryDate.split('-').map(Number);
-                      const date = new Date(year, month - 1, day);
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    }
-                    return 'Select date';
-                  })()}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <input
-                  type="date"
-                  value={entryDate}
-                  onChange={(e) => setEntryDate(e.target.value)}
-                  max={getLocalDateString(new Date())}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowDatePicker(false)}
-                  className="w-full px-3 py-1.5 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Submit Button */}
+          {/* STEP 4: Submit Button */}
           <button
             type="submit"
             disabled={loading || !content.trim()}

@@ -66,6 +66,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     isOpen: boolean;
     category: SizeCategory | null;
   }>({ isOpen: false, category: null });
+  const [wishlistCheckStates, setWishlistCheckStates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadCategories();
@@ -351,8 +352,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
           {categories.map((category) => {
             const isEditing = editingId === category.id;
             const emoji = getCategoryEmoji(category.category);
-
-            const [showWishlistCheck, setShowWishlistCheck] = useState(false);
+            const showWishlistCheck = wishlistCheckStates[category.id] || false;
 
             return (
               <div
@@ -379,8 +379,10 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                     <button
                       onClick={() => {
                         handleAddToWishlist(category);
-                        setShowWishlistCheck(true);
-                        setTimeout(() => setShowWishlistCheck(false), 2000);
+                        setWishlistCheckStates(prev => ({ ...prev, [category.id]: true }));
+                        setTimeout(() => {
+                          setWishlistCheckStates(prev => ({ ...prev, [category.id]: false }));
+                        }, 2000);
                       }}
                       className="text-amber-500 hover:text-amber-600 transition-all duration-200 p-2 hover:scale-110 relative group"
                       title="Add to wishlist"
