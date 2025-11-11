@@ -67,6 +67,7 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
       });
 
       const data = await response.json();
+      console.log('Invite API response:', data); // Debug logging
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to send invite');
@@ -74,7 +75,7 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
 
       // Check if there was a warning (email not sent)
       if (data.warning) {
-        setMessage({ type: 'error', text: data.warning });
+        setMessage({ type: 'error', text: `Invite created but: ${data.warning}` });
       } else {
         setMessage({ type: 'success', text: `Invitation sent to ${email}!` });
       }
@@ -82,6 +83,7 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
       setEmail('');
       loadPendingInvites(); // Refresh the list
     } catch (error: any) {
+      console.error('Invite error:', error); // Debug logging
       setMessage({ type: 'error', text: error.message });
     } finally {
       setIsSending(false);
