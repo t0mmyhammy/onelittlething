@@ -37,7 +37,9 @@
       "Bash(vercel deploy:*)",
       "Bash(vercel:*)",
       "Bash(tee:*)",
-      "Bash(README.md)"
+      "Bash(README.md)",
+      "Bash(app/login/page.tsx)",
+      "Bash(app/signup/page.tsx)"
     ],
     "deny": [],
     "ask": []
