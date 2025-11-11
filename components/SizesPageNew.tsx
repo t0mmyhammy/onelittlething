@@ -144,7 +144,7 @@ export default function SizesPageNew({
         {/* Tabs */}
         <div className="bg-white rounded-t-2xl border-b border-sand">
           <div className="flex items-center justify-between px-2 pt-2">
-            <div className="flex gap-1 overflow-x-auto">
+            <div className="flex gap-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
