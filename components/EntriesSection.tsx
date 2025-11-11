@@ -299,7 +299,7 @@ export default function EntriesSection({
             <div className="absolute left-2.5 md:left-[94px] top-3 bottom-3 w-[1px] md:w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
 
             {/* Timeline entries grouped by date */}
-            <div className="space-y-4 md:space-y-8">
+            <div className="space-y-7 md:space-y-10">
               {Object.entries(visibleGroupedEntries)
                 .sort((a, b) => {
                   const dateA = parseLocalDate(a[0]).getTime();
@@ -315,12 +315,12 @@ export default function EntriesSection({
                   return (
                     <div key={dateStr} className="relative">
                       {/* Mobile: Timeline node + date on left side */}
-                      <div className="md:hidden flex items-start gap-3 mb-2">
+                      <div className="md:hidden flex items-start gap-3 mb-3">
                         {/* Timeline node on the line */}
                         <div className="flex-shrink-0 relative z-10 mt-1">
                           <div className="w-2 h-2 rounded-full bg-sage ring-2 ring-cream shadow-sm" />
                         </div>
-                        <div className="text-sm font-semibold text-gray-700 pt-0.5">
+                        <div className="text-[13px] font-medium text-gray-500 uppercase tracking-wide pt-0.5">
                           {shortDate}
                         </div>
                       </div>
@@ -328,8 +328,8 @@ export default function EntriesSection({
                       {/* Desktop: Date + Timeline layout */}
                       <div className="hidden md:flex gap-4">
                         {/* Date on the left */}
-                        <div className="flex-shrink-0 w-20 pt-1 text-right">
-                          <div className="text-sm font-medium text-gray-700">{shortDate}</div>
+                        <div className="flex-shrink-0 w-24 pt-1 text-right">
+                          <div className="text-[13px] font-medium text-gray-500 uppercase tracking-wide">{shortDate}</div>
                         </div>
 
                         {/* Timeline node - perfectly centered on the line */}
@@ -349,12 +349,12 @@ export default function EntriesSection({
                                   : 'w-full'
                               }`}
                             >
-                              <div className="bg-white border border-sand rounded-xl p-4 hover:border-sage hover:shadow-sm transition-all h-full">
-                                <div className="flex justify-between items-start gap-3 mb-3">
-                                  <div className="flex gap-2 flex-wrap items-center">
+                              <div className="bg-[#FDFCFB] rounded-xl p-4 shadow-sm hover:shadow-md transition-all h-full">
+                                <div className="flex justify-between items-start gap-3 mb-2.5">
+                                  <div className="flex gap-1.5 flex-wrap items-center">
                                     {/* Creator Initial Badge */}
                                     {mounted && creatorInfo[entry.created_by] && (
-                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                                      <div className="flex-shrink-0 w-[22px] h-[22px] rounded-full bg-sage/15 text-sage flex items-center justify-center text-[11px] font-semibold">
                                         {getCreatorInitial(creatorInfo[entry.created_by])}
                                       </div>
                                     )}
@@ -365,7 +365,7 @@ export default function EntriesSection({
                                         <span
                                           key={ec.children.id}
                                           style={{ backgroundColor: colors.hex }}
-                                          className={`text-xs px-2.5 py-1 rounded-full ${colors.text} font-medium`}
+                                          className={`text-[12px] px-2 py-0.5 rounded-full ${colors.text} font-semibold`}
                                         >
                                           {ec.children.name}
                                         </span>
@@ -378,10 +378,10 @@ export default function EntriesSection({
                                     aria-label="Edit moment"
                                     title={fullDate}
                                   >
-                                    <PencilIcon className="w-5 h-5" />
+                                    <PencilIcon className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <p className="text-gray-800 leading-relaxed">{entry.content}</p>
+                                <p className="text-[15px] text-gray-700 leading-relaxed">{entry.content}</p>
                                 {entry.photo_url && (
                                   <div className="mt-3">
                                     <img
@@ -399,17 +399,17 @@ export default function EntriesSection({
                       </div>
 
                       {/* Mobile: Full-width entries with left padding for timeline */}
-                      <div className="md:hidden space-y-2 pl-7">
+                      <div className="md:hidden space-y-3 pl-7">
                           {dateEntries.map((entry) => (
                             <div
                               key={entry.id}
-                              className="group bg-white border border-sand rounded-lg p-3 hover:border-sage hover:shadow-sm transition-all"
+                              className="group bg-[#FDFCFB] rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all"
                             >
                               <div className="flex justify-between items-start gap-2 mb-2">
                                 <div className="flex gap-1.5 flex-wrap items-center">
                                   {/* Creator Initial Badge */}
                                   {creatorInfo[entry.created_by] && (
-                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                                    <div className="flex-shrink-0 w-[22px] h-[22px] rounded-full bg-sage/15 text-sage flex items-center justify-center text-[11px] font-semibold">
                                       {getCreatorInitial(creatorInfo[entry.created_by])}
                                     </div>
                                   )}
@@ -420,7 +420,7 @@ export default function EntriesSection({
                                       <span
                                         key={ec.children.id}
                                         style={{ backgroundColor: colors.hex }}
-                                        className={`text-xs px-2 py-0.5 rounded-full ${colors.text} font-medium`}
+                                        className={`text-[12px] px-2 py-0.5 rounded-full ${colors.text} font-semibold`}
                                       >
                                         {ec.children.name}
                                       </span>
@@ -433,10 +433,10 @@ export default function EntriesSection({
                                   aria-label="Edit moment"
                                   title={fullDate}
                                 >
-                                  <PencilIcon className="w-5 h-5" />
+                                  <PencilIcon className="w-4 h-4" />
                                 </button>
                               </div>
-                              <p className="text-gray-800 leading-relaxed">{entry.content}</p>
+                              <p className="text-[15px] text-gray-700 leading-relaxed">{entry.content}</p>
                               {entry.photo_url && (
                                 <div className="mt-2">
                                   <img

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface IdeaItem {
@@ -56,6 +56,12 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     itemId: string | null;
     itemName: string | null;
   }>({ isOpen: false, itemId: null, itemName: null });
+  const [aiModal, setAiModal] = useState<{
+    isOpen: boolean;
+    item: IdeaItem | null;
+    loading: boolean;
+    research: string;
+  }>({ isOpen: false, item: null, loading: false, research: '' });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -205,6 +211,65 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     setItems(prev => prev.filter(i => i.id !== deleteConfirmModal.itemId));
     setDeleteConfirmModal({ isOpen: false, itemId: null, itemName: null });
     showToast('Idea deleted');
+  };
+
+  const handleAIResearch = async (item: IdeaItem) => {
+    setAiModal({
+      isOpen: true,
+      item,
+      loading: true,
+      research: '',
+    });
+
+    try {
+      const response = await fetch('/api/idea-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemName: item.item_name,
+          category: item.category,
+          size: item.size,
+          brand: item.brand,
+          existingNotes: item.notes,
+          childName,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to get research');
+
+      const data = await response.json();
+      setAiModal(prev => ({
+        ...prev,
+        loading: false,
+        research: data.research || 'Unable to generate research.',
+      }));
+    } catch (error) {
+      console.error('AI research error:', error);
+      setAiModal(prev => ({
+        ...prev,
+        loading: false,
+        research: 'Unable to generate research. Please try again.',
+      }));
+    }
+  };
+
+  const applyAIResearch = async () => {
+    if (!aiModal.item) return;
+
+    const { error } = await supabase
+      .from('inventory_items')
+      .update({
+        notes: aiModal.research,
+      })
+      .eq('id', aiModal.item.id);
+
+    if (!error) {
+      setItems(prev => prev.map(i =>
+        i.id === aiModal.item?.id ? { ...i, notes: aiModal.research } : i
+      ));
+      setAiModal({ isOpen: false, item: null, loading: false, research: '' });
+      showToast('Research added to notes!');
+    }
   };
 
   const handleAddNewIdea = async () => {
@@ -404,20 +469,34 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {!isEditing && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteConfirmModal({
-                              isOpen: true,
-                              itemId: item.id,
-                              itemName: item.item_name
-                            });
-                          }}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete idea"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <>
+                          {/* AI Research Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAIResearch(item);
+                            }}
+                            className="p-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                            title="AI research"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
+                          {/* Delete Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmModal({
+                                isOpen: true,
+                                itemId: item.id,
+                                itemName: item.item_name
+                              });
+                            }}
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete idea"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
                       )}
                       {isExpanded ? (
                         <ChevronUp className="w-5 h-5 text-gray-400" />
@@ -574,6 +653,63 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Research Modal */}
+      {aiModal.isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, item: null, loading: false, research: '' })}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif text-gray-900">
+                  AI Research
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {aiModal.item?.item_name}
+                </p>
+              </div>
+            </div>
+
+            {aiModal.loading ? (
+              <div className="py-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p className="text-gray-600">Researching and generating recommendations...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {aiModal.research}
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={applyAIResearch}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 font-medium transition-all"
+                  >
+                    Add to Notes
+                  </button>
+                  <button
+                    onClick={() => setAiModal({ isOpen: false, item: null, loading: false, research: '' })}
+                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

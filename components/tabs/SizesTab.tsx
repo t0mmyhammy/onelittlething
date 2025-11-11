@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Plus, Clock, Check, Sparkles } from 'lucide-react';
+import { Gift, Plus, Clock, Check, Lightbulb } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface SizeCategory {
@@ -76,13 +76,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     categoryName: string | null;
   }>({ isOpen: false, categoryId: null, categoryName: null });
   const [customCategoryName, setCustomCategoryName] = useState('');
-  const [aiModal, setAiModal] = useState<{
-    isOpen: boolean;
-    category: SizeCategory | null;
-    loading: boolean;
-    recommendations: string[];
-    selectedRecommendations: Set<number>;
-  }>({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() });
+  const [actionType, setActionType] = useState<'wishlist' | 'ideas' | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -195,119 +189,67 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
   };
 
   const handleAddToWishlist = (category: SizeCategory) => {
+    setActionType('wishlist');
     setSizeSelectionModal({ isOpen: true, category });
   };
 
-  const confirmAddToWishlist = async (selectedSize: 'current' | 'next') => {
+  const handleAddToIdeas = (category: SizeCategory) => {
+    setActionType('ideas');
+    setSizeSelectionModal({ isOpen: true, category });
+  };
+
+  const confirmAction = async (selectedSize: 'current' | 'next') => {
     const category = sizeSelectionModal.category;
-    if (!category) return;
+    if (!category || !actionType) return;
 
     const size = selectedSize === 'current' ? category.current_size : category.next_size;
     const sizeLabel = selectedSize === 'current' ? 'Current' : 'Next';
     const itemName = `${category.category}${size ? ` - Size ${size}` : ' (size TBD)'}`;
     const notes = category.notes ? `${sizeLabel} size. ${category.notes}` : `${sizeLabel} size`;
 
-    const { error } = await supabase
-      .from('shopping_list_items')
-      .insert({
-        child_id: childId,
-        family_id: familyId,
-        item_name: itemName,
-        category: category.category,
-        size: size || null,
-        notes: notes,
-        is_completed: false,
-        status: 'idle',
-        archived: false,
-      });
-
-    if (!error) {
-      alert(`Added "${itemName}" to wishlist!`);
-      setSizeSelectionModal({ isOpen: false, category: null });
-    }
-  };
-
-  const handleAIRecommendations = async (category: SizeCategory) => {
-    setAiModal({
-      isOpen: true,
-      category,
-      loading: true,
-      recommendations: [],
-      selectedRecommendations: new Set(),
-    });
-
-    try {
-      // Calculate child's age for context
-      const { data: child } = await supabase
-        .from('children')
-        .select('birthdate, name')
-        .eq('id', childId)
-        .single();
-
-      let ageContext = '';
-      if (child?.birthdate) {
-        const birth = new Date(child.birthdate);
-        const today = new Date();
-        const diffMs = today.getTime() - birth.getTime();
-        const ageDate = new Date(diffMs);
-        const years = Math.abs(ageDate.getUTCFullYear() - 1970);
-        const months = ageDate.getUTCMonth();
-        ageContext = years > 0 ? `${years} year${years > 1 ? 's' : ''} old` : `${months} month${months > 1 ? 's' : ''} old`;
-      }
-
-      const response = await fetch('/api/size-recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    if (actionType === 'wishlist') {
+      const { error } = await supabase
+        .from('shopping_list_items')
+        .insert({
+          child_id: childId,
+          family_id: familyId,
+          item_name: itemName,
           category: category.category,
-          currentSize: category.current_size,
-          nextSize: category.next_size,
-          childAge: ageContext,
-          childName: child?.name || childName,
-          existingNotes: category.notes,
-        }),
-      });
+          size: size || null,
+          notes: notes,
+          is_completed: false,
+          status: 'idle',
+          archived: false,
+        });
 
-      if (!response.ok) throw new Error('Failed to get recommendations');
+      if (!error) {
+        alert(`Added "${itemName}" to wishlist!`);
+        setSizeSelectionModal({ isOpen: false, category: null });
+        setActionType(null);
+      }
+    } else if (actionType === 'ideas') {
+      const { data: { user } } = await supabase.auth.getUser();
 
-      const data = await response.json();
-      setAiModal(prev => ({
-        ...prev,
-        loading: false,
-        recommendations: data.recommendations || [],
-      }));
-    } catch (error) {
-      console.error('AI recommendations error:', error);
-      setAiModal(prev => ({
-        ...prev,
-        loading: false,
-        recommendations: ['Unable to generate recommendations. Please try again.'],
-      }));
-    }
-  };
+      const { error } = await supabase
+        .from('inventory_items')
+        .insert({
+          child_id: childId,
+          item_name: itemName,
+          category: category.category,
+          size: size || null,
+          notes: notes,
+          state: 'idea',
+          next_size_up: false,
+          created_by: user?.id,
+        });
 
-  const applyAIRecommendations = async () => {
-    if (!aiModal.category) return;
-
-    const selectedTexts = Array.from(aiModal.selectedRecommendations)
-      .map(index => aiModal.recommendations[index])
-      .join(' • ');
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from('child_size_categories')
-      .update({
-        notes: selectedTexts,
-        updated_at: new Date().toISOString(),
-        modified_by: user?.id,
-        modified_at: new Date().toISOString(),
-      })
-      .eq('id', aiModal.category.id);
-
-    if (!error) {
-      await loadCategories();
-      setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() });
+      if (!error) {
+        alert(`Added "${itemName}" to ideas!`);
+        setSizeSelectionModal({ isOpen: false, category: null });
+        setActionType(null);
+        // Optionally redirect to Ideas tab
+        window.location.hash = 'ideas';
+      }
     }
   };
 
@@ -391,12 +333,12 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-3xl font-serif text-gray-900 mb-1">{childName}'s Sizes</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-[22px] font-semibold text-gray-900 mb-1.5">{childName}'s Sizes</h2>
+          <p className="text-[15px] text-gray-600 leading-relaxed">
             {getContextualMessage()}
           </p>
           {lastUpdated && (
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 mt-1.5">
               Last updated: {formatLastUpdated(lastUpdated)}
             </p>
           )}
@@ -534,18 +476,18 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
             return (
               <div
                 key={category.id}
-                className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 ${
+                className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 px-5 py-4 ${
                   isEditing ? 'ring-2 ring-sage' : ''
                 }`}
               >
                 {/* Category Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl">{emoji}</span>
+                    <span className="text-3xl">{emoji}</span>
                     <div>
-                      <h3 className="font-bold text-gray-900">{category.category}</h3>
+                      <h3 className="text-[17px] font-semibold text-gray-900">{category.category}</h3>
                       {category.updated_at && !isEditing && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-400 mt-1">
                           <Clock className="w-3 h-3 inline mr-1" />
                           {formatTimestamp(category.updated_at)}
                         </p>
@@ -554,21 +496,18 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                   </div>
                   {!isEditing && (
                     <div className="flex items-center gap-2">
-                      {/* AI Button */}
+                      {/* Lightbulb - Add to Ideas */}
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAIRecommendations(category);
-                        }}
-                        className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg relative group/ai"
-                        title="Get AI recommendations"
+                        onClick={() => handleAddToIdeas(category)}
+                        className="text-yellow-500 hover:text-yellow-600 transition-all duration-200 p-2 hover:scale-110 relative group"
+                        title="Add to ideas"
                       >
-                        <Sparkles className="w-4 h-4 group-hover/ai:animate-pulse" />
-                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/ai:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                          AI recommendations
+                        <Lightbulb className="w-5 h-5" />
+                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                          Add to ideas
                         </span>
                       </button>
-                      {/* Wishlist Button */}
+                      {/* Present - Add to Wishlist */}
                       <button
                         onClick={() => {
                           handleAddToWishlist(category);
@@ -577,15 +516,15 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                             setWishlistCheckStates(prev => ({ ...prev, [category.id]: false }));
                           }, 2000);
                         }}
-                        className="text-amber-500 hover:text-amber-600 transition-all duration-200 p-2 hover:scale-110 relative group"
+                        className="text-rose hover:text-rose/80 transition-all duration-200 p-2 hover:scale-110 relative group"
                         title="Add to wishlist"
                       >
                         {showWishlistCheck ? (
                           <Check className="w-5 h-5 text-green-500" />
                         ) : (
-                          <Star className="w-5 h-5 group-hover:fill-amber-500" />
+                          <Gift className="w-5 h-5" />
                         )}
-                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                           Add to wishlist
                         </span>
                       </button>
@@ -599,22 +538,22 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                     onClick={() => handleEdit(category)}
                     className="w-full text-left group"
                   >
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6 items-center">
                       <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1.5">Current</p>
-                        <p className="text-3xl font-bold text-gray-900 group-hover:text-sage transition-all duration-200">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Current</p>
+                        <p className="text-[22px] font-semibold text-gray-800 group-hover:text-sage transition-all duration-200">
                           {category.current_size || '—'}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-xs font-medium text-sage/70 mb-1.5">Next</p>
-                        <p className="text-3xl font-bold text-sage/80 group-hover:text-sage transition-all duration-200 group-hover:scale-105">
+                      <div className="border-l border-gray-100 pl-6">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Next</p>
+                        <p className="text-[22px] font-semibold text-sage group-hover:opacity-90 transition-all duration-200">
                           {category.next_size || '—'}
                         </p>
                       </div>
                     </div>
                     {category.notes && (
-                      <p className="text-sm text-gray-500 mt-3 italic bg-gray-50 px-3 py-2 rounded-lg">{category.notes}</p>
+                      <p className="text-sm text-gray-500 mt-4 leading-relaxed bg-gray-50 px-3 py-2.5 rounded-lg">{category.notes}</p>
                     )}
                   </button>
                 ) : (
@@ -693,14 +632,17 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
       {sizeSelectionModal.isOpen && sizeSelectionModal.category && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => setSizeSelectionModal({ isOpen: false, category: null })}
+          onClick={() => {
+            setSizeSelectionModal({ isOpen: false, category: null });
+            setActionType(null);
+          }}
         >
           <div
             className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-serif text-gray-900 mb-2">
-              Add {sizeSelectionModal.category.category} to Wishlist
+              Add {sizeSelectionModal.category.category} to {actionType === 'wishlist' ? 'Wishlist' : 'Ideas'}
             </h3>
             <p className="text-sm text-gray-600 mb-6">
               Which size would you like to add?
@@ -709,7 +651,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
             <div className="space-y-3">
               {/* Current Size Option */}
               <button
-                onClick={() => confirmAddToWishlist('current')}
+                onClick={() => confirmAction('current')}
                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                   sizeSelectionModal.category.current_size
                     ? 'border-sage hover:bg-sage/5 hover:shadow-md'
@@ -730,7 +672,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
 
               {/* Next Size Option */}
               <button
-                onClick={() => confirmAddToWishlist('next')}
+                onClick={() => confirmAction('next')}
                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                   sizeSelectionModal.category.next_size
                     ? 'border-blue-500 hover:bg-blue-50 hover:shadow-md'
@@ -757,7 +699,10 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
             )}
 
             <button
-              onClick={() => setSizeSelectionModal({ isOpen: false, category: null })}
+              onClick={() => {
+                setSizeSelectionModal({ isOpen: false, category: null });
+                setActionType(null);
+              }}
               className="w-full mt-4 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium transition-colors"
             >
               Cancel
@@ -797,100 +742,6 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI Recommendations Modal */}
-      {aiModal.isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() })}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-serif text-gray-900">
-                  AI Size Recommendations
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {aiModal.category?.category} for {childName}
-                </p>
-              </div>
-            </div>
-
-            {aiModal.loading ? (
-              <div className="py-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-                <p className="text-gray-600">Analyzing size data and generating recommendations...</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 mb-4">
-                  Select the recommendations you'd like to add to your notes:
-                </p>
-                <div className="space-y-3 mb-6">
-                  {aiModal.recommendations.map((rec, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        const newSelected = new Set(aiModal.selectedRecommendations);
-                        if (newSelected.has(index)) {
-                          newSelected.delete(index);
-                        } else {
-                          newSelected.add(index);
-                        }
-                        setAiModal(prev => ({ ...prev, selectedRecommendations: newSelected }));
-                      }}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                        aiModal.selectedRecommendations.has(index)
-                          ? 'border-purple-500 bg-purple-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-all ${
-                          aiModal.selectedRecommendations.has(index)
-                            ? 'bg-purple-600 border-purple-600'
-                            : 'border-gray-300'
-                        } flex items-center justify-center`}>
-                          {aiModal.selectedRecommendations.has(index) && (
-                            <Check className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700 flex-1">{rec}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={applyAIRecommendations}
-                    disabled={aiModal.selectedRecommendations.size === 0}
-                    className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-all ${
-                      aiModal.selectedRecommendations.size > 0
-                        ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    Apply {aiModal.selectedRecommendations.size > 0 && `(${aiModal.selectedRecommendations.size})`}
-                  </button>
-                  <button
-                    onClick={() => setAiModal({ isOpen: false, category: null, loading: false, recommendations: [], selectedRecommendations: new Set() })}
-                    className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}
