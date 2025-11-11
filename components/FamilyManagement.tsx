@@ -72,7 +72,13 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
         throw new Error(data.error || 'Failed to send invite');
       }
 
-      setMessage({ type: 'success', text: `Invitation sent to ${email}!` });
+      // Check if there was a warning (email not sent)
+      if (data.warning) {
+        setMessage({ type: 'error', text: data.warning });
+      } else {
+        setMessage({ type: 'success', text: `Invitation sent to ${email}!` });
+      }
+
       setEmail('');
       loadPendingInvites(); // Refresh the list
     } catch (error: any) {

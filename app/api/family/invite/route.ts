@@ -71,31 +71,58 @@ export async function POST(request: Request) {
 
     // Send email
     const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/invite/${token}`;
-    
+
     const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'A family member';
-    
-    await resend.emails.send({
-      from: 'OneLittleThing <invites@littlevictors.com>',
-      to: email,
-      subject: `${userName} invited you to join their family on OneLittleThing`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #374151; font-size: 24px;">You're invited!</h1>
-          <p style="color: #6B7280; font-size: 16px; line-height: 1.5;">
-            ${userName} has invited you to join their family on OneLittleThing, 
-            where you can capture and share everyday moments together.
-          </p>
-          <a href="${inviteUrl}" 
-             style="display: inline-block; background: #D8A7A0; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 500;">
-            Accept Invitation
-          </a>
-          <p style="color: #9CA3AF; font-size: 14px;">
-            This invitation expires in 7 days. If you didn't expect this invitation, you can ignore this email.
-          </p>
-        </div>
-      `,
-    });
+
+    // Check if Resend API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY not configured');
+      return NextResponse.json({
+        success: true,
+        warning: 'Invite created but email not sent (email service not configured)'
+      });
+    }
+
+    try {
+      const { data: emailData, error: emailError } = await resend.emails.send({
+        from: 'OneLittleThing <invites@littlevictors.com>',
+        to: email,
+        subject: `${userName} invited you to join their family on OneLittleThing`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #374151; font-size: 24px;">You're invited!</h1>
+            <p style="color: #6B7280; font-size: 16px; line-height: 1.5;">
+              ${userName} has invited you to join their family on OneLittleThing,
+              where you can capture and share everyday moments together.
+            </p>
+            <a href="${inviteUrl}"
+               style="display: inline-block; background: #D8A7A0; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 500;">
+              Accept Invitation
+            </a>
+            <p style="color: #9CA3AF; font-size: 14px;">
+              This invitation expires in 7 days. If you didn't expect this invitation, you can ignore this email.
+            </p>
+          </div>
+        `,
+      });
+
+      if (emailError) {
+        console.error('Resend error:', emailError);
+        return NextResponse.json({
+          success: true,
+          warning: 'Invite created but email failed to send. Please share the invite link manually.'
+        });
+      }
+
+      console.log('Email sent successfully:', emailData);
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      return NextResponse.json({
+        success: true,
+        warning: 'Invite created but email failed to send. Please share the invite link manually.'
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
