@@ -50,6 +50,8 @@ const CATEGORY_GROUPS = {
 
 export default function SizesTab({ childId, childName, familyId }: SizesTabProps) {
   const supabase = createClient();
+
+  // All state hooks at component level (never inside loops/maps)
   const [categories, setCategories] = useState<SizeCategory[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<{
