@@ -63,10 +63,10 @@ export default function ChildProfileBar({
               <button
                 key={child.id}
                 onClick={() => onSelectChild(child.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left ${
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 text-left ${
                   isSelected
-                    ? 'bg-sage/10 ring-2 ring-sage/30'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-sage/10 ring-2 ring-sage/30 shadow-sm'
+                    : 'hover:bg-gray-50 hover:shadow-sm'
                 }`}
               >
                 {child.photo_url ? (

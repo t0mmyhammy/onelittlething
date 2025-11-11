@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Heart, Plus, Clock } from 'lucide-react';
+import { Star, Plus, Clock, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface SizeCategory {
@@ -249,23 +249,43 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     return date.toLocaleDateString();
   };
 
+  // Calculate contextual message
+  const getContextualMessage = () => {
+    if (categories.length === 0) {
+      return `Start tracking ${childName}'s sizes — get notified when it's time to size up`;
+    }
+    if (!lastUpdated) {
+      return `Track ${childName}'s growing sizes`;
+    }
+    const diffDays = Math.floor((Date.now() - lastUpdated) / (1000 * 60 * 60 * 24));
+    if (diffDays > 90) {
+      return `Time for a size check-up? It's been ${Math.floor(diffDays / 30)} months!`;
+    }
+    return `Track ${childName}'s growing sizes — automatically reminds you when it's time to size up`;
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-3xl font-serif text-gray-900">{childName}'s Sizes</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Last updated: {formatLastUpdated(lastUpdated)}
+          <h2 className="text-3xl font-serif text-gray-900 mb-1">{childName}'s Sizes</h2>
+          <p className="text-sm text-gray-600">
+            {getContextualMessage()}
           </p>
+          {lastUpdated && (
+            <p className="text-xs text-gray-400 mt-1">
+              Last updated: {formatLastUpdated(lastUpdated)}
+            </p>
+          )}
         </div>
         {!isAddingCategory && (
           <button
             onClick={() => setIsAddingCategory(true)}
-            className="text-sage hover:text-rose transition-colors flex items-center gap-2 text-sm font-medium"
+            className="px-4 py-2.5 bg-sage text-white rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2 font-medium shadow-sm hover:shadow-md"
           >
             <Plus className="w-4 h-4" />
-            Add
+            Add Item
           </button>
         )}
       </div>
@@ -319,20 +339,25 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
 
       {/* Size Cards */}
       {categories.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400 mb-2">No sizes tracked yet</p>
-          <p className="text-sm text-gray-400">Tap Add to get started</p>
+        <div className="text-center py-20 bg-gradient-to-br from-sage/5 to-rose/5 rounded-2xl border-2 border-dashed border-sage/20">
+          <div className="text-6xl mb-4">👕</div>
+          <p className="text-lg font-medium text-gray-700 mb-2">No sizes added yet</p>
+          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+            Start with {childName}'s shoe size, pants, or favorite shirt — tap "Add Item" above
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {categories.map((category) => {
             const isEditing = editingId === category.id;
             const emoji = getCategoryEmoji(category.category);
 
+            const [showWishlistCheck, setShowWishlistCheck] = useState(false);
+
             return (
               <div
                 key={category.id}
-                className={`bg-white rounded-2xl shadow-sm hover:shadow-md transition-all p-6 ${
+                className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 ${
                   isEditing ? 'ring-2 ring-sage' : ''
                 }`}
               >
@@ -341,21 +366,33 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{emoji}</span>
                     <div>
-                      <h3 className="font-medium text-gray-900">{category.category}</h3>
+                      <h3 className="font-bold text-gray-900">{category.category}</h3>
                       {category.updated_at && !isEditing && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          Updated {formatTimestamp(category.updated_at)}
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          {formatTimestamp(category.updated_at)}
                         </p>
                       )}
                     </div>
                   </div>
                   {!isEditing && (
                     <button
-                      onClick={() => handleAddToWishlist(category)}
-                      className="text-rose/60 hover:text-rose transition-colors p-2"
+                      onClick={() => {
+                        handleAddToWishlist(category);
+                        setShowWishlistCheck(true);
+                        setTimeout(() => setShowWishlistCheck(false), 2000);
+                      }}
+                      className="text-amber-500 hover:text-amber-600 transition-all duration-200 p-2 hover:scale-110 relative group"
                       title="Add to wishlist"
                     >
-                      <Heart className="w-5 h-5" />
+                      {showWishlistCheck ? (
+                        <Check className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Star className="w-5 h-5 group-hover:fill-amber-500" />
+                      )}
+                      <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        Add to wishlist
+                      </span>
                     </button>
                   )}
                 </div>
@@ -368,20 +405,20 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Current</p>
-                        <p className="text-3xl font-bold text-gray-900 group-hover:text-sage transition-colors">
+                        <p className="text-xs font-medium text-gray-500 mb-1.5">Current</p>
+                        <p className="text-3xl font-bold text-gray-900 group-hover:text-sage transition-all duration-200">
                           {category.current_size || '—'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Next</p>
-                        <p className="text-3xl font-bold text-gray-600 group-hover:text-sage transition-colors">
+                        <p className="text-xs font-medium text-sage/70 mb-1.5">Next</p>
+                        <p className="text-3xl font-bold text-sage/80 group-hover:text-sage transition-all duration-200 group-hover:scale-105">
                           {category.next_size || '—'}
                         </p>
                       </div>
                     </div>
                     {category.notes && (
-                      <p className="text-sm text-gray-500 mt-3 italic">{category.notes}</p>
+                      <p className="text-sm text-gray-500 mt-3 italic bg-gray-50 px-3 py-2 rounded-lg">{category.notes}</p>
                     )}
                   </button>
                 ) : (
