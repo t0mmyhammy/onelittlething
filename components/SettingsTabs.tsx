@@ -85,46 +85,58 @@ export default function SettingsTabs({
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-serif text-gray-900 mb-2">Settings</h1>
-          <p className="text-gray-600">
-            Manage your account, profile, and family
+          <h1 className="text-3xl font-serif text-gray-900 mb-1">Settings</h1>
+          <p className="text-sm text-gray-500">
+            Manage your account and family preferences
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
+        <div className="border-b border-gray-200 mb-8 relative">
           <nav className="-mb-px flex gap-8">
             <button
               onClick={() => handleTabChange('profile')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`relative py-4 px-1 font-medium text-sm transition-colors ${
                 activeTab === 'profile'
-                  ? 'border-rose text-rose'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'text-rose'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               My Profile
+              {activeTab === 'profile' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose transition-all duration-300" />
+              )}
             </button>
             <button
               onClick={() => handleTabChange('family')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`relative py-4 px-1 font-medium text-sm transition-colors ${
                 activeTab === 'family'
-                  ? 'border-rose text-rose'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'text-rose'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Family
+              {activeTab === 'family' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose transition-all duration-300" />
+              )}
             </button>
           </nav>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'profile' && (
-          <PersonalSettings user={user} initialUserPrefs={initialUserPrefs} />
-        )}
+        {/* Tab Content with fade-slide transition */}
+        <div className="transition-all duration-300 ease-in-out">
+          {activeTab === 'profile' && (
+            <div className="animate-fadeSlideIn">
+              <PersonalSettings user={user} initialUserPrefs={initialUserPrefs} />
+            </div>
+          )}
 
-        {activeTab === 'family' && (
-          <FamilySettings familyId={familyId} initialChildren={initialChildren} userId={user.id} />
-        )}
+          {activeTab === 'family' && (
+            <div className="animate-fadeSlideIn">
+              <FamilySettings familyId={familyId} initialChildren={initialChildren} userId={user.id} />
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

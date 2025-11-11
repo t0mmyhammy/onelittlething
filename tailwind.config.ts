@@ -21,6 +21,15 @@ const config: Config = {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
         serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
+      keyframes: {
+        fadeSlideIn: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        fadeSlideIn: 'fadeSlideIn 0.3s ease-in-out',
+      },
     },
   },
   plugins: [],

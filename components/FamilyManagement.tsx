@@ -43,6 +43,14 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
     loadPendingInvites();
   }, [familyId]);
 
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   const loadPendingInvites = async () => {
     const { data } = await supabase
       .from('family_invites')
@@ -145,8 +153,35 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
     return member.user.user_metadata?.full_name || member.user.email?.split('@')[0] || 'User';
   };
 
+  const getInviteInitials = (email: string): string => {
+    return email.charAt(0).toUpperCase();
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Toast-style message */}
+      {message && (
+        <div
+          className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm animate-fadeSlideIn ${
+            message.type === 'success'
+              ? 'bg-sage text-white'
+              : 'bg-red-500 text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {message.type === 'success' ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
+            <span className="font-medium">{message.text}</span>
+          </div>
+        </div>
+      )}
       <div>
         <h3 className="text-lg font-serif text-gray-900 mb-4 flex items-center gap-2">
           <UserGroupIcon className="w-5 h-5" />
@@ -179,9 +214,9 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
 
         {/* Pending Invites */}
         {pendingInvites.length > 0 && (
-          <div className="border-t border-gray-200 pt-6 mt-6">
+          <div className="border-t border-gray-200 pt-4 mt-4">
             <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-              <ClockIcon className="w-5 h-5" />
+              <ClockIcon className="w-5 h-5 text-amber-600" />
               Pending Invitations
             </h4>
             <div className="space-y-2">
@@ -197,9 +232,13 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
                     {/* Header - Clickable to expand/collapse */}
                     <button
                       onClick={() => setExpandedInvite(isExpanded ? null : invite.id)}
-                      className="w-full flex items-center justify-between p-3 text-left hover:bg-amber-100 transition-colors"
+                      className="w-full flex items-center gap-3 p-3 text-left hover:bg-amber-100 transition-colors"
                     >
-                      <div className="flex-1 min-w-0 pr-2">
+                      {/* Avatar with initial */}
+                      <div className="w-10 h-10 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center font-medium flex-shrink-0">
+                        {getInviteInitials(invite.email)}
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 truncate">{invite.email}</div>
                         <div className="text-xs text-amber-700">
                           Expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
@@ -242,9 +281,9 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
         )}
 
         {/* Invite Form */}
-        <div className="border-t border-gray-200 pt-6 mt-6">
+        <div className="border-t border-gray-200 pt-4 mt-4">
           <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-            <EnvelopeIcon className="w-5 h-5" />
+            <EnvelopeIcon className="w-5 h-5 text-sage" />
             Invite Family Member
           </h4>
 
@@ -260,29 +299,17 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
               />
             </div>
 
-            {message && (
-              <div
-                className={`p-3 rounded-lg text-sm ${
-                  message.type === 'success'
-                    ? 'bg-sage/10 text-sage'
-                    : 'bg-red-50 text-red-800'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={isSending || !email}
-              className="w-full bg-sage text-white py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-sage text-white py-2 rounded-lg font-medium hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSending ? 'Sending...' : 'Send Invitation'}
             </button>
           </form>
 
-          <p className="text-sm text-gray-500 mt-3">
-            They'll receive an email with instructions to join your family.
+          <p className="text-xs text-gray-500 mt-3">
+            They'll receive an email with instructions to join your family
           </p>
         </div>
       </div>

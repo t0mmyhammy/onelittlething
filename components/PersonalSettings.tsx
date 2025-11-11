@@ -175,16 +175,16 @@ export default function PersonalSettings({ user, initialUserPrefs }: PersonalSet
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-8">
+    <div className="bg-white rounded-2xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-serif text-gray-900">Personal Information</h2>
         {!isEditing && !showCropper && (
           <button
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:text-rose transition-colors"
+            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-rose/10 flex items-center justify-center text-gray-600 hover:text-rose transition-all"
+            aria-label="Edit profile"
           >
-            <PencilIcon className="w-4 h-4" />
-            Edit
+            <PencilIcon className="w-5 h-5" />
           </button>
         )}
       </div>
@@ -276,7 +276,10 @@ export default function PersonalSettings({ user, initialUserPrefs }: PersonalSet
             <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
               {email}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 mt-1.5">
+              Used for notifications and family access
+            </p>
+            <p className="text-xs text-gray-400 mt-1 opacity-70">
               Contact support to change your email address
             </p>
           </div>

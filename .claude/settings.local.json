@@ -39,7 +39,10 @@
       "Bash(tee:*)",
       "Bash(README.md)",
       "Bash(app/login/page.tsx)",
-      "Bash(app/signup/page.tsx)"
+      "Bash(app/signup/page.tsx)",
+      "Bash(basename:*)",
+      "Bash(npx supabase:*)",
+      "Bash(pgrep:*)"
     ],
     "deny": [],
     "ask": []

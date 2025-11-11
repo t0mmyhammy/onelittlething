@@ -195,7 +195,10 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     return date.toLocaleDateString();
   };
 
-  const availableCategories = COMMON_CATEGORIES.filter(
+  // Flatten all categories from CATEGORY_GROUPS
+  const allCategoryNames = Object.values(CATEGORY_GROUPS).flat().map(cat => cat.name);
+
+  const availableCategories = allCategoryNames.filter(
     cat => !categories.find(c => c.category.toLowerCase() === cat.toLowerCase())
   );
 
