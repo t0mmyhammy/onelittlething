@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { UserGroupIcon, EnvelopeIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, EnvelopeIcon, XCircleIcon, ClockIcon, PaperAirplaneIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 interface FamilyMember {
   id: string;
@@ -35,6 +35,8 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [expandedInvite, setExpandedInvite] = useState<string | null>(null);
+  const [resendingInvite, setResendingInvite] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -100,9 +102,37 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
       if (error) throw error;
 
       setMessage({ type: 'success', text: 'Invitation cancelled' });
+      setExpandedInvite(null);
       loadPendingInvites(); // Refresh the list
     } catch (error: any) {
       setMessage({ type: 'error', text: 'Failed to cancel invitation' });
+    }
+  };
+
+  const handleResendInvite = async (inviteEmail: string, inviteId: string) => {
+    setResendingInvite(inviteId);
+    try {
+      const response = await fetch('/api/family/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail.toLowerCase() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend invite');
+      }
+
+      if (data.warning) {
+        setMessage({ type: 'error', text: `Resent but: ${data.warning}` });
+      } else {
+        setMessage({ type: 'success', text: `Invitation resent to ${inviteEmail}!` });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setResendingInvite(null);
     }
   };
 
@@ -157,23 +187,53 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
             <div className="space-y-2">
               {pendingInvites.map((invite) => {
                 const daysLeft = Math.ceil((new Date(invite.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isExpanded = expandedInvite === invite.id;
+
                 return (
                   <div
                     key={invite.id}
-                    className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg"
+                    className="bg-amber-50 border border-amber-200 rounded-lg overflow-hidden"
                   >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{invite.email}</div>
-                      <div className="text-xs text-amber-700">
-                        Expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
-                      </div>
-                    </div>
+                    {/* Header - Clickable to expand/collapse */}
                     <button
-                      onClick={() => handleCancelInvite(invite.id)}
-                      className="text-sm text-red-600 hover:text-red-800 font-medium"
+                      onClick={() => setExpandedInvite(isExpanded ? null : invite.id)}
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-amber-100 transition-colors"
                     >
-                      Cancel
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="font-medium text-gray-900 truncate">{invite.email}</div>
+                        <div className="text-xs text-amber-700">
+                          Expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                        </div>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUpIcon className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                      ) : (
+                        <ChevronDownIcon className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                      )}
                     </button>
+
+                    {/* Expandable Actions */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 flex gap-2 border-t border-amber-200 bg-amber-50/50">
+                        <button
+                          onClick={() => handleResendInvite(invite.email, invite.id)}
+                          disabled={resendingInvite === invite.id}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <PaperAirplaneIcon className="w-4 h-4 text-amber-700" />
+                          <span className="text-sm font-medium text-amber-700">
+                            {resendingInvite === invite.id ? 'Sending...' : 'Resend'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleCancelInvite(invite.id)}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          <XCircleIcon className="w-4 h-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-600">Cancel</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
