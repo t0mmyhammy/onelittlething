@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { UserGroupIcon, EnvelopeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, EnvelopeIcon, XMarkIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 interface FamilyMember {
   id: string;
@@ -16,6 +16,14 @@ interface FamilyMember {
   };
 }
 
+interface PendingInvite {
+  id: string;
+  email: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
+
 interface FamilyManagementProps {
   familyId: string;
   members: FamilyMember[];
@@ -26,7 +34,25 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const supabase = createClient();
+
+  useEffect(() => {
+    loadPendingInvites();
+  }, [familyId]);
+
+  const loadPendingInvites = async () => {
+    const { data } = await supabase
+      .from('family_invites')
+      .select('id, email, status, created_at, expires_at')
+      .eq('family_id', familyId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setPendingInvites(data);
+    }
+  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,10 +74,27 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
 
       setMessage({ type: 'success', text: `Invitation sent to ${email}!` });
       setEmail('');
+      loadPendingInvites(); // Refresh the list
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('family_invites')
+        .delete()
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Invitation cancelled' });
+      loadPendingInvites(); // Refresh the list
+    } catch (error: any) {
+      setMessage({ type: 'error', text: 'Failed to cancel invitation' });
     }
   };
 
@@ -96,8 +139,42 @@ export default function FamilyManagement({ familyId, members, currentUserId }: F
           ))}
         </div>
 
+        {/* Pending Invites */}
+        {pendingInvites.length > 0 && (
+          <div className="border-t border-gray-200 pt-6 mt-6">
+            <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+              <ClockIcon className="w-5 h-5" />
+              Pending Invitations
+            </h4>
+            <div className="space-y-2">
+              {pendingInvites.map((invite) => {
+                const daysLeft = Math.ceil((new Date(invite.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{invite.email}</div>
+                      <div className="text-xs text-amber-700">
+                        Expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleCancelInvite(invite.id)}
+                      className="text-sm text-red-600 hover:text-red-800 font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Invite Form */}
-        <div className="border-t border-gray-200 pt-6">
+        <div className="border-t border-gray-200 pt-6 mt-6">
           <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
             <EnvelopeIcon className="w-5 h-5" />
             Invite Family Member
