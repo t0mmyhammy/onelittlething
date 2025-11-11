@@ -26,6 +26,7 @@ interface SettingsTabsProps {
   user: any;
   initialUserPrefs: UserPrefs | null;
   familyId: string;
+  familyName: string;
   initialChildren: Child[];
 }
 
@@ -35,6 +36,7 @@ export default function SettingsTabs({
   user,
   initialUserPrefs,
   familyId,
+  familyName,
   initialChildren,
 }: SettingsTabsProps) {
   const router = useRouter();
@@ -133,7 +135,7 @@ export default function SettingsTabs({
 
           {activeTab === 'family' && (
             <div className="animate-fadeSlideIn">
-              <FamilySettings familyId={familyId} initialChildren={initialChildren} userId={user.id} />
+              <FamilySettings familyId={familyId} familyName={familyName} initialChildren={initialChildren} userId={user.id} />
             </div>
           )}
         </div>

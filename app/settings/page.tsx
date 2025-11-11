@@ -19,11 +19,12 @@ export default async function SettingsPage() {
   // Get user's family
   const { data: familyMember } = await supabase
     .from('family_members')
-    .select('family_id')
+    .select('family_id, families(name)')
     .eq('user_id', user.id)
     .single();
 
   const familyId = familyMember?.family_id || '';
+  const familyName = (familyMember?.families as any)?.name || 'Your Family';
 
   // Get children (show all except explicitly archived)
   const { data: children } = await supabase
@@ -44,6 +45,7 @@ export default async function SettingsPage() {
       user={user}
       initialUserPrefs={userPrefs}
       familyId={familyId}
+      familyName={familyName}
       initialChildren={children || []}
     />
   );

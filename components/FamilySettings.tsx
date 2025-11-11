@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ChildrenSection from './ChildrenSection';
 import FamilyManagement from './FamilyManagement';
 
@@ -18,13 +19,17 @@ interface Child {
 
 interface FamilySettingsProps {
   familyId: string;
+  familyName: string;
   initialChildren: Child[];
   userId: string;
 }
 
-export default function FamilySettings({ familyId, initialChildren, userId }: FamilySettingsProps) {
+export default function FamilySettings({ familyId, familyName, initialChildren, userId }: FamilySettingsProps) {
   const [familyMembers, setFamilyMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(familyName);
+  const [isSavingName, setIsSavingName] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -64,13 +69,28 @@ export default function FamilySettings({ familyId, initialChildren, userId }: Fa
     setLoading(false);
   };
 
-  // Get family name (could be fetched from database in future)
-  const getFamilyName = () => {
-    if (initialChildren.length > 0) {
-      const firstChildName = initialChildren[0].name.split(' ').pop() || 'Family';
-      return `The ${firstChildName} Family`;
+  const handleSaveFamilyName = async () => {
+    if (!editedName.trim()) return;
+
+    setIsSavingName(true);
+    const { error } = await supabase
+      .from('families')
+      .update({ name: editedName.trim() })
+      .eq('id', familyId);
+
+    if (!error) {
+      setIsEditingName(false);
+      // Refresh the page to update the name everywhere
+      window.location.reload();
+    } else {
+      console.error('Error updating family name:', error);
     }
-    return 'Your Family';
+    setIsSavingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(familyName);
+    setIsEditingName(false);
   };
 
   return (
@@ -78,8 +98,46 @@ export default function FamilySettings({ familyId, initialChildren, userId }: Fa
       {/* Family Overview Banner */}
       <div className="bg-gradient-to-r from-sage/10 to-rose/10 rounded-2xl p-6 border border-sage/20">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-serif text-gray-900 mb-1">{getFamilyName()}</h2>
+          <div className="flex-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-2xl font-serif text-gray-900 border-2 border-sage rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-sage"
+                  placeholder="Family Name"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveFamilyName}
+                  disabled={isSavingName || !editedName.trim()}
+                  className="p-2 text-sage hover:bg-sage/10 rounded-lg transition-colors disabled:opacity-50"
+                  title="Save"
+                >
+                  <CheckIcon className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isSavingName}
+                  className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                  title="Cancel"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-2xl font-serif text-gray-900">{familyName}</h2>
+                <button
+                  onClick={() => setIsEditingName(true)}
+                  className="p-1.5 text-gray-400 hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
+                  title="Edit family name"
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>{initialChildren.filter(c => !c.archived).length} {initialChildren.filter(c => !c.archived).length === 1 ? 'child' : 'children'}</span>
               <span>·</span>
