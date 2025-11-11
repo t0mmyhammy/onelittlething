@@ -430,15 +430,18 @@ export default function EntriesSection({
                   })}
             </div>
 
-            {/* Load More Button */}
+            {/* View All in Timeline Button */}
             {hasMoreEntries && (
-              <div className="flex justify-center mt-8 pt-6 border-t border-gray-100">
-                <button
-                  onClick={() => setVisibleCount(prev => prev + 10)}
-                  className="px-6 py-3 bg-white text-sage border-2 border-sage rounded-lg font-medium hover:bg-sage hover:text-white transition-all duration-200"
+              <div className="flex flex-col items-center mt-8 pt-6 border-t border-gray-100 gap-2">
+                <a
+                  href="/timeline"
+                  className="px-6 py-3 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-all duration-200 text-center"
                 >
-                  Load More Moments ({filteredAndSortedEntries.length - visibleCount} remaining)
-                </button>
+                  View All in Timeline ({filteredAndSortedEntries.length} total moments)
+                </a>
+                <p className="text-xs text-gray-500">
+                  Explore all your memories with advanced filters and search
+                </p>
               </div>
             )}
           </div>
