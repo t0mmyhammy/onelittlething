@@ -10,17 +10,22 @@ interface PageProps {
 
 export default async function InvitePage({ params }: PageProps) {
   const supabase = await createClient();
-  
+
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
 
   // Get invite
-  const { data: invite } = await supabase
+  const { data: invite, error: inviteError } = await supabase
     .from('family_invites')
     .select('*, families(name)')
     .eq('token', params.token)
     .eq('status', 'pending')
     .single();
+
+  // Log for debugging
+  if (inviteError) {
+    console.error('Invite lookup error:', inviteError);
+  }
 
   if (!invite) {
     return (
@@ -125,7 +130,7 @@ export default async function InvitePage({ params }: PageProps) {
 
         <p className="text-xs text-gray-500 text-center mt-6">
           This invitation expires in{' '}
-          {Math.ceil((new Date(invite.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}{' '}
+          {Math.max(1, Math.ceil((new Date(invite.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}{' '}
           days
         </p>
       </div>
