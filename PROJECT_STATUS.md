@@ -499,7 +499,94 @@ Users reported poor mobile UX with desktop navigation tabs showing on iPhones. T
 
 ---
 
-**Last Updated**: 2025-11-10
-**Version**: MVP Phase 1.5 - Advanced Features Complete ✅
-**Completion**: ~98% (all major features functional)
-**Next Milestone**: Photo attachments to entries, export functionality
+## Recent Updates - 2025-11-11
+
+### ✅ Major UX Enhancements & Bug Fixes
+
+#### 1. Dashboard Micro-Animations
+**Enhanced user experience with calm, progressive loading:**
+- **Staggered card animations**: Cards fade and slide up sequentially (0.1s delay)
+  - Baby Countdown Card → Daily Anchor → Quick Entry → Week's Progress → Timeline
+- **Custom CSS animations** added to `globals.css`:
+  - `fadeSlideIn` - Gentle upward slide with fade
+  - `pulse-once` - Single pulse for emphasis
+  - `fade-in` - Simple fade in
+  - `subtle-bounce` - Infinite gentle bounce for playful elements
+- **Result**: Serene, intentional dashboard experience matching app's emotional tone
+
+#### 2. Timeline Improvements
+**Better performance and user control:**
+- **Limited display**: Shows first 10 entries by default (faster load times)
+- **Load More button**: Reveals 10 more entries at a time
+- **Remaining count**: Button shows "Load More Moments (X remaining)"
+- **Maintains all functionality**: Search, filter, and sort work seamlessly
+- **Time dot visuals**: Already in place with gradient timeline line
+
+#### 3. This Week's Progress Enhancement
+**Added personality and encouragement:**
+- **8 personalized messages** based on daily count:
+  - "🌤 You're building a beautiful rhythm" (0 days)
+  - "✨ Great start! One moment at a time" (1 day)
+  - "🔥 You're on fire this week!" (4 days)
+  - "🎉 Amazing! You've captured every day this week" (7 days)
+- **Animated checkmarks**: Pulse effect when rendered
+- **Streak counter**: Fades in with sage color emphasis
+- **Hover effects**: Empty circles show subtle hover states
+
+#### 4. Pregnancy Progress Card Enhancements
+**Contextual milestone messages:**
+- **Progress context** in headlines:
+  - "Week 20 — halfway there!"
+  - "Week 13 — entering second trimester!"
+  - "Week 27 — entering third trimester!"
+  - "Week 30 — entering the home stretch!"
+  - "Week 35 — almost time to meet!"
+  - "Week 37-38 — early term, baby is ready!"
+  - "Week 39+ — full term!"
+- **Subtle bounce animation**: Baby size emoji gently bounces
+- **Info modal**: Tap-to-expand for term timeline education (already existed)
+
+#### 5. Ideas Tab - Add Idea Functionality
+**Fixed missing feature:**
+- **"Add Idea" button**: Top right of Ideas tab
+- **Full form**: Item name, category, size, brand, notes
+- **Inline creation**: New ideas appear immediately in grid
+- **Toast notifications**: Confirms successful save
+- **Seamless integration**: Works with existing edit/delete/add-to-wishlist flow
+
+#### 6. Share Modal Privacy Fix
+**Hidden items now properly excluded:**
+- **Reload on open**: Modal fetches fresh data when opened
+- **Respects hide_from_sharing**: Checkbox in Sizes tab now works correctly
+- **Already filtered**: Query on line 60 excluded hidden items, now properly refreshes
+
+### 📋 Updated File Locations
+
+#### Modified Components
+- `/app/dashboard/page.tsx` - Added staggered animations to all cards
+- `/app/globals.css` - Added custom animation keyframes
+- `/components/EntriesSection.tsx` - Load More functionality, limited display
+- `/components/StreakWidget.tsx` - Personalized messages, animated checkmarks
+- `/components/BabyCountdownCard.tsx` - Progress context, bounce animation
+- `/components/tabs/IdeasTab.tsx` - Add Idea button and form
+- `/components/ShareModal.tsx` - Refresh data on open
+- `/components/DailyAnchor.tsx` - Already had refresh functionality
+- `/components/QuickEntryForm.tsx` - Already had expand/collapse, voice, photo
+
+### 🎨 Design Improvements Summary
+- **Calm Progression**: Staggered animations create serene loading experience
+- **Micro-Delight**: Subtle bounces, pulses, and fades add human touch
+- **Emotional Continuity**: Personalized messages build connection over time
+- **Performance**: Timeline limited display ensures fast page loads
+
+### 🐛 Bug Fixes
+1. **Ideas Tab**: Can now add new ideas (was read-only)
+2. **Share Modal**: Hidden items properly excluded from selection
+3. **Timeline**: Better performance with pagination
+
+---
+
+**Last Updated**: 2025-11-11
+**Version**: MVP Phase 1.6 - UX Polish Complete ✅
+**Completion**: ~99% (all major features functional and polished)
+**Next Milestone**: Photo attachments to entries, export functionality, mobile app
