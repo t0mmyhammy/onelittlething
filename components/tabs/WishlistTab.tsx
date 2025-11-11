@@ -20,6 +20,8 @@ interface ShoppingItem {
   status?: 'idle' | 'selected' | 'reserved' | 'purchased';
   reserved_by?: string | null;
   archived?: boolean;
+  reserved_at?: string | null;
+  purchased_at?: string | null;
 }
 
 interface WishlistTabProps {
@@ -50,6 +52,8 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     brand: string;
     size: string;
     color: string;
+    status: 'idle' | 'selected' | 'reserved' | 'purchased';
+    reserved_by: string;
   }>({
     item_name: '',
     url: '',
@@ -58,6 +62,8 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     brand: '',
     size: '',
     color: '',
+    status: 'idle',
+    reserved_by: '',
   });
   const [reservingId, setReservingId] = useState<string | null>(null);
   const [reservedByInput, setReservedByInput] = useState('');
@@ -151,35 +157,51 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       brand: item.brand || '',
       size: item.size || '',
       color: item.color || '',
+      status: item.status || 'idle',
+      reserved_by: item.reserved_by || '',
     });
     setShowActionsId(null);
   };
 
   const handleSaveEdit = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    const now = new Date().toISOString();
+
+    // Track status change dates
+    const updateData: any = {
+      item_name: editingValues.item_name,
+      url: editingValues.url || null,
+      price: editingValues.price ? parseFloat(editingValues.price) : null,
+      notes: editingValues.notes || null,
+      brand: editingValues.brand || null,
+      size: editingValues.size || null,
+      color: editingValues.color || null,
+      status: editingValues.status,
+      reserved_by: editingValues.reserved_by || null,
+      is_completed: editingValues.status === 'purchased',
+    };
+
+    // Set reserved_at if status changed to reserved
+    if (editingValues.status === 'reserved' && item?.status !== 'reserved') {
+      updateData.reserved_at = now;
+    }
+
+    // Set purchased_at if status changed to purchased
+    if (editingValues.status === 'purchased' && item?.status !== 'purchased') {
+      updateData.purchased_at = now;
+    }
+
     const { error } = await supabase
       .from('shopping_list_items')
-      .update({
-        item_name: editingValues.item_name,
-        url: editingValues.url || null,
-        price: editingValues.price ? parseFloat(editingValues.price) : null,
-        notes: editingValues.notes || null,
-        brand: editingValues.brand || null,
-        size: editingValues.size || null,
-        color: editingValues.color || null,
-      })
+      .update(updateData)
       .eq('id', itemId);
 
     if (!error) {
       setItems(prev => prev.map(item =>
         item.id === itemId ? {
           ...item,
-          item_name: editingValues.item_name,
-          url: editingValues.url || null,
-          price: editingValues.price ? parseFloat(editingValues.price) : null,
-          notes: editingValues.notes || null,
-          brand: editingValues.brand || null,
-          size: editingValues.size || null,
-          color: editingValues.color || null,
+          ...updateData,
+          price: updateData.price,
         } : item
       ));
       setEditingId(null);
@@ -196,6 +218,8 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       brand: '',
       size: '',
       color: '',
+      status: 'idle',
+      reserved_by: '',
     });
   };
 
@@ -469,6 +493,31 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                     rows={2}
                     className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none resize-none"
                   />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Status</label>
+                      <select
+                        value={editingValues.status}
+                        onChange={(e) => setEditingValues({ ...editingValues, status: e.target.value as 'idle' | 'selected' | 'reserved' | 'purchased' })}
+                        className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                      >
+                        <option value="idle">Idle</option>
+                        <option value="selected">Selected</option>
+                        <option value="reserved">Reserved</option>
+                        <option value="purchased">Purchased</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Reserved By</label>
+                      <input
+                        type="text"
+                        value={editingValues.reserved_by}
+                        onChange={(e) => setEditingValues({ ...editingValues, reserved_by: e.target.value })}
+                        placeholder="Person's name"
+                        className="w-full px-4 py-2 border border-sand rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 /* View Mode */
@@ -512,17 +561,29 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                         <p className="text-sm text-gray-600 mb-3">{item.notes}</p>
                       )}
 
-                      {item.url && (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-sage hover:text-rose font-medium mb-3"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          View product
-                        </a>
-                      )}
+                      <div className="flex items-center gap-4 mb-3">
+                        {item.url && (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm text-sage hover:text-rose font-medium"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            View product
+                          </a>
+                        )}
+                        {item.reserved_at && (
+                          <span className="text-xs text-gray-500">
+                            Reserved {new Date(item.reserved_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {item.purchased_at && (
+                          <span className="text-xs text-gray-500">
+                            Purchased {new Date(item.purchased_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
 
                       {/* Action Buttons */}
                       {!isPurchased && !isEditing && (

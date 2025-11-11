@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Pencil, Check, X, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -38,6 +38,11 @@ export default function NeedsTab({ childId, childName, inventoryItems, childSize
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Shoes', 'Tops', 'Bottoms']));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [items, setItems] = useState<InventoryItem[]>(inventoryItems);
+
+  // Update items when child changes or inventoryItems prop changes
+  useEffect(() => {
+    setItems(inventoryItems);
+  }, [inventoryItems, childId]);
 
   // Group items by category
   const groupedItems = useMemo(() => {

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Ruler, ClipboardList, Gift } from 'lucide-react';
+import { Ruler, ClipboardList, Gift, Share2 } from 'lucide-react';
 import ChildProfileBar from './ChildProfileBar';
 import SizesTab from './tabs/SizesTab';
 import NeedsTab from './tabs/NeedsTab';
 import WishlistTab from './tabs/WishlistTab';
+import ShareModal from './ShareModal';
 
 interface Child {
   id: string;
@@ -76,6 +77,7 @@ export default function SizesPageNew({
 }: SizesPageNewProps) {
   const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id || '');
   const [activeTab, setActiveTab] = useState<TabType>('sizes');
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const childSizes = sizes.find(s => s.child_id === selectedChildId) || null;
@@ -113,51 +115,60 @@ export default function SizesPageNew({
 
       {/* Main content area */}
       <div className="flex-1 min-w-0">
-        {/* Mobile: Child selector dropdown */}
+        {/* Mobile: Child selector buttons */}
         <div className="lg:hidden mb-4">
           <div className="bg-white rounded-xl border border-sand p-3">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
               Child
             </label>
-            <select
-              value={selectedChildId}
-              onChange={(e) => {
-                setSelectedChildId(e.target.value);
-                // Close dropdown on mobile after selection
-                e.currentTarget.blur();
-              }}
-              className="w-full px-3 py-2 bg-gray-50 border border-sand rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-sage"
-            >
+            <div className="flex gap-2 flex-wrap">
               {children.map((child) => (
-                <option key={child.id} value={child.id}>
+                <button
+                  key={child.id}
+                  onClick={() => setSelectedChildId(child.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedChildId === child.id
+                      ? 'bg-sage text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
                   {child.name}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-t-2xl border-b border-sand">
-          <div className="flex gap-1 px-2 pt-2 overflow-x-auto">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'bg-white text-sage border-t-2 border-x-2 border-sage -mb-px'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center justify-between px-2 pt-2">
+            <div className="flex gap-1 overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                      isActive
+                        ? 'bg-white text-sage border-t-2 border-x-2 border-sage -mb-px'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-sage hover:bg-sage/10 rounded-lg transition-colors mr-2"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
           </div>
         </div>
 
@@ -188,6 +199,15 @@ export default function SizesPageNew({
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && selectedChild && (
+        <ShareModal
+          childId={selectedChildId}
+          childName={selectedChild.name}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 }

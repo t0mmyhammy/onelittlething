@@ -164,10 +164,10 @@ export default function SizesTab({ childId, childName }: SizesTabProps) {
         {!isAddingCategory && (
           <button
             onClick={() => setIsAddingCategory(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-sage hover:text-white hover:bg-sage border border-sage rounded-lg transition-all"
+            className="flex items-center justify-center w-10 h-10 text-sage hover:text-white hover:bg-sage border border-sage rounded-lg transition-all"
+            aria-label="Add Category"
           >
-            <Plus className="w-4 h-4" />
-            Add Category
+            <Plus className="w-5 h-5" />
           </button>
         )}
       </div>
