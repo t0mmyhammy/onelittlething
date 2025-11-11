@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { getColorClasses } from '@/lib/labelColors';
 
 // Helper to parse date string without timezone conversion
@@ -9,9 +11,9 @@ const parseLocalDate = (dateStr: string): Date => {
 };
 
 // Helper to get creator's initial
-const getCreatorInitial = (creator?: { email: string; user_metadata?: { full_name?: string } }): string => {
-  if (!creator) return '?';
-  const name = creator.user_metadata?.full_name || creator.email?.split('@')[0] || 'User';
+const getCreatorInitial = (creatorInfo?: { email: string; full_name: string }): string => {
+  if (!creatorInfo) return '?';
+  const name = creatorInfo.full_name || creatorInfo.email?.split('@')[0] || 'User';
   return name.charAt(0).toUpperCase();
 };
 
@@ -19,6 +21,7 @@ interface Entry {
   id: string;
   content: string;
   entry_date: string;
+  created_by: string;
   entry_children?: Array<{
     children: {
       id: string;
@@ -26,13 +29,6 @@ interface Entry {
       label_color?: string | null;
     };
   }>;
-  creator?: {
-    id: string;
-    email: string;
-    user_metadata?: {
-      full_name?: string;
-    };
-  };
 }
 
 interface OnThisDayProps {
@@ -40,6 +36,36 @@ interface OnThisDayProps {
 }
 
 export default function OnThisDay({ entries }: OnThisDayProps) {
+  const supabase = createClient();
+  const [creatorInfo, setCreatorInfo] = useState<Record<string, { email: string; full_name: string }>>({});
+
+  // Fetch creator info for all entries
+  useEffect(() => {
+    const fetchCreatorInfo = async () => {
+      if (!entries || entries.length === 0) return;
+
+      const uniqueUserIds = [...new Set(entries.map(e => e.created_by))];
+      if (uniqueUserIds.length === 0) return;
+
+      const { data, error } = await supabase.rpc('get_user_info', {
+        user_ids: uniqueUserIds
+      });
+
+      if (data && !error) {
+        const infoMap: Record<string, { email: string; full_name: string }> = {};
+        data.forEach((user: any) => {
+          infoMap[user.id] = {
+            email: user.email,
+            full_name: user.full_name
+          };
+        });
+        setCreatorInfo(infoMap);
+      }
+    };
+
+    fetchCreatorInfo();
+  }, [entries]);
+
   if (!entries || entries.length === 0) return null;
 
   // Get how many years ago
@@ -65,9 +91,9 @@ export default function OnThisDay({ entries }: OnThisDayProps) {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex gap-2 flex-wrap items-center">
                   {/* Creator Initial Badge */}
-                  {entry.creator && (
+                  {creatorInfo[entry.created_by] && (
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
-                      {getCreatorInitial(entry.creator)}
+                      {getCreatorInitial(creatorInfo[entry.created_by])}
                     </div>
                   )}
                   {/* Child Tags */}
