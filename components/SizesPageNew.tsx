@@ -191,6 +191,7 @@ export default function SizesPageNew({
               inventoryItems={childInventory}
               childSizes={childSizes}
               familyId={familyId}
+              onSwitchToWishlist={() => setActiveTab('wishlist')}
             />
           )}
           {activeTab === 'wishlist' && (

@@ -11,6 +11,7 @@ interface SizeCategory {
   next_size: string | null;
   notes: string | null;
   need_status: string | null;
+  hide_from_sharing: boolean;
   updated_at: string;
   created_at: string;
 }
@@ -42,6 +43,9 @@ const CATEGORY_GROUPS = {
     { name: 'Underwear', emoji: '🩲' },
     { name: 'Swimsuit', emoji: '🩱' },
   ],
+  'Other': [
+    { name: 'Other', emoji: '⭐' },
+  ],
 };
 
 export default function SizesTab({ childId, childName, familyId }: SizesTabProps) {
@@ -53,7 +57,8 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     next: string;
     fitNotes: string;
     needStatus: string;
-  }>({ current: '', next: '', fitNotes: '', needStatus: 'have_enough' });
+    hideFromSharing: boolean;
+  }>({ current: '', next: '', fitNotes: '', needStatus: 'have_enough', hideFromSharing: false });
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +95,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
         next_size: editingValues.next || null,
         notes: editingValues.fitNotes || null,
         need_status: editingValues.needStatus,
+        hide_from_sharing: editingValues.hideFromSharing,
         updated_at: new Date().toISOString(),
         modified_by: user?.id,
         modified_at: new Date().toISOString(),
@@ -109,12 +115,13 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
       next: category.next_size || '',
       fitNotes: category.notes || '',
       needStatus: category.need_status || 'have_enough',
+      hideFromSharing: category.hide_from_sharing || false,
     });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditingValues({ current: '', next: '', fitNotes: '', needStatus: 'have_enough' });
+    setEditingValues({ current: '', next: '', fitNotes: '', needStatus: 'have_enough', hideFromSharing: false });
   };
 
   const handleAddCategory = async () => {
@@ -408,6 +415,15 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
                       placeholder="Notes (optional)"
                       className="w-full text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-sage"
                     />
+                    <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={editingValues.hideFromSharing}
+                        onChange={(e) => setEditingValues({ ...editingValues, hideFromSharing: e.target.checked })}
+                        className="w-4 h-4 text-sage border-gray-300 rounded focus:ring-sage"
+                      />
+                      <span className="text-sm text-gray-600">Hide from sharing</span>
+                    </label>
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={() => handleSave(category.id)}
