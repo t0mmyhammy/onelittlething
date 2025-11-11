@@ -22,26 +22,21 @@ export async function GET(request: Request) {
       if (!existingMember) {
         const userName = data.user.user_metadata.full_name || data.user.email?.split('@')[0] || 'User';
 
-        // Create family
-        const { data: family } = await supabase
-          .from('families')
-          .insert({ name: `${userName}'s Family` })
-          .select()
-          .single();
-
-        if (family) {
-          // Add user as family member
-          await supabase.from('family_members').insert({
-            family_id: family.id,
-            user_id: data.user.id,
-            role: 'parent',
+        // Use database function to create family and add member atomically
+        const { error: familyError } = await supabase
+          .rpc('create_family_with_member', {
+            family_name: `${userName}'s Family`,
+            member_user_id: data.user.id
           });
 
-          // Create user preferences
-          await supabase.from('user_preferences').insert({
-            user_id: data.user.id,
-          });
+        if (familyError) {
+          console.error('Failed to create family:', familyError);
         }
+
+        // Create user preferences (optional)
+        await supabase.from('user_preferences').insert({
+          user_id: data.user.id,
+        });
       }
     }
   }

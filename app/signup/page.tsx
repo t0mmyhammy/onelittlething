@@ -45,38 +45,36 @@ function SignupForm() {
 
       // Create a family for the new user
       if (data.user) {
-        const { error: familyError } = await supabase
-          .from('families')
-          .insert({ name: `${fullName}'s Family` })
-          .select()
-          .single();
+        console.log('Creating family for user:', data.user.id);
 
-        if (familyError) throw familyError;
+        // Use database function to create family and add member atomically
+        const { data: familyId, error: familyError } = await supabase
+          .rpc('create_family_with_member', {
+            family_name: `${fullName}'s Family`,
+            member_user_id: data.user.id
+          });
 
-        // Get the created family
-        const { data: families } = await supabase
-          .from('families')
-          .select('id')
-          .eq('name', `${fullName}'s Family`)
-          .single();
-
-        if (families) {
-          // Add user as a family member
-          await supabase
-            .from('family_members')
-            .insert({
-              family_id: families.id,
-              user_id: data.user.id,
-              role: 'parent',
-            });
-
-          // Create default user preferences
-          await supabase
-            .from('user_preferences')
-            .insert({
-              user_id: data.user.id,
-            });
+        if (familyError) {
+          console.error('Family creation error:', familyError);
+          throw new Error(`Failed to create family: ${familyError.message}`);
         }
+
+        console.log('Family created:', familyId);
+
+        // Create default user preferences
+        const { error: prefsError } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: data.user.id,
+          });
+
+        if (prefsError) {
+          console.error('User preferences error:', prefsError);
+          // Don't throw - preferences are optional
+          console.warn('Continuing without preferences');
+        }
+
+        console.log('User setup complete');
       }
 
       // Redirect to invite page if there's an invite token, otherwise dashboard
