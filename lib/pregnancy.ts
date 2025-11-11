@@ -27,12 +27,10 @@ export function calcFromDueDate(dueISO: string): PregnancyMeta {
   // Calculate days elapsed in pregnancy (280 days total - days until due)
   const daysElapsed = GESTATION_DAYS - daysUntilDue;
 
-  // Calculate completed weeks (how many full 7-day periods have passed)
-  const completedWeeks = Math.floor(daysElapsed / 7);
-
-  // Current week is completedWeeks + 1 (you're IN the week after completing N weeks)
+  // Calculate current week by rounding down (floor)
+  // Week changes only when you enter the new week (e.g., Week 20 starts on day 140, not day 133)
   // Clamp between 1 and 40
-  const week = Math.min(40, Math.max(1, completedWeeks + 1));
+  const week = Math.min(40, Math.max(1, Math.floor(daysElapsed / 7)));
 
   // For percentage calculation, use actual elapsed weeks (can include partial week)
   const elapsedWeeks = daysElapsed / 7;
