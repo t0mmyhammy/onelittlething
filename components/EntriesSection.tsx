@@ -65,7 +65,8 @@ export default function EntriesSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [creatorInfo, setCreatorInfo] = useState<Record<string, { email: string; full_name: string }>>({});
   const [mounted, setMounted] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(10); // Show first 10 entries by default
+  const [isExpanded, setIsExpanded] = useState(false); // Collapsed by default
+  const [visibleCount, setVisibleCount] = useState(10); // Show first 10 entries when using Load More
   const supabase = createClient();
 
   // Mark as mounted to prevent hydration mismatch
@@ -157,10 +158,14 @@ export default function EntriesSection({
     return Object.values(groupedEntries).flat();
   }, [groupedEntries]);
 
-  // Limit entries shown based on visibleCount
+  // Limit entries shown based on expanded state and visibleCount
   const visibleEntries = useMemo(() => {
+    if (!isExpanded) {
+      // Show only first 3 entries when collapsed
+      return filteredAndSortedEntries.slice(0, 3);
+    }
     return filteredAndSortedEntries.slice(0, visibleCount);
-  }, [filteredAndSortedEntries, visibleCount]);
+  }, [filteredAndSortedEntries, visibleCount, isExpanded]);
 
   // Group visible entries by date for rendering
   const visibleGroupedEntries = useMemo(() => {
@@ -449,8 +454,21 @@ export default function EntriesSection({
                   })}
             </div>
 
-            {/* View All in Timeline Button */}
-            {hasMoreEntries && (
+            {/* Expand/View All Button */}
+            {!isExpanded && filteredAndSortedEntries.length > 3 && (
+              <div className="flex justify-center mt-6 pt-6 border-t border-gray-100">
+                <button
+                  onClick={() => setIsExpanded(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-white text-sage border-2 border-sage rounded-lg font-medium hover:bg-sage hover:text-white transition-all duration-200"
+                >
+                  <span>Show More Moments ({filteredAndSortedEntries.length - 3} more)</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            {isExpanded && hasMoreEntries && (
               <div className="flex flex-col items-center mt-8 pt-6 border-t border-gray-100 gap-2">
                 <a
                   href="/timeline"
