@@ -144,22 +144,18 @@ export default function CareInfoPageClient({
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Share Guide Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setIsShareModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-sage text-white rounded-xl font-medium hover:bg-sage/90 transition-colors shadow-sm"
-        >
-          <Share2 className="w-4 h-4" />
-          Share Guide
-        </button>
-      </div>
+  const getContextualShareLabel = () => {
+    if (activeTab === 'family') return 'Share Family Guide';
+    const child = children.find(c => c.id === activeTab);
+    return child ? `Share ${child.name}'s Guide` : 'Share Guide';
+  };
 
-      {/* Tab Navigation */}
-      <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden">
-        <div className="flex items-center gap-2 p-2 overflow-x-auto">
+  return (
+    <div className="relative">
+      {/* Sticky Tab Navigation */}
+      <div className="sticky top-0 z-20 bg-[#FAF9F8] pb-4 -mt-8 pt-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden">
+          <div className="flex items-center gap-2 p-2 overflow-x-auto">
           {/* Family tab */}
           <button
             onClick={() => setActiveTab('family')}
@@ -226,10 +222,12 @@ export default function CareInfoPageClient({
             );
           })}
         </div>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === 'family' ? (
+      {/* Tab Content Area */}
+      <div className="mt-6">
+        {activeTab === 'family' ? (
         <FamilyCareInfoTab
           familyId={familyId}
           familyCareInfo={familyCareInfo}
@@ -259,7 +257,18 @@ export default function CareInfoPageClient({
             />
           );
         })()
-      )}
+        )}
+      </div>
+
+      {/* Floating Share Button */}
+      <button
+        onClick={() => setIsShareModalOpen(true)}
+        className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-sage text-white rounded-2xl font-medium hover:bg-sage/90 transition-all shadow-lg hover:shadow-xl z-30 hover:scale-105"
+      >
+        <Share2 className="w-5 h-5" />
+        <span className="hidden sm:inline">{getContextualShareLabel()}</span>
+        <span className="sm:hidden">Share</span>
+      </button>
 
       {/* Share Modal */}
       <ShareModal

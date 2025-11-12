@@ -63,17 +63,17 @@ export default async function CareInfoPage() {
   const profilePhotoUrl = userPrefs?.profile_photo_url;
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-[#FAF9F8]">
       <MobileNav
         userPhotoUrl={profilePhotoUrl || undefined}
         userName={displayName}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-serif text-gray-900 mb-2">Care Information</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl font-serif text-gray-900 mb-2">Care Guides</h1>
           <p className="text-gray-600">
-            Create guides to share with babysitters, teachers, and family
+            Build comprehensive care information and share with confidence
           </p>
         </div>
 
