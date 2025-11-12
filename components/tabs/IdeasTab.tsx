@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface IdeaItem {
@@ -33,6 +33,41 @@ interface IdeasTabProps {
   familyId: string;
   onSwitchToWishlist?: () => void;
 }
+
+// Helper component to render notes with clickable links
+const NotesDisplay = ({ notes }: { notes: string }) => {
+  // Parse markdown links: [text](url)
+  const parts = notes.split(/(\[.*?\]\(.*?\))/g);
+
+  return (
+    <div className="text-sm text-gray-800 whitespace-pre-wrap">
+      {parts.map((part, index) => {
+        // Check if this part is a markdown link
+        const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+
+        if (linkMatch) {
+          const [, text, url] = linkMatch;
+          return (
+            <span key={index} className="inline-flex items-center gap-1">
+              <span className="font-medium text-gray-900">{text}</span>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-[#7B6CF6] hover:text-[#6759F5] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </span>
+          );
+        }
+
+        return <span key={index}>{part}</span>;
+      })}
+    </div>
+  );
+};
 
 export default function IdeasTab({ childId, childName, inventoryItems, childSizes, familyId, onSwitchToWishlist }: IdeasTabProps) {
   const supabase = createClient();
@@ -672,7 +707,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                         {item.notes && (
                           <div>
                             <p className="text-xs font-medium text-gray-600 mb-1">Notes:</p>
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap">{item.notes}</p>
+                            <NotesDisplay notes={item.notes} />
                           </div>
                         )}
 
