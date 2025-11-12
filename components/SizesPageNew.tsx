@@ -181,6 +181,7 @@ export default function SizesPageNew({
               childId={selectedChildId}
               childSizes={childSizes}
               childName={selectedChild?.name || ''}
+              childGender={selectedChild?.gender || null}
               familyId={familyId}
             />
           )}
@@ -188,6 +189,7 @@ export default function SizesPageNew({
             <IdeasTab
               childId={selectedChildId}
               childName={selectedChild?.name || ''}
+              childGender={selectedChild?.gender || null}
               inventoryItems={childInventory}
               childSizes={childSizes}
               familyId={familyId}

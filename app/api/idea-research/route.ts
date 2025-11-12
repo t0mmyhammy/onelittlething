@@ -12,7 +12,7 @@ export const maxDuration = 60; // 60 second timeout for web search
 
 export async function POST(req: Request) {
   try {
-    const { itemName, category, size, brand, existingNotes, childName, additionalContext, researchFocus, retailers, budget } = await req.json();
+    const { itemName, category, size, brand, existingNotes, childName, childGender, additionalContext, researchFocus, retailers, budget } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       brand,
       existingNotes,
       childName,
+      childGender,
       additionalContext,
       researchFocus,
       retailers,
@@ -136,6 +137,7 @@ function buildIdeaResearchPrompt(
   brand: string | null,
   existingNotes: string | null,
   childName: string,
+  childGender: string | null,
   additionalContext: string | null,
   researchFocus: string | null,
   retailers: string[] | null,
@@ -154,7 +156,7 @@ ${hasExistingNotes && researchFocus
 
 ## Context:
 - Item: ${itemName}
-- For: ${childName}
+- For: ${childName}${childGender ? ` (${childGender})` : ''}
 ${category ? `- Category: ${category}` : ''}
 ${size ? `- Size: ${size}` : ''}
 ${brand ? `- Preferred Brand: ${brand}` : ''}
@@ -199,8 +201,10 @@ ${hasExistingNotes && researchFocus ? '5. DO NOT recommend products already ment
    - Every URL must link to a specific product you actually found
 8. Focus on popular, well-reviewed products with good ratings when available
 9. If brand specified, prioritize that brand but include alternatives${hasRetailerRestriction ? ` (from the allowed retailers only)` : ' from different retailers'}
-10. Consider the child's age and appropriate products for their developmental stage
-11. ${hasRetailerRestriction ? `**STRICT ENFORCEMENT**: Double-check that ALL products are from: ${retailers.join(', ')}` : '**VARY YOUR SOURCES** - try to include products from at least 2-3 different retailers'}
+10. ${childGender ? `**GENDER-APPROPRIATE**: The child is ${childGender === 'boy' ? 'a boy' : 'a girl'}. Search for and recommend products appropriate for ${childGender === 'boy' ? 'boys' : 'girls'}. Do NOT recommend products designed for the opposite gender.` : 'Consider the child\'s age and appropriate products for their developmental stage'}
+11. Consider the child's age and appropriate products for their developmental stage
+12. **VERIFY URLs BEFORE RETURNING**: Every URL must be a working product page you found in your search. If you cannot find a valid product URL, do not include that product.
+13. ${hasRetailerRestriction ? `**STRICT ENFORCEMENT**: Double-check that ALL products are from: ${retailers.join(', ')}` : '**VARY YOUR SOURCES** - try to include products from at least 2-3 different retailers'}
 
 Return ONLY the JSON object, nothing else.`;
 }

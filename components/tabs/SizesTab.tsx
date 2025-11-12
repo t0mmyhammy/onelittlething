@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Gift, Plus, Clock, Check, Lightbulb } from 'lucide-react';
+import { Gift, Plus, Clock, Check, Lightbulb, Shirt, ShoppingBag, Sparkles, Star, CircleDot, Bed, Waves } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface SizeCategory {
@@ -19,36 +19,63 @@ interface SizeCategory {
 interface SizesTabProps {
   childId: string;
   childName: string;
+  childGender: string | null;
   childSizes: any; // Legacy prop, not used anymore
   familyId: string;
 }
 
-// Grouped categories with emojis
-const CATEGORY_GROUPS = {
+// Grouped categories with icons and gender filters
+type CategoryItem = {
+  name: string;
+  emoji: string;
+  gender: string | null;
+};
+
+type CategoryGroups = {
+  [key: string]: CategoryItem[];
+};
+
+const CATEGORY_GROUPS: CategoryGroups = {
   'Clothing': [
-    { name: 'Pants', emoji: '👖' },
-    { name: 'Shirts', emoji: '👕' },
-    { name: 'Coat/Jacket', emoji: '🧥' },
-    { name: 'Dress', emoji: '👗' },
-    { name: 'Pajamas', emoji: '😴' },
+    { name: 'Pants', emoji: '👖', gender: null },
+    { name: 'Shirts', emoji: '👕', gender: null },
+    { name: 'Coat/Jacket', emoji: '🧥', gender: null },
+    { name: 'Dress', emoji: '👗', gender: 'girl' },
+    { name: 'Pajamas', emoji: '🛏️', gender: null },
   ],
   'Accessories': [
-    { name: 'Shoes', emoji: '👟' },
-    { name: 'Hat', emoji: '🧢' },
-    { name: 'Gloves/Mittens', emoji: '🧤' },
-    { name: 'Socks', emoji: '🧦' },
+    { name: 'Shoes', emoji: '👟', gender: null },
+    { name: 'Hat', emoji: '🧢', gender: null },
+    { name: 'Gloves/Mittens', emoji: '🧤', gender: null },
+    { name: 'Socks', emoji: '🧦', gender: null },
   ],
   'Essentials': [
-    { name: 'Diapers', emoji: '🧷' },
-    { name: 'Underwear', emoji: '🩲' },
-    { name: 'Swimsuit', emoji: '🩱' },
+    { name: 'Diapers', emoji: '🧷', gender: null },
+    { name: 'Underwear', emoji: '🩲', gender: null },
+    { name: 'Swimsuit', emoji: '🏊', gender: null },
   ],
   'Other': [
-    { name: 'Other', emoji: '⭐' },
+    { name: 'Other', emoji: '⭐', gender: null },
   ],
 };
 
-export default function SizesTab({ childId, childName, familyId }: SizesTabProps) {
+// Filter categories based on gender
+const getFilteredCategories = (childGender: string | null): CategoryGroups => {
+  const filtered: CategoryGroups = {};
+
+  for (const [group, items] of Object.entries(CATEGORY_GROUPS)) {
+    filtered[group] = items.filter(item => {
+      // If item has no gender restriction, include it
+      if (!item.gender) return true;
+      // If item has gender restriction, only include if it matches
+      return item.gender === childGender;
+    });
+  }
+
+  return filtered;
+};
+
+export default function SizesTab({ childId, childName, childGender, familyId }: SizesTabProps) {
   const supabase = createClient();
 
   // All state hooks at component level (never inside loops/maps)
@@ -266,8 +293,9 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
     return date.toLocaleDateString();
   };
 
-  // Flatten all categories from CATEGORY_GROUPS
-  const allCategoryNames = Object.values(CATEGORY_GROUPS).flat().map(cat => cat.name);
+  // Flatten all categories from CATEGORY_GROUPS (filtered by gender)
+  const filteredGroups = getFilteredCategories(childGender);
+  const allCategoryNames = Object.values(filteredGroups).flat().map(cat => cat.name);
 
   const availableCategories = allCategoryNames.filter(
     cat => !categories.find(c => c.category.toLowerCase() === cat.toLowerCase())
@@ -283,7 +311,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
 
   // Get category emoji
   const getCategoryEmoji = (categoryName: string) => {
-    for (const [_, items] of Object.entries(CATEGORY_GROUPS)) {
+    for (const [_, items] of Object.entries(filteredGroups)) {
       const found = items.find(item => item.name === categoryName);
       if (found) return found.emoji;
     }
@@ -360,7 +388,7 @@ export default function SizesTab({ childId, childName, familyId }: SizesTabProps
           <div className="mb-4">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Add Category</h3>
             <div className="grid grid-cols-3 gap-2">
-              {Object.entries(CATEGORY_GROUPS).map(([groupName, items]) => (
+              {Object.entries(filteredGroups).map(([groupName, items]) => (
                 <div key={groupName} className="col-span-3">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{groupName}</p>
                   <div className="grid grid-cols-3 gap-2 mb-4">

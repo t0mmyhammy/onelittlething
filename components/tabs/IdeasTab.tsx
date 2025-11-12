@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, ExternalLink } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, ExternalLink, Settings, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import AILoadingScreen from '@/components/AILoadingScreen';
 
 interface IdeaItem {
   id: string;
@@ -28,6 +29,7 @@ interface ChildSize {
 interface IdeasTabProps {
   childId: string;
   childName: string;
+  childGender: string | null;
   inventoryItems: IdeaItem[];
   childSizes: ChildSize | null;
   familyId: string;
@@ -69,7 +71,7 @@ const NotesDisplay = ({ notes }: { notes: string }) => {
   );
 };
 
-export default function IdeasTab({ childId, childName, inventoryItems, childSizes, familyId, onSwitchToWishlist }: IdeasTabProps) {
+export default function IdeasTab({ childId, childName, childGender, inventoryItems, childSizes, familyId, onSwitchToWishlist }: IdeasTabProps) {
   const supabase = createClient();
   const [items, setItems] = useState<IdeaItem[]>(inventoryItems);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -78,7 +80,6 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<IdeaItem>>({});
   const [toast, setToast] = useState<string | null>(null);
-  const [isAddingNew, setIsAddingNew] = useState(false);
   const [newIdeaForm, setNewIdeaForm] = useState({
     item_name: '',
     category: '',
@@ -95,6 +96,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     isOpen: boolean;
     item: IdeaItem | null;
     loading: boolean;
+    showingSuccess: boolean;
     research: string;
     products: Array<{
       name: string;
@@ -104,7 +106,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
       url?: string;
     }>;
     selectedProducts: number[];
-  }>({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] });
+  }>({ isOpen: false, item: null, loading: false, showingSuccess: false, research: '', products: [], selectedProducts: [] });
   const [aiPromptModal, setAiPromptModal] = useState<{
     isOpen: boolean;
     item: IdeaItem | null;
@@ -113,18 +115,46 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     customRetailers: string;
     budget: string;
   }>({ isOpen: false, item: null, additionalContext: '', selectedRetailers: [], customRetailers: '', budget: '' });
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [favoriteRetailers, setFavoriteRetailers] = useState<string[]>([]);
+  const [newRetailer, setNewRetailer] = useState('');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiResults, setAiResults] = useState<Array<{
+    id: string;
+    item_name: string;
+    category: string;
+    brand: string | null;
+    size: string | null;
+    rationale: string;
+    url: string | null;
+    added: boolean;
+  }>>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [addedCount, setAddedCount] = useState(0);
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
     setItems(inventoryItems);
   }, [inventoryItems, childId]);
 
-  // Get current user ID
+  // Get current user ID and load favorite retailers
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id) {
         setCurrentUserId(user.id);
+
+        // Load favorite retailers
+        const { data: prefs } = await supabase
+          .from('user_preferences')
+          .select('favorite_retailers')
+          .eq('user_id', user.id)
+          .single();
+
+        if (prefs?.favorite_retailers) {
+          setFavoriteRetailers(prefs.favorite_retailers);
+        }
       }
     };
     getUser();
@@ -295,6 +325,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
       isOpen: true,
       item,
       loading: true,
+      showingSuccess: false,
       research: '',
       products: [],
       selectedProducts: [],
@@ -315,6 +346,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
           retailers: allRetailers.length > 0 ? allRetailers : null, // Only search specified retailers
           budget: aiPromptModal.budget || null,
           childName,
+          childGender,
         }),
       });
 
@@ -329,17 +361,28 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
         throw new Error(data.error);
       }
 
+      // Show success message briefly before results
       setAiModal(prev => ({
         ...prev,
         loading: false,
+        showingSuccess: true,
         research: data.research || 'Unable to generate research.',
         products: data.products || [],
       }));
+
+      // After 800ms, hide success and show results
+      setTimeout(() => {
+        setAiModal(prev => ({
+          ...prev,
+          showingSuccess: false,
+        }));
+      }, 800);
     } catch (error: any) {
       console.error('AI research error:', error);
       setAiModal(prev => ({
         ...prev,
         loading: false,
+        showingSuccess: false,
         research: `Error: ${error.message || 'Unable to generate research. Please try again.'}`,
         products: [],
       }));
@@ -360,7 +403,7 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
       setItems(prev => prev.map(i =>
         i.id === aiModal.item?.id ? { ...i, notes: aiModal.research } : i
       ));
-      setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] });
+      setAiModal({ isOpen: false, item: null, loading: false, showingSuccess: false, research: '', products: [], selectedProducts: [] });
       showToast('Research added to notes!');
     }
   };
@@ -414,8 +457,86 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
 
     if (!error && data) {
       setItems(prev => [...data, ...prev]);
-      setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] });
+      setAiModal({ isOpen: false, item: null, loading: false, showingSuccess: false, research: '', products: [], selectedProducts: [] });
       showToast(`${selectedProds.length} product${selectedProds.length > 1 ? 's' : ''} added as separate idea cards!`);
+    }
+  };
+
+  const handleGenerateIdeas = async () => {
+    if (!aiPrompt.trim()) return;
+
+    setAiLoading(true);
+    setAiResults([]);
+
+    try {
+      const response = await fetch('/api/generate-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: aiPrompt.trim(),
+          childName,
+          childGender,
+          childSizes: childSizes,
+          favoriteRetailers: favoriteRetailers.length > 0 ? favoriteRetailers : null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate ideas');
+      }
+
+      const data = await response.json();
+
+      // Convert API results to our format
+      const results = data.ideas.map((idea: any, index: number) => ({
+        id: `temp-${Date.now()}-${index}`,
+        item_name: idea.name,
+        category: idea.category || 'General',
+        brand: idea.brand || null,
+        size: idea.size || null,
+        rationale: idea.rationale || '',
+        url: idea.url || null,
+        added: false,
+      }));
+
+      setAiResults(results);
+    } catch (error: any) {
+      console.error('AI generation error:', error);
+      alert('Failed to generate ideas. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAddAIResult = async (resultId: string) => {
+    const result = aiResults.find(r => r.id === resultId);
+    if (!result || result.added) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert({
+        child_id: childId,
+        item_name: result.item_name,
+        category: result.category,
+        brand: result.brand,
+        size: result.size,
+        notes: result.rationale + (result.url ? `\n\n[View Product](${result.url})` : ''),
+        state: 'idea',
+        next_size_up: false,
+        created_by: user?.id,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setItems(prev => [data, ...prev]);
+      setAiResults(prev => prev.map(r =>
+        r.id === resultId ? { ...r, added: true } : r
+      ));
+      setAddedCount(prev => prev + 1);
+      showToast('Added to ideas!');
     }
   };
 
@@ -452,21 +573,11 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
         size: '',
         notes: '',
       });
-      setIsAddingNew(false);
+      setAddedCount(prev => prev + 1);
       showToast('Idea added!');
     }
   };
 
-  const handleCancelNewIdea = () => {
-    setIsAddingNew(false);
-    setNewIdeaForm({
-      item_name: '',
-      category: '',
-      brand: '',
-      size: '',
-      notes: '',
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -480,26 +591,238 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
         </div>
       )}
 
+      {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-serif text-gray-900">{childName}'s Ideas</h2>
-          <p className="text-sm text-gray-600 mt-1">Click any card to expand and edit details</p>
+          <h2 className="text-[22px] font-semibold text-gray-900">{childName}'s Ideas</h2>
+          <p className="text-[15px] text-gray-600 mt-1">Start with AI or add something by hand.</p>
         </div>
-        {!isAddingNew && (
+        <button
+          onClick={() => setSettingsModal(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          title="Settings"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="relative">
+        <div className="flex gap-6 border-b border-gray-200">
           <button
-            onClick={() => setIsAddingNew(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+            onClick={() => setActiveTab('ai')}
+            className={`pb-3 text-[16px] font-medium transition-colors relative ${
+              activeTab === 'ai' ? 'text-[#7B6CF6]' : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            Add Idea
+            <Wand2 className="w-4 h-4 inline-block mr-2 mb-0.5" />
+            Get Ideas with AI
+            {activeTab === 'ai' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B6CF6] transition-all duration-250 ease-in-out" />
+            )}
           </button>
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`pb-3 text-[16px] font-medium transition-colors relative ${
+              activeTab === 'manual' ? 'text-[#7B6CF6]' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Plus className="w-4 h-4 inline-block mr-2 mb-0.5" />
+            Add Manually
+            {activeTab === 'manual' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B6CF6] transition-all duration-250 ease-in-out" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Context Bar */}
+      <div className="flex items-center gap-2 p-3 bg-[#F5F4FD] rounded-lg border border-[#E8E7F0]">
+        <span className="text-[12px] font-medium text-gray-700">{childName}</span>
+        {childSizes && (
+          <>
+            {childSizes.shirt_size && (
+              <span className="px-2 py-0.5 bg-white rounded text-[12px] font-medium text-gray-600">
+                {childSizes.shirt_size}
+              </span>
+            )}
+            {childSizes.pants_size && (
+              <span className="px-2 py-0.5 bg-white rounded text-[12px] font-medium text-gray-600">
+                {childSizes.pants_size}
+              </span>
+            )}
+            {childSizes.shoe_size && (
+              <span className="px-2 py-0.5 bg-white rounded text-[12px] font-medium text-gray-600">
+                Shoe: {childSizes.shoe_size}
+              </span>
+            )}
+          </>
         )}
       </div>
 
-      {/* Add New Idea Form */}
-      {isAddingNew && (
-        <div className="border-2 border-sage rounded-2xl bg-white shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Idea</h3>
+      {/* Tab Content */}
+      {activeTab === 'ai' ? (
+        <>
+        {/* AI Composer */}
+        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-6">
+          <h3 className="text-[20px] font-semibold text-gray-900 mb-4">What are you looking for?</h3>
+
+          {/* Prompt Input */}
+          <textarea
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder="warm winter outfits for daycare"
+            rows={3}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7B6CF6] focus:border-transparent text-[15px] resize-none"
+          />
+
+          {/* Quick Chips */}
+          <div className="flex flex-wrap gap-2 mt-3 mb-4">
+            {['clothing', 'shoes', 'outerwear', 'books', 'toys'].map(chip => (
+              <button
+                key={chip}
+                onClick={() => setAiPrompt(prev => prev ? `${prev} ${chip}` : chip)}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-[12px] font-medium text-gray-700 transition-colors"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleGenerateIdeas}
+              disabled={!aiPrompt.trim() || aiLoading}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#7B6CF6] hover:bg-[#6759F5] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Wand2 className="w-4 h-4" />
+              {aiLoading ? 'Generating...' : 'Generate with AI'}
+            </button>
+            <button
+              onClick={() => {/* TODO: Show examples */}}
+              className="text-[15px] text-[#7B6CF6] hover:text-[#6759F5] font-medium transition-colors"
+            >
+              Try examples
+            </button>
+          </div>
+
+          {/* Loading State */}
+          {aiLoading && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <AILoadingScreen itemName={`ideas for "${aiPrompt}"`} />
+            </div>
+          )}
+
+          {/* Empty State - Idea Starters */}
+          {!aiLoading && aiResults.length === 0 && !aiPrompt && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-[14px] text-gray-600 mb-3">Try these idea starters:</p>
+              <div className="space-y-2">
+                {[
+                  'holiday gifts under $40',
+                  'indoor winter play',
+                  'rainy day outfits'
+                ].map(starter => (
+                  <button
+                    key={starter}
+                    onClick={() => setAiPrompt(starter)}
+                    className="block w-full text-left px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-[15px] text-gray-700 transition-colors"
+                  >
+                    "{starter}"
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI Results Grid */}
+        {!aiLoading && aiResults.length > 0 && (
+          <div>
+            <h3 className="text-[18px] font-semibold text-gray-900 mb-4">
+              Suggested Ideas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {aiResults.map((result) => (
+                <div
+                  key={result.id}
+                  className={`border-2 rounded-xl p-4 transition-all ${
+                    result.added
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-[#7B6CF6] hover:shadow-md'
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <h4 className="text-[16px] font-semibold text-gray-900">
+                      {result.item_name}
+                    </h4>
+                    {result.added && (
+                      <span className="flex items-center gap-1 text-[12px] text-green-600 font-medium bg-green-100 px-2 py-1 rounded">
+                        <Check className="w-3 h-3" />
+                        Added
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Chips */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[12px] font-medium rounded">
+                      {result.category}
+                    </span>
+                    {result.size && (
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[12px] font-medium rounded">
+                        {result.size}
+                      </span>
+                    )}
+                    {result.brand && (
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[12px] font-medium rounded">
+                        {result.brand}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Rationale */}
+                  {result.rationale && (
+                    <p className="text-[14px] text-gray-600 mb-3">
+                      {result.rationale}
+                    </p>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {!result.added && (
+                      <button
+                        onClick={() => handleAddAIResult(result.id)}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#7B6CF6] hover:bg-[#6759F5] text-white rounded-lg font-medium transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add to Ideas
+                      </button>
+                    )}
+                    {result.url && (
+                      <a
+                        href={result.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center justify-center gap-2 px-4 py-2 border-2 border-gray-200 hover:border-gray-300 text-gray-700 rounded-lg font-medium transition-colors ${result.added ? 'flex-1' : ''}`}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        View Product
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        </>
+      ) : (
+        /* Manual Form */
+        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-6">
+          <h3 className="text-[20px] font-semibold text-gray-900 mb-4">Add Manually</h3>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -565,14 +888,40 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                 Add Idea
               </button>
               <button
-                onClick={handleCancelNewIdea}
+                onClick={() => setNewIdeaForm({ item_name: '', category: '', brand: '', size: '', notes: '' })}
                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
               >
                 <X className="w-4 h-4" />
-                Cancel
+                Clear
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Banner after adding items */}
+      {addedCount > 0 && (
+        <div className="p-4 bg-[#E8F5E9] border border-[#81C784] rounded-xl flex items-center justify-between animate-fade-in">
+          <p className="text-[15px] text-gray-800">
+            <Check className="w-4 h-4 inline mr-2 text-green-600" />
+            {addedCount} idea{addedCount > 1 ? 's' : ''} saved for {childName}.
+          </p>
+          <button
+            onClick={() => setAddedCount(0)}
+            className="text-[14px] text-gray-600 hover:text-gray-900 font-medium"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Saved Ideas Header */}
+      {items.length > 0 && (
+        <div className="flex items-center justify-between">
+          <h3 className="text-[18px] font-semibold text-gray-900">
+            Saved Ideas <span className="text-gray-500 font-normal">({items.length})</span>
+          </h3>
+          <p className="text-[14px] text-gray-600">Click any card to expand and edit</p>
         </div>
       )}
 
@@ -671,6 +1020,23 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                     )}
                   </div>
                 </button>
+
+                {/* Move to Wishlist Button - Visible in collapsed view */}
+                {!isExpanded && !isEditing && (
+                  <div className="px-4 pb-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToWishlist(item);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-sage/10 text-sage hover:bg-sage hover:text-white transition-all"
+                      title="Move to Wishlist"
+                    >
+                      <Gift className="w-4 h-4" />
+                      Add to Wishlist
+                    </button>
+                  </div>
+                )}
 
                 {/* Expanded section */}
                 {isExpanded && (
@@ -831,29 +1197,31 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             {/* Retailer Selection */}
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-2">Where should I search? (select all that apply)</p>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {['Amazon', 'Target', 'Walmart', 'Nike', 'Pottery Barn Kids', 'Crate & Kids'].map(retailer => (
-                  <button
-                    key={retailer}
-                    onClick={() => {
-                      setAiPromptModal(prev => ({
-                        ...prev,
-                        selectedRetailers: prev.selectedRetailers.includes(retailer)
-                          ? prev.selectedRetailers.filter(r => r !== retailer)
-                          : [...prev.selectedRetailers, retailer]
-                      }));
-                    }}
-                    className={`px-3 py-2 text-sm rounded-lg border-2 transition-all ${
-                      aiPromptModal.selectedRetailers.includes(retailer)
-                        ? 'border-[#7B6CF6] bg-[#F5F4FD] text-[#7B6CF6] font-medium'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {aiPromptModal.selectedRetailers.includes(retailer) && '✓ '}
-                    {retailer}
-                  </button>
-                ))}
-              </div>
+              {(favoriteRetailers.length > 0 || favoriteRetailers.length === 0) && (
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {(favoriteRetailers.length > 0 ? favoriteRetailers : ['Amazon', 'Target', 'Walmart']).map(retailer => (
+                    <button
+                      key={retailer}
+                      onClick={() => {
+                        setAiPromptModal(prev => ({
+                          ...prev,
+                          selectedRetailers: prev.selectedRetailers.includes(retailer)
+                            ? prev.selectedRetailers.filter(r => r !== retailer)
+                            : [...prev.selectedRetailers, retailer]
+                        }));
+                      }}
+                      className={`px-3 py-2 text-sm rounded-lg border-2 transition-all ${
+                        aiPromptModal.selectedRetailers.includes(retailer)
+                          ? 'border-[#7B6CF6] bg-[#F5F4FD] text-[#7B6CF6] font-medium'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {aiPromptModal.selectedRetailers.includes(retailer) && '✓ '}
+                      {retailer}
+                    </button>
+                  ))}
+                </div>
+              )}
               <input
                 type="text"
                 value={aiPromptModal.customRetailers}
@@ -932,7 +1300,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
       {aiModal.isOpen && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] })}
+          onClick={() => !aiModal.loading && setAiModal({ isOpen: false, item: null, loading: false, showingSuccess: false, research: '', products: [], selectedProducts: [] })}
         >
           <div
             className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
@@ -952,11 +1320,11 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
               </div>
             </div>
 
-            {aiModal.loading ? (
-              <div className="py-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#7B6CF6] mb-4"></div>
-                <p className="text-gray-600">Researching and generating recommendations...</p>
-              </div>
+            {aiModal.loading || aiModal.showingSuccess ? (
+              <AILoadingScreen
+                itemName={aiModal.item?.item_name}
+                showSuccess={aiModal.showingSuccess}
+              />
             ) : (
               <>
                 {/* TLDR Summary */}
@@ -1035,7 +1403,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                     </button>
                   )}
                   <button
-                    onClick={() => setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] })}
+                    onClick={() => setAiModal({ isOpen: false, item: null, loading: false, showingSuccess: false, research: '', products: [], selectedProducts: [] })}
                     className={`px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium ${aiModal.selectedProducts.length === 0 ? 'flex-1' : ''}`}
                   >
                     Close
@@ -1043,6 +1411,124 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {settingsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-serif text-gray-900">Settings</h3>
+              <button
+                onClick={() => setSettingsModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Favorite Retailers Section */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Favorite Retailers</h4>
+              <p className="text-xs text-gray-600 mb-3">
+                These retailers will appear as quick-select buttons when doing AI research.
+              </p>
+
+              {/* Current Retailers */}
+              {favoriteRetailers.length > 0 ? (
+                <div className="space-y-2 mb-3">
+                  {favoriteRetailers.map((retailer, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <span className="text-sm text-gray-800">{retailer}</span>
+                      <button
+                        onClick={() => {
+                          setFavoriteRetailers(prev => prev.filter((_, i) => i !== index));
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic mb-3">
+                  No favorite retailers yet. Add some below!
+                </p>
+              )}
+
+              {/* Add New Retailer */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newRetailer}
+                  onChange={(e) => setNewRetailer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newRetailer.trim()) {
+                      setFavoriteRetailers(prev => [...prev, newRetailer.trim()]);
+                      setNewRetailer('');
+                    }
+                  }}
+                  placeholder="Add retailer (e.g., Amazon, Target)"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                />
+                <button
+                  onClick={() => {
+                    if (newRetailer.trim()) {
+                      setFavoriteRetailers(prev => [...prev, newRetailer.trim()]);
+                      setNewRetailer('');
+                    }
+                  }}
+                  disabled={!newRetailer.trim()}
+                  className="px-4 py-2 bg-[#7B6CF6] text-white rounded-lg font-medium hover:bg-[#6759F5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user?.id) return;
+
+                  // Upsert user preferences
+                  const { error } = await supabase
+                    .from('user_preferences')
+                    .upsert({
+                      user_id: user.id,
+                      favorite_retailers: favoriteRetailers,
+                      updated_at: new Date().toISOString(),
+                    }, {
+                      onConflict: 'user_id'
+                    });
+
+                  if (!error) {
+                    showToast('Settings saved successfully!');
+                    setSettingsModal(false);
+                  } else {
+                    showToast('Error saving settings');
+                    console.error('Settings save error:', error);
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 bg-sage text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                Save Settings
+              </button>
+              <button
+                onClick={() => setSettingsModal(false)}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

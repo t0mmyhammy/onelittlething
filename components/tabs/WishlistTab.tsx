@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical, Lightbulb } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ShoppingItem {
@@ -78,6 +78,23 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     itemId: string | null;
     itemName: string | null;
   }>({ isOpen: false, itemId: null, itemName: null });
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+        setShowActionsId(null);
+      }
+    };
+
+    if (showActionsId) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showActionsId]);
 
   // Sort items by status
   const sortedItems = useMemo(() => {
@@ -257,6 +274,45 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
         item.id === itemId ? { ...item, archived: newArchivedState } : item
       ));
       setShowActionsId(null);
+    }
+  };
+
+  const handleMoveToIdeas = async (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Create entry in inventory_items (Ideas tab)
+    const { error: insertError } = await supabase
+      .from('inventory_items')
+      .insert({
+        child_id: childId,
+        item_name: item.item_name,
+        category: item.category || 'General',
+        brand: item.brand || null,
+        size: item.size || null,
+        notes: item.notes || null,
+        state: 'idea',
+        next_size_up: false,
+        created_by: user?.id,
+      });
+
+    if (!insertError) {
+      // Archive the wishlist item
+      const { error: archiveError } = await supabase
+        .from('shopping_list_items')
+        .update({ archived: true })
+        .eq('id', itemId);
+
+      if (!archiveError) {
+        setItems(prev => prev.map(i =>
+          i.id === itemId ? { ...i, archived: true } : i
+        ));
+        setShowActionsId(null);
+        // Show success feedback
+        alert('Item moved to Ideas!');
+      }
     }
   };
 
@@ -583,7 +639,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                           )}
                           {/* More Actions Menu */}
                           {!isPurchased && !isEditing && (
-                            <div className="relative">
+                            <div className="relative" ref={showActions ? actionsMenuRef : null}>
                               <button
                                 onClick={() => setShowActionsId(showActions ? null : item.id)}
                                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
@@ -684,6 +740,16 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                               Reserve
                             </button>
                           )}
+
+                          {/* Move to Ideas Button */}
+                          <button
+                            onClick={() => handleMoveToIdeas(item.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-all whitespace-nowrap"
+                            title="Move to Ideas"
+                          >
+                            <Lightbulb className="w-4 h-4" />
+                            Move to Ideas
+                          </button>
 
                           {isReserving && (
                             <div className="flex items-center gap-2 w-full sm:w-auto">
