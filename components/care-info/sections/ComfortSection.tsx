@@ -1,11 +1,14 @@
 'use client';
 
 import { Eye, EyeOff } from 'lucide-react';
+import InfoTooltip from '../InfoTooltip';
+import { getFieldGuideline, calculateAgeInMonths, getParentingTips } from '@/lib/cdcGuidelines';
 
 interface ComfortSectionProps {
   data: any;
   notes: string;
   redactedFields: string[];
+  childBirthdate: string | null;
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
@@ -15,20 +18,30 @@ export default function ComfortSection({
   data,
   notes,
   redactedFields,
+  childBirthdate,
   onUpdate,
   onNotesUpdate,
   onRedactionToggle
 }: ComfortSectionProps) {
   const isRedacted = (field: string) => redactedFields.includes(field);
+  const ageInMonths = calculateAgeInMonths(childBirthdate);
 
   return (
     <div className="space-y-6">
       {/* Calming tips */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            How to calm them down
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              How to calm them down
+            </label>
+            <InfoTooltip
+              title="Calming Strategies"
+              cdcGuidelines={getFieldGuideline('calming_tips', ageInMonths) || undefined}
+              parentingTips={getParentingTips('calming_tips') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('calming_tips')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -52,9 +65,17 @@ export default function ComfortSection({
       {/* Comfort items */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Special comfort items
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Special comfort items
+            </label>
+            <InfoTooltip
+              title="Comfort Objects"
+              cdcGuidelines={getFieldGuideline('comfort_items', ageInMonths) || undefined}
+              parentingTips={getParentingTips('comfort_items') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('comfort_items')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -78,9 +99,17 @@ export default function ComfortSection({
       {/* Favorites */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Favorite things
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Favorite things
+            </label>
+            <InfoTooltip
+              title="Favorites & Interests"
+              cdcGuidelines={getFieldGuideline('favorites', ageInMonths) || undefined}
+              parentingTips={getParentingTips('favorites') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('favorites')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -104,9 +133,17 @@ export default function ComfortSection({
       {/* Dislikes */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Dislikes or triggers
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Dislikes or triggers
+            </label>
+            <InfoTooltip
+              title="Dislikes & Triggers"
+              cdcGuidelines={getFieldGuideline('dislikes', ageInMonths) || undefined}
+              parentingTips={getParentingTips('dislikes') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('dislikes')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -130,9 +167,17 @@ export default function ComfortSection({
       {/* Behavior notes */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Behavioral notes
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Behavioral notes
+            </label>
+            <InfoTooltip
+              title="Behavior Guidance"
+              cdcGuidelines={getFieldGuideline('behavior', ageInMonths) || undefined}
+              parentingTips={getParentingTips('behavior') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('behavior')}
             className="text-gray-400 hover:text-gray-600 transition-colors"

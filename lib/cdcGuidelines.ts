@@ -121,10 +121,17 @@ export function getParentingTips(field: string, parentingStyles?: string[]): str
     'meals': "Division of responsibility: Parents decide when, where, and what. Child decides whether and how much. No pressure to clean plate.",
     'screen_time': "Model healthy screen habits yourself. Make screen time a privilege, not a default. Co-view when possible and discuss content.",
     'calming_tips': "Validate feelings first ('I see you're upset'). Then offer tools (deep breaths, counting, hug). Stay calm yourself - kids mirror us.",
+    'comfort_items': "Comfort objects help kids self-soothe. Don't judge what comforts them. Have a backup if possible. They'll outgrow it naturally.",
+    'favorites': "Knowing what they love helps you connect. Use favorites as rewards or comfort. Notice patterns - it tells you who they're becoming.",
+    'dislikes': "Respect their genuine dislikes. Don't force. Reintroduce gently over time. Some sensory aversions are real, not defiance.",
+    'behavior': "Behind every behavior is a need. Tired? Hungry? Overwhelmed? Address the need, not just the behavior. Connection before correction.",
     'allergies': "Teach your child to recognize their symptoms. Practice how to ask for help. Never minimize their concerns about feeling 'different.'",
+    'medications': "Kids need to understand their meds. Explain in simple terms. Make it routine, not punishment. Praise cooperation without bribing.",
+    'conditions': "Normalize their condition. Connect with other families. Let them be the expert on their body. Advocate together, not for them.",
     'dos': "Focus on what they CAN do, not just limits. Give choices within boundaries ('Do you want to play inside or outside?').",
     'donts': "Explain the 'why' in simple terms. Keep rules consistent. Follow through every time - empty threats erode trust.",
     'warnings': "Name fears without judgment. 'You're scared of the dog. That's okay.' Build confidence gradually with small steps.",
+    'car_seat': "Car seat safety is non-negotiable. Explain it protects them like a seatbelt protects you. Check expiration dates and proper installation.",
   };
 
   // You can customize tips based on parenting styles if needed

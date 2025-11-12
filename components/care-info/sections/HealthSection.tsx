@@ -2,11 +2,14 @@
 
 import { Eye, EyeOff, Plus, X, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import InfoTooltip from '../InfoTooltip';
+import { getFieldGuideline, calculateAgeInMonths, getParentingTips } from '@/lib/cdcGuidelines';
 
 interface HealthSectionProps {
   data: any;
   notes: string;
   redactedFields: string[];
+  childBirthdate: string | null;
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
@@ -29,6 +32,7 @@ export default function HealthSection({
   data,
   notes,
   redactedFields,
+  childBirthdate,
   onUpdate,
   onNotesUpdate,
   onRedactionToggle
@@ -37,6 +41,7 @@ export default function HealthSection({
   const [customAllergy, setCustomAllergy] = useState('');
 
   const isRedacted = (field: string) => redactedFields.includes(field);
+  const ageInMonths = calculateAgeInMonths(childBirthdate);
 
   // Manage allergy list
   const allergies = data?.allergies || [];
@@ -72,9 +77,17 @@ export default function HealthSection({
       {/* Allergies */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Allergies
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Allergies
+            </label>
+            <InfoTooltip
+              title="Allergy Guidelines"
+              cdcGuidelines={getFieldGuideline('allergies', ageInMonths) || undefined}
+              parentingTips={getParentingTips('allergies') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('allergies')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -194,9 +207,17 @@ export default function HealthSection({
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Daily medications
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Daily medications
+                  </label>
+                  <InfoTooltip
+                    title="Medication Guidelines"
+                    cdcGuidelines={getFieldGuideline('medications', ageInMonths) || undefined}
+                    parentingTips={getParentingTips('medications') || undefined}
+                    ageInMonths={ageInMonths}
+                  />
+                </div>
                 <button
                   onClick={() => onRedactionToggle('medications')}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -248,9 +269,17 @@ export default function HealthSection({
       {/* Medical conditions */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Medical conditions or special needs
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Medical conditions or special needs
+            </label>
+            <InfoTooltip
+              title="Medical Conditions"
+              cdcGuidelines={getFieldGuideline('conditions', ageInMonths) || undefined}
+              parentingTips={getParentingTips('conditions') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('conditions')}
             className="text-gray-400 hover:text-gray-600 transition-colors"

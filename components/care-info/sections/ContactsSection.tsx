@@ -6,6 +6,7 @@ interface ContactsSectionProps {
   data: any;
   notes: string;
   redactedFields: string[];
+  childBirthdate: string | null;
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
@@ -15,6 +16,7 @@ export default function ContactsSection({
   data,
   notes,
   redactedFields,
+  childBirthdate,
   onUpdate,
   onNotesUpdate,
   onRedactionToggle

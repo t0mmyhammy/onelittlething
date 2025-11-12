@@ -409,6 +409,7 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     data={careInfo.health}
                     notes={careInfo.health_notes || ''}
                     redactedFields={careInfo.health_redacted_fields || []}
+                    childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('health', field, value)}
                     onNotesUpdate={(notes) => updateNotes('health', notes)}
                     onRedactionToggle={(field) => {
@@ -435,6 +436,7 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     data={careInfo.comfort}
                     notes={careInfo.comfort_notes || ''}
                     redactedFields={careInfo.comfort_redacted_fields || []}
+                    childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('comfort', field, value)}
                     onNotesUpdate={(notes) => updateNotes('comfort', notes)}
                     onRedactionToggle={(field) => {
@@ -461,6 +463,7 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     data={careInfo.safety}
                     notes={careInfo.safety_notes || ''}
                     redactedFields={careInfo.safety_redacted_fields || []}
+                    childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('safety', field, value)}
                     onNotesUpdate={(notes) => updateNotes('safety', notes)}
                     onRedactionToggle={(field) => {
@@ -487,6 +490,7 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     data={careInfo.contacts}
                     notes={careInfo.contacts_notes || ''}
                     redactedFields={careInfo.contacts_redacted_fields || []}
+                    childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('contacts', field, value)}
                     onNotesUpdate={(notes) => updateNotes('contacts', notes)}
                     onRedactionToggle={(field) => {

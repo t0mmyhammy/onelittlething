@@ -1,11 +1,14 @@
 'use client';
 
 import { Eye, EyeOff, Check, X } from 'lucide-react';
+import InfoTooltip from '../InfoTooltip';
+import { getFieldGuideline, calculateAgeInMonths, getParentingTips } from '@/lib/cdcGuidelines';
 
 interface SafetySectionProps {
   data: any;
   notes: string;
   redactedFields: string[];
+  childBirthdate: string | null;
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
@@ -15,11 +18,13 @@ export default function SafetySection({
   data,
   notes,
   redactedFields,
+  childBirthdate,
   onUpdate,
   onNotesUpdate,
   onRedactionToggle
 }: SafetySectionProps) {
   const isRedacted = (field: string) => redactedFields.includes(field);
+  const ageInMonths = calculateAgeInMonths(childBirthdate);
 
   return (
     <div className="space-y-6">
@@ -33,6 +38,12 @@ export default function SafetySection({
             <label className="block text-sm font-medium text-gray-700">
               Things they CAN do
             </label>
+            <InfoTooltip
+              title="Setting Boundaries"
+              cdcGuidelines={getFieldGuideline('dos', ageInMonths) || undefined}
+              parentingTips={getParentingTips('dos') || undefined}
+              ageInMonths={ageInMonths}
+            />
           </div>
           <button
             onClick={() => onRedactionToggle('dos')}
@@ -64,6 +75,12 @@ export default function SafetySection({
             <label className="block text-sm font-medium text-gray-700">
               Things they CANNOT do
             </label>
+            <InfoTooltip
+              title="Setting Limits"
+              cdcGuidelines={getFieldGuideline('donts', ageInMonths) || undefined}
+              parentingTips={getParentingTips('donts') || undefined}
+              ageInMonths={ageInMonths}
+            />
           </div>
           <button
             onClick={() => onRedactionToggle('donts')}
@@ -88,9 +105,17 @@ export default function SafetySection({
       {/* Important warnings */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Safety warnings or concerns
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Safety warnings or concerns
+            </label>
+            <InfoTooltip
+              title="Safety Awareness"
+              cdcGuidelines={getFieldGuideline('warnings', ageInMonths) || undefined}
+              parentingTips={getParentingTips('warnings') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('warnings')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -114,9 +139,17 @@ export default function SafetySection({
       {/* Car seat / transportation */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Car seat & transportation
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Car seat & transportation
+            </label>
+            <InfoTooltip
+              title="Car Seat Safety"
+              cdcGuidelines={getFieldGuideline('car_seat', ageInMonths) || undefined}
+              parentingTips={getParentingTips('car_seat') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('car_seat')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
