@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Baby, Home, FileText } from 'lucide-react';
+import { User, Baby, Home, FileText, Share2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ChildCareInfoTab from './care-info/ChildCareInfoTab';
 import FamilyCareInfoTab from './care-info/FamilyCareInfoTab';
+import ShareModal from './care-info/ShareModal';
 
 interface Child {
   id: string;
@@ -95,6 +96,9 @@ export default function CareInfoPageClient({
   const [childCareInfo, setChildCareInfo] = useState<ChildCareInfo[]>(initialChildCareInfo);
   const [familyCareInfo, setFamilyCareInfo] = useState<FamilyCareInfo | null>(initialFamilyCareInfo);
 
+  // Share modal state
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
   // Persist tab selection
   useEffect(() => {
     localStorage.setItem('careInfoActiveTab', activeTab);
@@ -142,6 +146,17 @@ export default function CareInfoPageClient({
 
   return (
     <div className="space-y-6">
+      {/* Share Guide Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setIsShareModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-sage text-white rounded-xl font-medium hover:bg-sage/90 transition-colors shadow-sm"
+        >
+          <Share2 className="w-4 h-4" />
+          Share Guide
+        </button>
+      </div>
+
       {/* Tab Navigation */}
       <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden">
         <div className="flex items-center gap-2 p-2 overflow-x-auto">
@@ -245,6 +260,16 @@ export default function CareInfoPageClient({
           );
         })()
       )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        children={children}
+        childCareInfo={childCareInfo}
+        familyCareInfo={familyCareInfo}
+        selectedChildId={activeTab !== 'family' ? activeTab : undefined}
+      />
     </div>
   );
 }
