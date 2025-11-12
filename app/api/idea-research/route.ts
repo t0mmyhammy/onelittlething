@@ -59,8 +59,8 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: researchFocus
-            ? `Search Amazon.com right now for: ${itemName} ${researchFocus}. Find 3-5 real products for ${childName} with exact product page URLs.`
-            : `Search Amazon.com right now for: ${itemName}. Find 3-5 real, currently available products for ${childName} with exact product page URLs (amazon.com/dp/ASIN format).`,
+            ? `Search the web now for: ${itemName} ${researchFocus}. Find 3-5 real products from DIFFERENT retailers (specialized stores, brand sites, department stores, online retailers). Include exact product page URLs for ${childName}.`
+            : `Search the web now for: ${itemName}. Find 3-5 real, currently available products for ${childName} from various retailers. Prioritize specialized stores when relevant (e.g., university bookstores for college gear, baby stores for nursery items, sporting goods stores for athletic wear). Include exact product page URLs from each retailer.`,
         },
       ],
       temperature: 0.3, // Lower for more factual, accurate results
@@ -123,12 +123,12 @@ function buildIdeaResearchPrompt(
 ): string {
   const hasExistingNotes = existingNotes && existingNotes.trim().length > 0;
 
-  return `You are a helpful shopping assistant with real-time web search capabilities. You can search Amazon.com RIGHT NOW to find actual, currently available products.
+  return `You are a helpful shopping assistant with real-time web search capabilities. You can search the entire internet RIGHT NOW to find actual, currently available products from ANY retailer.
 
 ## Task:
 ${hasExistingNotes && researchFocus
-  ? `The user already has research on this item. SEARCH AMAZON.COM NOW for DIFFERENT products focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations that are currently available.`
-  : 'SEARCH AMAZON.COM NOW and provide a brief TLDR summary and recommend 3-5 specific products that are currently available for purchase.'
+  ? `The user already has research on this item. SEARCH THE WEB NOW for DIFFERENT products focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations from various retailers.`
+  : 'SEARCH THE WEB NOW across ALL retailers and provide a brief TLDR summary and recommend 3-5 specific products that are currently available for purchase. Include diverse sources - specialized stores, brand websites, department stores, online retailers, etc.'
 }
 
 ## Context:
@@ -158,22 +158,31 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 }
 
 ## Guidelines:
-1. **USE YOUR WEB SEARCH**: Search Amazon.com RIGHT NOW for real products
-2. TLDR should be concise, friendly, and helpful - based on current market research
-3. Recommend 3-5 specific products that are CURRENTLY AVAILABLE on Amazon
-${hasExistingNotes && researchFocus ? '4. DO NOT recommend products already mentioned in previous research - search for DIFFERENT options' : '4. Include current price ranges from your search results'}
-5. List 3-4 key features for each product based on actual product descriptions
-6. **CRITICAL - GET REAL URLs FROM YOUR SEARCH**:
-   - Extract the ACTUAL Amazon product page URL from your search results
-   - Format MUST be: https://www.amazon.com/dp/ASIN (e.g., https://www.amazon.com/dp/B0BX7CJZW9)
-   - Or: https://www.amazon.com/product-name/dp/ASIN
-   - DO NOT use search URLs (/s?k=), listing URLs (/gp/), or guessed URLs
-   - Every URL must be a direct link to an actual product page you found
-   - Verify the ASIN exists in your search results
-7. Focus on popular, well-reviewed products with good ratings (4+ stars if possible)
-8. If brand specified, prioritize that brand but include alternatives
-9. Consider the child's age and appropriate products for their developmental stage
-10. Recommend products based on actual current availability and reviews
+1. **USE YOUR WEB SEARCH**: Search across ALL retailers RIGHT NOW for real products
+2. **PRIORITIZE SPECIALIZED RETAILERS** when relevant:
+   - University merchandise → Search university bookstores, campus stores, Fanatics
+   - Baby/nursery items → Search Babylist, Pottery Barn Kids, Crate & Kids, West Elm Kids
+   - Athletic wear → Search Nike.com, Adidas.com, Dick's Sporting Goods, Academy Sports
+   - Toys → Search Target, specialist toy stores, brand websites
+   - General items → Include Amazon, Walmart, Target, but also specialty shops
+3. TLDR should be concise, friendly, and helpful - based on current market research
+4. Recommend 3-5 specific products from DIVERSE SOURCES (don't just pick Amazon)
+${hasExistingNotes && researchFocus ? '5. DO NOT recommend products already mentioned in previous research - search for DIFFERENT retailers and options' : '5. Include current price ranges from your search results'}
+6. List 3-4 key features for each product based on actual product descriptions
+7. **CRITICAL - GET REAL URLs FROM YOUR SEARCH**:
+   - Extract the ACTUAL product page URL from your search results
+   - Must be a direct link to the product detail page (not category/search pages)
+   - Examples of GOOD URLs:
+     * https://www.amazon.com/dp/B0BX7CJZW9
+     * https://www.nike.com/t/revolution-7-kids-shoe-abc123
+     * https://mdenstore.com/products/michigan-wolverines-toddler-hoodie
+     * https://www.potterybarnkids.com/products/organic-crib-sheet
+   - Examples of BAD URLs: /search?q=, /category/, /browse/
+   - Every URL must link to a specific product you actually found
+8. Focus on popular, well-reviewed products with good ratings when available
+9. If brand specified, prioritize that brand but include alternatives from different retailers
+10. Consider the child's age and appropriate products for their developmental stage
+11. **VARY YOUR SOURCES** - try to include products from at least 2-3 different retailers
 
 Return ONLY the JSON object, nothing else.`;
 }
