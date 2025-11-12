@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Home, BookOpen, Calendar, AlertTriangle, Check, Undo, ChevronDown, ChevronUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import HomeBaseSection from './sections/HomeBaseSection';
+import HouseRulesSection from './sections/HouseRulesSection';
+import ScheduleSection from './sections/ScheduleSection';
+import EmergencySection from './sections/EmergencySection';
 
 interface FamilyCareInfo {
   id: string;
@@ -110,6 +114,37 @@ export default function FamilyCareInfoTab({ familyId, familyCareInfo: initialCar
       setSaveState({ section, status: 'error' });
     }
   }, [careInfo, supabase]);
+
+  // Update section field
+  const updateSection = useCallback((section: SectionType, field: string, value: any) => {
+    if (!careInfo) return;
+
+    setCareInfo(prev => {
+      if (!prev) return prev;
+
+      const currentData = prev[section] || {};
+      const newData = { ...currentData, [field]: value };
+
+      // Add to undo stack
+      setUndoStack(prevStack => [...prevStack, { section, data: currentData, timestamp: Date.now() }].slice(-5));
+      setShowUndoToast(true);
+
+      // Hide undo toast after 10 seconds
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = setTimeout(() => setShowUndoToast(false), 10000);
+
+      // Debounced save
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        saveSection(section, newData, prev[`${section}_notes`] || null);
+      }, 1000);
+
+      return {
+        ...prev,
+        [section]: newData,
+      };
+    });
+  }, [careInfo, saveSection]);
 
   // Update section notes
   const updateNotes = useCallback((section: SectionType, notes: string) => {
@@ -266,25 +301,109 @@ export default function FamilyCareInfoTab({ familyId, familyCareInfo: initialCar
             {/* Section Content */}
             {isExpanded && (
               <div className="px-6 pb-6 pt-2 border-t border-sand">
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-500 italic">
-                    Section content coming soon...
-                  </p>
+                {section.id === 'home_base' && (
+                  <HomeBaseSection
+                    data={careInfo.home_base}
+                    notes={careInfo.home_base_notes || ''}
+                    redactedFields={careInfo.home_base_redacted_fields || []}
+                    onUpdate={(field, value) => updateSection('home_base', field, value)}
+                    onNotesUpdate={(notes) => updateNotes('home_base', notes)}
+                    onRedactionToggle={(field) => {
+                      const current = careInfo.home_base_redacted_fields || [];
+                      const updated = current.includes(field)
+                        ? current.filter((f: string) => f !== field)
+                        : [...current, field];
 
-                  {/* Notes field (common to all sections) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Additional notes
-                    </label>
-                    <textarea
-                      value={careInfo[`${section.id}_notes`] || ''}
-                      onChange={(e) => updateNotes(section.id, e.target.value)}
-                      placeholder="What caregivers should know..."
-                      className="w-full px-4 py-3 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage resize-none"
-                      rows={3}
-                    />
-                  </div>
-                </div>
+                      setCareInfo(prev => prev ? { ...prev, home_base_redacted_fields: updated } : prev);
+
+                      if (careInfo) {
+                        supabase
+                          .from('family_care_info')
+                          .update({ home_base_redacted_fields: updated })
+                          .eq('id', careInfo.id)
+                          .then();
+                      }
+                    }}
+                  />
+                )}
+
+                {section.id === 'house_rules' && (
+                  <HouseRulesSection
+                    data={careInfo.house_rules}
+                    notes={careInfo.house_rules_notes || ''}
+                    redactedFields={careInfo.house_rules_redacted_fields || []}
+                    onUpdate={(field, value) => updateSection('house_rules', field, value)}
+                    onNotesUpdate={(notes) => updateNotes('house_rules', notes)}
+                    onRedactionToggle={(field) => {
+                      const current = careInfo.house_rules_redacted_fields || [];
+                      const updated = current.includes(field)
+                        ? current.filter((f: string) => f !== field)
+                        : [...current, field];
+
+                      setCareInfo(prev => prev ? { ...prev, house_rules_redacted_fields: updated } : prev);
+
+                      if (careInfo) {
+                        supabase
+                          .from('family_care_info')
+                          .update({ house_rules_redacted_fields: updated })
+                          .eq('id', careInfo.id)
+                          .then();
+                      }
+                    }}
+                  />
+                )}
+
+                {section.id === 'schedule' && (
+                  <ScheduleSection
+                    data={careInfo.schedule}
+                    notes={careInfo.schedule_notes || ''}
+                    redactedFields={careInfo.schedule_redacted_fields || []}
+                    onUpdate={(field, value) => updateSection('schedule', field, value)}
+                    onNotesUpdate={(notes) => updateNotes('schedule', notes)}
+                    onRedactionToggle={(field) => {
+                      const current = careInfo.schedule_redacted_fields || [];
+                      const updated = current.includes(field)
+                        ? current.filter((f: string) => f !== field)
+                        : [...current, field];
+
+                      setCareInfo(prev => prev ? { ...prev, schedule_redacted_fields: updated } : prev);
+
+                      if (careInfo) {
+                        supabase
+                          .from('family_care_info')
+                          .update({ schedule_redacted_fields: updated })
+                          .eq('id', careInfo.id)
+                          .then();
+                      }
+                    }}
+                  />
+                )}
+
+                {section.id === 'emergency' && (
+                  <EmergencySection
+                    data={careInfo.emergency}
+                    notes={careInfo.emergency_notes || ''}
+                    redactedFields={careInfo.emergency_redacted_fields || []}
+                    onUpdate={(field, value) => updateSection('emergency', field, value)}
+                    onNotesUpdate={(notes) => updateNotes('emergency', notes)}
+                    onRedactionToggle={(field) => {
+                      const current = careInfo.emergency_redacted_fields || [];
+                      const updated = current.includes(field)
+                        ? current.filter((f: string) => f !== field)
+                        : [...current, field];
+
+                      setCareInfo(prev => prev ? { ...prev, emergency_redacted_fields: updated } : prev);
+
+                      if (careInfo) {
+                        supabase
+                          .from('family_care_info')
+                          .update({ emergency_redacted_fields: updated })
+                          .eq('id', careInfo.id)
+                          .then();
+                      }
+                    }}
+                  />
+                )}
               </div>
             )}
           </div>
