@@ -14,7 +14,15 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite');
+  const errorFromUrl = searchParams.get('error');
   const supabase = createClient();
+
+  // Show error from URL if present
+  useEffect(() => {
+    if (errorFromUrl) {
+      setError(decodeURIComponent(errorFromUrl));
+    }
+  }, [errorFromUrl]);
 
   // Calculate form validity and button opacity
   const isFormValid = useMemo(() => {

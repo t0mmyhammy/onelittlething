@@ -10,7 +10,12 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && data.user) {
+    if (error) {
+      console.error('Auth callback error:', error);
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
+    }
+
+    if (data.user) {
       // Check if user already has a family
       const { data: existingMember } = await supabase
         .from('family_members')
@@ -22,21 +27,24 @@ export async function GET(request: Request) {
       if (!existingMember) {
         const userName = data.user.user_metadata.full_name || data.user.email?.split('@')[0] || 'User';
 
-        // Use database function to create family and add member atomically
-        const { error: familyError } = await supabase
-          .rpc('create_family_with_member', {
-            family_name: `${userName}'s Family`,
-            member_user_id: data.user.id
-          });
+        try {
+          // Use database function to create family and add member atomically
+          const { data: familyId, error: familyError } = await supabase
+            .rpc('create_family_with_member', {
+              family_name: `${userName}'s Family`,
+              member_user_id: data.user.id
+            });
 
-        if (familyError) {
-          console.error('Failed to create family:', familyError);
+          if (familyError) {
+            console.error('Failed to create family:', familyError);
+            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Database error: ${familyError.message}`)}`);
+          }
+
+          console.log('Family created successfully:', familyId);
+        } catch (err: any) {
+          console.error('Exception creating family:', err);
+          return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Setup error: ${err.message}`)}`);
         }
-
-        // Create user preferences (optional)
-        await supabase.from('user_preferences').insert({
-          user_id: data.user.id,
-        });
       }
     }
   }
