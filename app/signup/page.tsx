@@ -47,19 +47,33 @@ function SignupForm() {
       if (data.user) {
         console.log('Creating family for user:', data.user.id);
 
-        // Use database function to create family and add member atomically
-        const { data: familyId, error: familyError } = await supabase
-          .rpc('create_family_with_member', {
-            family_name: `${fullName}'s Family`,
-            member_user_id: data.user.id
-          });
+        // Create family directly
+        const { data: family, error: familyError } = await supabase
+          .from('families')
+          .insert({ name: `${fullName}'s Family` })
+          .select('id')
+          .single();
 
         if (familyError) {
           console.error('Family creation error:', familyError);
           throw new Error(`Failed to create family: ${familyError.message}`);
         }
 
-        console.log('Family created:', familyId);
+        // Add user as family member
+        const { error: memberError } = await supabase
+          .from('family_members')
+          .insert({
+            family_id: family.id,
+            user_id: data.user.id,
+            role: 'parent'
+          });
+
+        if (memberError) {
+          console.error('Member creation error:', memberError);
+          throw new Error(`Failed to add family member: ${memberError.message}`);
+        }
+
+        console.log('Family created:', family.id);
 
         // Create default user preferences
         const { error: prefsError } = await supabase

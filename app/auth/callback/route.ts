@@ -34,19 +34,38 @@ export async function GET(request: Request) {
         const userName = data.user.user_metadata.full_name || data.user.email?.split('@')[0] || 'User';
 
         try {
-          // Use database function to create family and add member atomically
-          const { data: familyId, error: familyError } = await supabase
-            .rpc('create_family_with_member', {
-              family_name: `${userName}'s Family`,
-              member_user_id: data.user.id
-            });
+          // Create family directly
+          const { data: family, error: familyError } = await supabase
+            .from('families')
+            .insert({ name: `${userName}'s Family` })
+            .select('id')
+            .single();
 
           if (familyError) {
             console.error('Failed to create family:', familyError);
             return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Database error: ${familyError.message}`)}`);
           }
 
-          console.log('Family created successfully:', familyId);
+          // Add user as family member
+          const { error: memberError } = await supabase
+            .from('family_members')
+            .insert({
+              family_id: family.id,
+              user_id: data.user.id,
+              role: 'parent'
+            });
+
+          if (memberError) {
+            console.error('Failed to add family member:', memberError);
+            return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Member error: ${memberError.message}`)}`);
+          }
+
+          // Create user preferences
+          await supabase.from('user_preferences').insert({
+            user_id: data.user.id,
+          });
+
+          console.log('Family created successfully:', family.id);
         } catch (err: any) {
           console.error('Exception creating family:', err);
           return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Setup error: ${err.message}`)}`);
