@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { User, Baby, Home, FileText, Share2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import ChildCareInfoTab from './care-info/ChildCareInfoTab';
-import FamilyCareInfoTab from './care-info/FamilyCareInfoTab';
+import ChildCareInfoTabV2 from './care-info/ChildCareInfoTabV2';
+import FamilyCareInfoTabV2 from './care-info/FamilyCareInfoTabV2';
 import ShareModal from './care-info/ShareModal';
 
 interface Child {
@@ -228,7 +228,7 @@ export default function CareInfoPageClient({
       {/* Tab Content Area */}
       <div className="mt-6">
         {activeTab === 'family' ? (
-        <FamilyCareInfoTab
+        <FamilyCareInfoTabV2
           familyId={familyId}
           familyCareInfo={familyCareInfo}
           onUpdate={(updated) => setFamilyCareInfo(updated)}
@@ -241,7 +241,7 @@ export default function CareInfoPageClient({
           const careInfo = childCareInfo.find(i => i.child_id === selectedChild.id);
 
           return (
-            <ChildCareInfoTab
+            <ChildCareInfoTabV2
               child={selectedChild}
               careInfo={careInfo}
               onUpdate={(updated) => {

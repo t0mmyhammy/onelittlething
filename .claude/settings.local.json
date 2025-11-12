@@ -43,7 +43,8 @@
       "Bash(basename:*)",
       "Bash(npx supabase:*)",
       "Bash(pgrep:*)",
-      "Bash(supabase db push:*)"
+      "Bash(supabase db push:*)",
+      "Bash(not filling out government paperwork.\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
