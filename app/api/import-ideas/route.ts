@@ -123,34 +123,51 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
     {
       "name": "Item Name",
       "category": "Category (e.g., Clothing, Toys, Books, etc.)",
-      "size": "Size if mentioned, otherwise ${childSizes?.shirt_size || childSizes?.pants_size || 'null'}",
+      "size": "Size if explicitly mentioned OR if clothing/shoes use ${childSizes?.shirt_size || childSizes?.pants_size || 'null'}, otherwise null",
       "brand": "Brand if mentioned, otherwise null",
-      "notes": "Any additional details, colors, or notes from the original text"
+      "url": "Product URL if found in the text, otherwise null",
+      "notes": "Any additional details, colors, or notes from the original text (excluding URLs)"
     }
   ]
 }
 
 ## Guidelines:
-1. **EXTRACT ALL DETAILS**: Look for sizes, brands, colors, materials in each line
+1. **EXTRACT ALL DETAILS**: Look for sizes, brands, colors, materials, and URLs in each line
 2. Each line (or logical item) becomes one idea object
 3. If multiple items are on one line, split them into separate objects
 4. ${childGender ? `Consider that ${childName} is ${childGender === 'boy' ? 'a boy' : 'a girl'} when categorizing items` : ''}
-5. Use the provided sizes as defaults if not specified in the text
-6. Categories should be general: Clothing, Toys, Books, Shoes, Accessories, etc.
-7. Be smart about parsing - handle bullet points, dashes, commas, or numbered lists
-8. If brand is mentioned anywhere in the line, extract it
-9. Put extra details (colors, materials, specific notes) in the "notes" field
-10. Clean up the item name to be concise (e.g., "Winter jacket - size 4T" → name: "Winter jacket", size: "4T")
+5. **IMPORTANT - SIZE LOGIC**:
+   - If size is explicitly mentioned in the text, use it
+   - If item is Clothing, Shoes, or Accessories AND no size mentioned, use the child's size (${childSizes?.shirt_size || childSizes?.pants_size || 'null'})
+   - For Toys, Books, Games, or other non-clothing items, size should be null
+6. **URL EXTRACTION**:
+   - Look for any URLs (http://, https://, www.) in the text
+   - Extract the URL and place it in the "url" field
+   - Remove the URL from other fields (name, notes)
+7. Categories should be general: Clothing, Toys, Books, Shoes, Accessories, Games, etc.
+8. Be smart about parsing - handle bullet points, dashes, commas, or numbered lists
+9. If brand is mentioned anywhere in the line, extract it
+10. Put extra details (colors, materials, specific notes) in the "notes" field
+11. Clean up the item name to be concise (e.g., "Winter jacket - size 4T" → name: "Winter jacket", size: "4T")
 
 Examples:
 Input: "Winter jacket - size 4T, waterproof"
-Output: { "name": "Winter jacket", "category": "Clothing", "size": "4T", "brand": null, "notes": "waterproof" }
+Output: { "name": "Winter jacket", "category": "Clothing", "size": "4T", "brand": null, "url": null, "notes": "waterproof" }
 
 Input: "Carter's fleece pajamas"
-Output: { "name": "Fleece pajamas", "category": "Clothing", "size": "${childSizes?.shirt_size || '4T'}", "brand": "Carter's", "notes": null }
+Output: { "name": "Fleece pajamas", "category": "Clothing", "size": "${childSizes?.shirt_size || '4T'}", "brand": "Carter's", "url": null, "notes": null }
 
 Input: "Red mittens, size 2-4"
-Output: { "name": "Mittens", "category": "Accessories", "size": "2-4", "brand": null, "notes": "red" }
+Output: { "name": "Mittens", "category": "Accessories", "size": "2-4", "brand": null, "url": null, "notes": "red" }
+
+Input: "LEGO Classic set https://www.amazon.com/dp/B0BX7CJZW9"
+Output: { "name": "LEGO Classic set", "category": "Toys", "size": null, "brand": "LEGO", "url": "https://www.amazon.com/dp/B0BX7CJZW9", "notes": null }
+
+Input: "Goodnight Moon book"
+Output: { "name": "Goodnight Moon", "category": "Books", "size": null, "brand": null, "url": null, "notes": null }
+
+Input: "Nike sneakers size 10 - https://www.target.com/p/kids-sneakers/A-12345"
+Output: { "name": "Nike sneakers", "category": "Shoes", "size": "10", "brand": "Nike", "url": "https://www.target.com/p/kids-sneakers/A-12345", "notes": null }
 
 Return ONLY the JSON object, nothing else.`;
 }

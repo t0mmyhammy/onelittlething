@@ -275,12 +275,22 @@ export default function IdeasTab({ childId, childName, childGender, inventoryIte
       });
 
     if (!error) {
-      showToast(`Added "${item.item_name}" to wishlist!`);
+      // Delete the item from inventory_items since it's now in the wishlist
+      await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', item.id);
+
+      // Remove from local state
+      setItems(prev => prev.filter(i => i.id !== item.id));
+
+      showToast(`Moved "${item.item_name}" to wishlist!`);
+
       // Trigger data refresh in parent component
       if (onDataChanged) {
         onDataChanged();
       }
-      // Don't remove from ideas - keep it here
+
       // Call parent callback to switch to wishlist tab
       if (onSwitchToWishlist) {
         setTimeout(() => {
@@ -615,17 +625,30 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
       const { data: { user } } = await supabase.auth.getUser();
 
       // Insert all parsed ideas
-      const newIdeas = data.ideas.map((idea: any) => ({
-        child_id: childId,
-        item_name: idea.name,
-        category: idea.category || 'General',
-        brand: idea.brand || null,
-        size: idea.size || null,
-        notes: idea.notes || null,
-        state: 'idea' as const,
-        next_size_up: false,
-        created_by: user?.id,
-      }));
+      const newIdeas = data.ideas.map((idea: any) => {
+        // Format notes with URL if provided
+        let formattedNotes = idea.notes || '';
+        if (idea.url) {
+          const linkText = idea.url.includes('amazon') ? 'Amazon' :
+                          idea.url.includes('target') ? 'Target' :
+                          idea.url.includes('walmart') ? 'Walmart' :
+                          'Product Link';
+          const urlLink = `[${linkText}](${idea.url})`;
+          formattedNotes = formattedNotes ? `${formattedNotes}\n${urlLink}` : urlLink;
+        }
+
+        return {
+          child_id: childId,
+          item_name: idea.name,
+          category: idea.category || 'General',
+          brand: idea.brand || null,
+          size: idea.size || null,
+          notes: formattedNotes || null,
+          state: 'idea' as const,
+          next_size_up: false,
+          created_by: user?.id,
+        };
+      });
 
       const { data: inserted, error } = await supabase
         .from('inventory_items')
