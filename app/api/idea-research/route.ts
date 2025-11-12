@@ -158,15 +158,20 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 
 ## Guidelines:
 1. TLDR should be concise, friendly, and helpful - like advice from a friend
-2. Recommend 3-5 specific, real products
+2. Recommend 3-5 specific, real products that actually exist
 ${hasExistingNotes && researchFocus ? '3. DO NOT recommend products already mentioned in previous research - find DIFFERENT options' : '3. Include realistic price ranges (e.g., "$25-35", "$50")'}
 4. List 3-4 key features for each product
-5. IMPORTANT: Include a real, working Amazon URL for each product (use amazon.com search URLs like https://www.amazon.com/s?k=product+name or direct product links if you know them)
-6. Focus on popular, well-reviewed options
+5. **CRITICAL**: Each product MUST have a direct Amazon product page URL, not a search URL
+   - Use format: https://www.amazon.com/dp/ASIN or https://www.amazon.com/product-name/dp/ASIN
+   - DO NOT use search URLs like /s?k=
+   - The URL must go directly to the product detail page
+   - If you don't know the exact ASIN, construct the most likely product page URL based on the product name and brand
+   - Example: https://www.amazon.com/Nike-Revolution-Running-Black-White/dp/B08N5WRWNW
+6. Focus on popular, well-reviewed, currently available products
 7. If brand specified, prioritize that brand but include alternatives
-8. Consider the child's age and appropriate products
+8. Consider the child's age and appropriate products for their developmental stage
 9. If special considerations are provided, factor those into your recommendations
-10. Focus on value and quality
+10. Focus on value and quality - recommend products you would actually buy
 
 Return ONLY the JSON object, nothing else.`;
 }

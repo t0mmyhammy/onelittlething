@@ -364,34 +364,45 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
   const handleAddSelectedProducts = async () => {
     if (!aiModal.item || aiModal.selectedProducts.length === 0) return;
 
+    const { data: { user } } = await supabase.auth.getUser();
+
     // Get selected products with AI-generated URLs
     const selectedProds = aiModal.selectedProducts.map(index => aiModal.products[index]);
 
-    // Build formatted notes with all selected products and hyperlinks
-    const productNotes = selectedProds.map(product => {
+    // Create a separate idea card for each selected product
+    const newIdeas = selectedProds.map(product => {
       const productName = product.brand ? `${product.name} by ${product.brand}` : product.name;
       const nameWithLink = product.url ? `[${productName}](${product.url})` : productName;
 
-      return `${nameWithLink}
+      const productNotes = `${nameWithLink}
 Price: ${product.price}
 
 Key Features:
 ${product.features.map(f => `• ${f}`).join('\n')}`;
-    }).join('\n\n---\n\n');
 
-    const { error } = await supabase
-      .from('inventory_items')
-      .update({
+      return {
+        child_id: childId,
+        item_name: product.name,
+        category: aiModal.item?.category || 'General',
+        brand: product.brand || null,
+        size: aiModal.item?.size || null,
         notes: productNotes,
-      })
-      .eq('id', aiModal.item.id);
+        state: 'idea' as const,
+        next_size_up: false,
+        created_by: user?.id,
+      };
+    });
 
-    if (!error) {
-      setItems(prev => prev.map(i =>
-        i.id === aiModal.item?.id ? { ...i, notes: productNotes } : i
-      ));
+    // Insert all new idea cards
+    const { data, error } = await supabase
+      .from('inventory_items')
+      .insert(newIdeas)
+      .select();
+
+    if (!error && data) {
+      setItems(prev => [...data, ...prev]);
       setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] });
-      showToast(`${selectedProds.length} product${selectedProds.length > 1 ? 's' : ''} added to idea!`);
+      showToast(`${selectedProds.length} product${selectedProds.length > 1 ? 's' : ''} added as separate idea cards!`);
     }
   };
 
@@ -958,7 +969,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                       className="flex-1 px-4 py-2.5 bg-[#7B6CF6] text-white rounded-lg hover:bg-[#6759F5] font-medium transition-all flex items-center justify-center gap-2"
                     >
                       <Check className="w-4 h-4" />
-                      Add to Notes ({aiModal.selectedProducts.length})
+                      Create {aiModal.selectedProducts.length} Idea Card{aiModal.selectedProducts.length > 1 ? 's' : ''}
                     </button>
                   )}
                   <button
