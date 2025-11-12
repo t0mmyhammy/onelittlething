@@ -59,7 +59,6 @@ export default function HomeBaseSection({
                 onChange={(e) => onUpdate('city', e.target.value)}
                 placeholder="San Francisco"
                 className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
-                readOnly
               />
             </div>
             <div>
@@ -70,7 +69,6 @@ export default function HomeBaseSection({
                 onChange={(e) => onUpdate('state', e.target.value)}
                 placeholder="CA"
                 className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
-                readOnly
               />
             </div>
             <div>
@@ -81,7 +79,6 @@ export default function HomeBaseSection({
                 onChange={(e) => onUpdate('zip_code', e.target.value)}
                 placeholder="94102"
                 className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
-                readOnly
               />
             </div>
           </div>
