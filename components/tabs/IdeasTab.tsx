@@ -135,6 +135,7 @@ export default function IdeasTab({ childId, childName, childGender, inventoryIte
   const [addedCount, setAddedCount] = useState(0);
   const [importText, setImportText] = useState('');
   const [importLoading, setImportLoading] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Update items when child changes or inventoryItems prop changes
@@ -635,13 +636,21 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
         setItems(prev => [...inserted, ...prev]);
         setImportText('');
         setAddedCount(prev => prev + inserted.length);
-        showToast(`Imported ${inserted.length} ideas!`);
-        setActiveTab('ai'); // Switch back to AI tab
+
+        // Show success celebration
+        setImportLoading(false);
+        setImportSuccess(true);
+
+        // After celebrating, switch back to AI tab
+        setTimeout(() => {
+          setImportSuccess(false);
+          setActiveTab('ai');
+          showToast(`Imported ${inserted.length} ideas!`);
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Import error:', error);
       alert('Failed to import ideas. Please try again.');
-    } finally {
       setImportLoading(false);
     }
   };
@@ -1093,7 +1102,14 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
           {/* Loading State */}
           {importLoading && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <AILoadingScreen itemName="your list" />
+              <AILoadingScreen itemName="your list" type="import" />
+            </div>
+          )}
+
+          {/* Success State */}
+          {importSuccess && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <AILoadingScreen itemName="your list" type="import" showSuccess={true} />
             </div>
           )}
         </div>

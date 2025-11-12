@@ -6,6 +6,7 @@ import { Wand2, Sparkles } from 'lucide-react';
 interface AILoadingScreenProps {
   itemName?: string;
   showSuccess?: boolean;
+  type?: 'default' | 'import';
 }
 
 const loadingMessages = [
@@ -19,6 +20,15 @@ const loadingMessages = [
   "Gathering ideas for you...",
 ];
 
+const importMessages = [
+  "Reading your list...",
+  "Understanding each item...",
+  "Extracting details...",
+  "Organizing information...",
+  "Creating cards...",
+  "Almost there...",
+];
+
 const funFacts = [
   "Did you know most 4T sizes last about 6 months?",
   "Machine washable > everything else.",
@@ -26,7 +36,8 @@ const funFacts = [
   "Quality basics last through multiple kids.",
 ];
 
-export default function AILoadingScreen({ itemName, showSuccess = false }: AILoadingScreenProps) {
+export default function AILoadingScreen({ itemName, showSuccess = false, type = 'default' }: AILoadingScreenProps) {
+  const messages = type === 'import' ? importMessages : loadingMessages;
   const [messageIndex, setMessageIndex] = useState(0);
   const [showFact, setShowFact] = useState(false);
   const [factIndex] = useState(Math.floor(Math.random() * funFacts.length));
@@ -36,7 +47,7 @@ export default function AILoadingScreen({ itemName, showSuccess = false }: AILoa
   // Rotate loading messages every 2 seconds
   useEffect(() => {
     const messageTimer = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % loadingMessages.length);
+      setMessageIndex(prev => (prev + 1) % messages.length);
     }, 2000);
 
     // Show fun fact after 5 seconds
@@ -87,17 +98,17 @@ export default function AILoadingScreen({ itemName, showSuccess = false }: AILoa
             <Sparkles className="w-8 h-8 text-white animate-pulse" />
           </div>
           {/* Success sparkles burst */}
-          {[...Array(8)].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <div
               key={i}
               className="absolute top-1/2 left-1/2 pointer-events-none"
               style={{
-                transform: `translate(-50%, -50%) rotate(${i * 45}deg)`,
+                transform: `translate(-50%, -50%) rotate(${i * 30}deg)`,
               }}
             >
               <Sparkles
                 className="text-[#A094F7] animate-sparkle-burst"
-                size={12}
+                size={type === 'import' ? 16 : 12}
                 style={{
                   animationDelay: `${i * 50}ms`,
                 }}
@@ -105,9 +116,14 @@ export default function AILoadingScreen({ itemName, showSuccess = false }: AILoa
             </div>
           ))}
         </div>
-        <p className="text-lg font-semibold text-gray-900 animate-bounce-in">
-          Found a few great options!
+        <p className="text-lg font-semibold text-gray-900 animate-bounce-in mb-2">
+          {type === 'import' ? '🎉 Cards created!' : 'Found a few great options!'}
         </p>
+        {type === 'import' && (
+          <p className="text-sm text-gray-600 animate-fade-in-delay">
+            Your list has been turned into individual cards
+          </p>
+        )}
       </div>
     );
   }
@@ -185,7 +201,7 @@ export default function AILoadingScreen({ itemName, showSuccess = false }: AILoa
           key={messageIndex}
           className="text-base font-medium text-gray-700 text-center animate-fade-in"
         >
-          {loadingMessages[messageIndex]}
+          {messages[messageIndex]}
         </p>
       </div>
 
@@ -263,6 +279,10 @@ export default function AILoadingScreen({ itemName, showSuccess = false }: AILoa
 
         .animate-fade-in {
           animation: fade-in 300ms ease-in-out;
+        }
+
+        .animate-fade-in-delay {
+          animation: fade-in 500ms ease-in-out 200ms both;
         }
 
         .animate-bounce-in {
