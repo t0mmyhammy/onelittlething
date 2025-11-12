@@ -87,9 +87,17 @@ export default function RoutinesSection({
       {/* Naps */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Nap schedule
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Nap schedule
+            </label>
+            <InfoTooltip
+              title="Nap Guidelines"
+              cdcGuidelines={getFieldGuideline('naps', ageInMonths) || undefined}
+              parentingTips={getParentingTips('naps') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('naps')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -113,9 +121,17 @@ export default function RoutinesSection({
       {/* Meals */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Meal times & preferences
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Meal times & preferences
+            </label>
+            <InfoTooltip
+              title="Feeding Guidelines"
+              cdcGuidelines={getFieldGuideline('meals', ageInMonths) || undefined}
+              parentingTips={getParentingTips('meals') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('meals')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -139,9 +155,17 @@ export default function RoutinesSection({
       {/* Bedtime */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Bedtime
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Bedtime
+            </label>
+            <InfoTooltip
+              title="Bedtime Guidelines"
+              cdcGuidelines={getFieldGuideline('bedtime', ageInMonths) || undefined}
+              parentingTips={getParentingTips('bedtime') || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('bedtime')}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -197,9 +221,17 @@ export default function RoutinesSection({
           {/* Screen Time */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Screen time rules
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Screen time rules
+                </label>
+                <InfoTooltip
+                  title="Screen Time Guidelines"
+                  cdcGuidelines={getFieldGuideline('screen_time', ageInMonths) || undefined}
+                  parentingTips={getParentingTips('screen_time') || undefined}
+                  ageInMonths={ageInMonths}
+                />
+              </div>
               <button
                 onClick={() => onRedactionToggle('screen_time')}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
