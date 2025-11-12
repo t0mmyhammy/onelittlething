@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     }
 
     // Build prompt for idea generation
+    const hasRetailerRestriction = favoriteRetailers && favoriteRetailers.length > 0;
     const systemPrompt = buildIdeaGenerationPrompt(
       prompt,
       childName,
@@ -55,11 +56,11 @@ export async function POST(req: Request) {
         },
         {
           role: 'user',
-          content: `Generate 4-6 idea recommendations for: ${prompt}`,
+          content: `Search ${hasRetailerRestriction ? `ONLY these retailers: ${favoriteRetailers.join(', ')}` : 'the web'} now for: ${prompt}. Find 4-6 specific, currently available products for ${childName}. Return results as JSON with this structure: {"ideas": [{"name": "Product Name", "category": "Category", "size": "Size", "brand": "Brand", "rationale": "Why it's good", "url": "Direct product URL"}]}`,
         },
       ],
       temperature: 0.4,
-      max_tokens: 1200,
+      max_tokens: 1500,
     });
 
     const content = response.choices[0]?.message?.content || '';
@@ -89,8 +90,12 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error('Idea generation API error:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+        details: error.response?.data || error.toString()
+      }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -107,49 +112,31 @@ function buildIdeaGenerationPrompt(
   favoriteRetailers: string[] | null
 ): string {
   const hasRetailerRestriction = favoriteRetailers && favoriteRetailers.length > 0;
+  const defaultSize = childSizes?.shirt_size || childSizes?.pants_size || '4T';
 
-  return `You are a helpful shopping assistant specializing in finding great ideas for children. ${hasRetailerRestriction ? `You must ONLY search the following retailers: ${favoriteRetailers.join(', ')}.` : 'You can search any retailer to find the best options.'}
+  return `You are a shopping assistant finding products for children.
 
-## Task:
-Based on the user's request, generate 4-6 specific, actionable product ideas with real product recommendations.
+Context:
+- Child: ${childName}${childGender ? ` (${childGender})` : ''}
+- Sizes: ${[childSizes?.shirt_size, childSizes?.pants_size, childSizes?.shoe_size].filter(Boolean).join(', ') || 'Not specified'}
 
-## Context:
-- For: ${childName}${childGender ? ` (${childGender})` : ''}
-${childSizes?.shirt_size ? `- Shirt Size: ${childSizes.shirt_size}` : ''}
-${childSizes?.pants_size ? `- Pants Size: ${childSizes.pants_size}` : ''}
-${childSizes?.shoe_size ? `- Shoe Size: ${childSizes.shoe_size}` : ''}
-${hasRetailerRestriction ? `- Preferred Retailers: ${favoriteRetailers.join(', ')}` : ''}
-
-## Response Format:
-Return ONLY a JSON object with this exact structure (no markdown, no code blocks):
+Instructions:
+1. Search the web for 4-6 specific, real products
+2. ${childGender ? `Find products appropriate for ${childGender === 'boy' ? 'boys' : 'girls'}` : 'Find age-appropriate products'}
+3. Include real product URLs from your search results
+4. Vary your recommendations (different types, brands, retailers)
+5. Return ONLY valid JSON (no markdown, no code blocks):
 
 {
   "ideas": [
     {
-      "name": "Specific Product or Item Name",
-      "category": "Category (e.g., Clothing, Toys, Books, etc.)",
-      "size": "${childSizes?.shirt_size || childSizes?.pants_size || '4T'}",
-      "brand": "Brand Name (if applicable)",
-      "rationale": "Brief 1-sentence explanation of why this is a good fit",
-      "url": "https://www.retailer.com/direct-product-url"
+      "name": "Product Name",
+      "category": "Category",
+      "size": "${defaultSize}",
+      "brand": "Brand",
+      "rationale": "Why it's good (1 sentence)",
+      "url": "https://retailer.com/product-url"
     }
   ]
-}
-
-## Guidelines:
-1. **USE YOUR WEB SEARCH**: ${hasRetailerRestriction ? `Search ONLY ${favoriteRetailers.join(', ')}` : 'Search across ALL retailers for the best options'}
-2. Focus on specific, real products that are currently available
-3. ${childGender ? `**GENDER-APPROPRIATE**: The child is ${childGender === 'boy' ? 'a boy' : 'a girl'}. Recommend products appropriate for ${childGender === 'boy' ? 'boys' : 'girls'}.` : 'Consider age-appropriate products'}
-4. Include size information when relevant (use provided sizes or infer from context)
-5. Rationale should be concise and friendly - explain why it's a good choice
-6. **CRITICAL - REAL URLs**: Extract ACTUAL product page URLs from search results
-   - Must be direct links to product pages
-   - Examples of GOOD URLs: https://www.target.com/p/product-name/A-12345, https://www.amazon.com/dp/B0BX7CJZW9
-   - Do NOT include category pages or search URLs
-7. Vary your recommendations - different types, brands, styles
-8. ${hasRetailerRestriction ? `**STRICT**: Only recommend products from ${favoriteRetailers.join(', ')}` : 'Include a mix of well-known and specialty retailers when appropriate'}
-9. Provide 4-6 ideas (not more, not less)
-10. Be specific - "Carter's Fleece Hoodie" not just "hoodie"
-
-Return ONLY the JSON object, nothing else.`;
+}`;
 }

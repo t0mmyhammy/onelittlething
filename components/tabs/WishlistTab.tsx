@@ -29,11 +29,12 @@ interface WishlistTabProps {
   childName: string;
   shoppingItems: ShoppingItem[];
   familyId: string;
+  onDataChanged?: () => void;
 }
 
 type FilterType = 'active' | 'reserved' | 'purchased' | 'archived';
 
-export default function WishlistTab({ childId, childName, shoppingItems, familyId }: WishlistTabProps) {
+export default function WishlistTab({ childId, childName, shoppingItems, familyId, onDataChanged }: WishlistTabProps) {
   const supabase = createClient();
   const [filter, setFilter] = useState<FilterType>('active');
   const [items, setItems] = useState<ShoppingItem[]>(
@@ -43,6 +44,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       archived: item.archived || false,
     }))
   );
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<{
     item_name: string;
@@ -310,6 +312,10 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           i.id === itemId ? { ...i, archived: true } : i
         ));
         setShowActionsId(null);
+        // Trigger data refresh in parent component
+        if (onDataChanged) {
+          onDataChanged();
+        }
         // Show success feedback
         alert('Item moved to Ideas!');
       }

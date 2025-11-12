@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Ruler, Lightbulb, Gift, Share2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import ChildProfileBar from './ChildProfileBar';
 import SizesTab from './tabs/SizesTab';
 import IdeasTab from './tabs/IdeasTab';
@@ -77,14 +78,41 @@ export default function SizesPageNew({
   shoppingItems,
   familyId,
 }: SizesPageNewProps) {
+  const supabase = createClient();
   const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id || '');
   const [activeTab, setActiveTab] = useState<TabType>('sizes');
   const [showShareModal, setShowShareModal] = useState(false);
 
+  // Local state for data that can be refreshed
+  const [localInventoryItems, setLocalInventoryItems] = useState<InventoryItem[]>(inventoryItems);
+  const [localShoppingItems, setLocalShoppingItems] = useState<ShoppingItem[]>(shoppingItems);
+
+  // Refresh data function
+  const refreshData = useCallback(async () => {
+    const childIds = children.map(c => c.id);
+
+    // Fetch inventory items
+    const { data: newInventory } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .in('child_id', childIds)
+      .order('category', { ascending: true });
+
+    // Fetch shopping list items
+    const { data: newShopping } = await supabase
+      .from('shopping_list_items')
+      .select('*')
+      .eq('family_id', familyId)
+      .order('created_at', { ascending: false });
+
+    if (newInventory) setLocalInventoryItems(newInventory);
+    if (newShopping) setLocalShoppingItems(newShopping);
+  }, [children, familyId, supabase]);
+
   const selectedChild = children.find(c => c.id === selectedChildId);
   const childSizes = sizes.find(s => s.child_id === selectedChildId) || null;
-  const childInventory = inventoryItems.filter(i => i.child_id === selectedChildId);
-  const childShopping = shoppingItems.filter(i => i.child_id === selectedChildId);
+  const childInventory = localInventoryItems.filter(i => i.child_id === selectedChildId);
+  const childShopping = localShoppingItems.filter(i => i.child_id === selectedChildId);
 
   if (children.length === 0) {
     return (
@@ -194,6 +222,7 @@ export default function SizesPageNew({
               childSizes={childSizes}
               familyId={familyId}
               onSwitchToWishlist={() => setActiveTab('wishlist')}
+              onDataChanged={refreshData}
             />
           )}
           {activeTab === 'wishlist' && (
@@ -202,6 +231,7 @@ export default function SizesPageNew({
               childName={selectedChild?.name || ''}
               shoppingItems={childShopping}
               familyId={familyId}
+              onDataChanged={refreshData}
             />
           )}
         </div>

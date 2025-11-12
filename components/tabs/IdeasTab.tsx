@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, ExternalLink, Settings, Gift } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, ExternalLink, Settings, Gift, Upload, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import AILoadingScreen from '@/components/AILoadingScreen';
 
@@ -34,6 +34,7 @@ interface IdeasTabProps {
   childSizes: ChildSize | null;
   familyId: string;
   onSwitchToWishlist?: () => void;
+  onDataChanged?: () => void;
 }
 
 // Helper component to render notes with clickable links
@@ -71,7 +72,7 @@ const NotesDisplay = ({ notes }: { notes: string }) => {
   );
 };
 
-export default function IdeasTab({ childId, childName, childGender, inventoryItems, childSizes, familyId, onSwitchToWishlist }: IdeasTabProps) {
+export default function IdeasTab({ childId, childName, childGender, inventoryItems, childSizes, familyId, onSwitchToWishlist, onDataChanged }: IdeasTabProps) {
   const supabase = createClient();
   const [items, setItems] = useState<IdeaItem[]>(inventoryItems);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -118,7 +119,7 @@ export default function IdeasTab({ childId, childName, childGender, inventoryIte
   const [settingsModal, setSettingsModal] = useState(false);
   const [favoriteRetailers, setFavoriteRetailers] = useState<string[]>([]);
   const [newRetailer, setNewRetailer] = useState('');
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'import'>('ai');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResults, setAiResults] = useState<Array<{
     id: string;
@@ -132,6 +133,9 @@ export default function IdeasTab({ childId, childName, childGender, inventoryIte
   }>>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
+  const [importText, setImportText] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -271,6 +275,10 @@ export default function IdeasTab({ childId, childName, childGender, inventoryIte
 
     if (!error) {
       showToast(`Added "${item.item_name}" to wishlist!`);
+      // Trigger data refresh in parent component
+      if (onDataChanged) {
+        onDataChanged();
+      }
       // Don't remove from ideas - keep it here
       // Call parent callback to switch to wishlist tab
       if (onSwitchToWishlist) {
@@ -578,6 +586,125 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
     }
   };
 
+  const handleImport = async () => {
+    if (!importText.trim()) {
+      alert('Please paste your list');
+      return;
+    }
+
+    setImportLoading(true);
+
+    try {
+      const response = await fetch('/api/import-ideas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: importText.trim(),
+          childName,
+          childGender,
+          childSizes,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import ideas');
+      }
+
+      const data = await response.json();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Insert all parsed ideas
+      const newIdeas = data.ideas.map((idea: any) => ({
+        child_id: childId,
+        item_name: idea.name,
+        category: idea.category || 'General',
+        brand: idea.brand || null,
+        size: idea.size || null,
+        notes: idea.notes || null,
+        state: 'idea' as const,
+        next_size_up: false,
+        created_by: user?.id,
+      }));
+
+      const { data: inserted, error } = await supabase
+        .from('inventory_items')
+        .insert(newIdeas)
+        .select();
+
+      if (!error && inserted) {
+        setItems(prev => [...inserted, ...prev]);
+        setImportText('');
+        setAddedCount(prev => prev + inserted.length);
+        showToast(`Imported ${inserted.length} ideas!`);
+        setActiveTab('ai'); // Switch back to AI tab
+      }
+    } catch (error: any) {
+      console.error('Import error:', error);
+      alert('Failed to import ideas. Please try again.');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleBulkMoveToWishlist = async () => {
+    if (selectedItems.size === 0) return;
+
+    const selectedItemsArray = Array.from(selectedItems);
+    const itemsToMove = items.filter(i => selectedItemsArray.includes(i.id));
+
+    for (const item of itemsToMove) {
+      await supabase
+        .from('shopping_list_items')
+        .insert({
+          child_id: childId,
+          family_id: familyId,
+          item_name: item.item_name,
+          category: item.category,
+          size: item.size,
+          brand: item.brand,
+          notes: item.notes,
+          is_completed: false,
+          status: 'idle',
+          archived: false,
+        });
+    }
+
+    setSelectedItems(new Set());
+    showToast(`Moved ${itemsToMove.length} items to wishlist!`);
+
+    // Trigger data refresh in parent component
+    if (onDataChanged) {
+      onDataChanged();
+    }
+
+    // Optionally switch to wishlist tab
+    if (onSwitchToWishlist) {
+      setTimeout(() => {
+        onSwitchToWishlist();
+      }, 1500);
+    }
+  };
+
+  const toggleSelectItem = (itemId: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map(i => i.id)));
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -595,7 +722,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-[22px] font-semibold text-gray-900">{childName}'s Ideas</h2>
-          <p className="text-[15px] text-gray-600 mt-1">Start with AI or add something by hand.</p>
+          <p className="text-[15px] text-gray-600 mt-1">Search with AI, import a list, or add manually.</p>
         </div>
         <button
           onClick={() => setSettingsModal(true)}
@@ -616,7 +743,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             }`}
           >
             <Wand2 className="w-4 h-4 inline-block mr-2 mb-0.5" />
-            Get Ideas with AI
+            Get Ideas
             {activeTab === 'ai' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B6CF6] transition-all duration-250 ease-in-out" />
             )}
@@ -630,6 +757,18 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             <Plus className="w-4 h-4 inline-block mr-2 mb-0.5" />
             Add Manually
             {activeTab === 'manual' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B6CF6] transition-all duration-250 ease-in-out" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('import')}
+            className={`pb-3 text-[16px] font-medium transition-colors relative ${
+              activeTab === 'import' ? 'text-[#7B6CF6]' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Upload className="w-4 h-4 inline-block mr-2 mb-0.5" />
+            Import List
+            {activeTab === 'import' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#7B6CF6] transition-all duration-250 ease-in-out" />
             )}
           </button>
@@ -665,7 +804,10 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
         <>
         {/* AI Composer */}
         <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-6">
-          <h3 className="text-[20px] font-semibold text-gray-900 mb-4">What are you looking for?</h3>
+          <div className="mb-4">
+            <h3 className="text-[20px] font-semibold text-gray-900">What are you looking for?</h3>
+            <p className="text-[14px] text-gray-500 mt-1">AI will search the web for specific product recommendations</p>
+          </div>
 
           {/* Prompt Input */}
           <textarea
@@ -673,39 +815,18 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             onChange={(e) => setAiPrompt(e.target.value)}
             placeholder="warm winter outfits for daycare"
             rows={3}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7B6CF6] focus:border-transparent text-[15px] resize-none"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7B6CF6] focus:border-transparent text-[15px] resize-none mb-4"
           />
 
-          {/* Quick Chips */}
-          <div className="flex flex-wrap gap-2 mt-3 mb-4">
-            {['clothing', 'shoes', 'outerwear', 'books', 'toys'].map(chip => (
-              <button
-                key={chip}
-                onClick={() => setAiPrompt(prev => prev ? `${prev} ${chip}` : chip)}
-                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-[12px] font-medium text-gray-700 transition-colors"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-
           {/* Actions */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleGenerateIdeas}
-              disabled={!aiPrompt.trim() || aiLoading}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#7B6CF6] hover:bg-[#6759F5] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Wand2 className="w-4 h-4" />
-              {aiLoading ? 'Generating...' : 'Generate with AI'}
-            </button>
-            <button
-              onClick={() => {/* TODO: Show examples */}}
-              className="text-[15px] text-[#7B6CF6] hover:text-[#6759F5] font-medium transition-colors"
-            >
-              Try examples
-            </button>
-          </div>
+          <button
+            onClick={handleGenerateIdeas}
+            disabled={!aiPrompt.trim() || aiLoading}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#7B6CF6] hover:bg-[#6759F5] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Wand2 className="w-4 h-4" />
+            {aiLoading ? 'Searching...' : 'Search with AI'}
+          </button>
 
           {/* Loading State */}
           {aiLoading && (
@@ -717,19 +838,27 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
           {/* Empty State - Idea Starters */}
           {!aiLoading && aiResults.length === 0 && !aiPrompt && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-[14px] text-gray-600 mb-3">Try these idea starters:</p>
-              <div className="space-y-2">
+              <p className="text-[14px] font-medium text-gray-700 mb-3">Popular searches:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
-                  'holiday gifts under $40',
-                  'indoor winter play',
-                  'rainy day outfits'
+                  { text: 'Holiday gifts under $40', emoji: '🎁' },
+                  { text: 'Indoor winter activities', emoji: '❄️' },
+                  { text: 'Rainy day outfits', emoji: '☔' },
+                  { text: 'Educational toys', emoji: '🧩' },
+                  { text: 'Summer camp essentials', emoji: '☀️' },
+                  { text: 'Birthday party ideas', emoji: '🎂' }
                 ].map(starter => (
                   <button
-                    key={starter}
-                    onClick={() => setAiPrompt(starter)}
-                    className="block w-full text-left px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-[15px] text-gray-700 transition-colors"
+                    key={starter.text}
+                    onClick={() => {
+                      setAiPrompt(starter.text.toLowerCase());
+                      // Auto-trigger search after short delay so user sees it populate
+                      setTimeout(() => handleGenerateIdeas(), 300);
+                    }}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-[#F5F4FD] border border-gray-200 hover:border-[#7B6CF6] rounded-lg text-[14px] text-gray-700 hover:text-[#7B6CF6] transition-all"
                   >
-                    "{starter}"
+                    <span className="text-lg">{starter.emoji}</span>
+                    <span className="font-medium">{starter.text}</span>
                   </button>
                 ))}
               </div>
@@ -819,7 +948,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
           </div>
         )}
         </>
-      ) : (
+      ) : activeTab === 'manual' ? (
         /* Manual Form */
         <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-6">
           <h3 className="text-[20px] font-semibold text-gray-900 mb-4">Add Manually</h3>
@@ -897,6 +1026,77 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             </div>
           </div>
         </div>
+      ) : (
+        /* Import Interface */
+        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm p-6">
+          <h3 className="text-[20px] font-semibold text-gray-900 mb-4">Import from List</h3>
+          <p className="text-[15px] text-gray-600 mb-4">
+            Paste a list from a Google Sheet, Word doc, or any text. AI will parse it and create individual idea cards.
+          </p>
+
+          {/* Paste Area */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Paste your list here</label>
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder="Winter jacket - size 4T&#10;Rain boots&#10;Fleece pajamas, Carter's brand&#10;Red mittens&#10;...or any format you have"
+              rows={12}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#7B6CF6] focus:border-transparent text-[15px] resize-none font-mono"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Tip: Each line can be an item. Include details like size, brand, or notes - AI will figure it out!
+            </p>
+          </div>
+
+          {/* Example Section */}
+          <div className="bg-[#F5F4FD] border border-[#E8E7F0] rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-2 mb-2">
+              <FileText className="w-4 h-4 text-[#7B6CF6] mt-0.5" />
+              <p className="text-sm font-medium text-gray-900">Example formats that work:</p>
+            </div>
+            <ul className="text-xs text-gray-600 space-y-1 ml-6">
+              <li>• Simple list: "Winter jacket", "Rain boots", "Mittens"</li>
+              <li>• With details: "Winter jacket - size 4T, waterproof"</li>
+              <li>• From spreadsheet: Copy/paste columns directly</li>
+              <li>• Bullet points: "- Item 1", "- Item 2"</li>
+            </ul>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleImport}
+              disabled={!importText.trim() || importLoading}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#7B6CF6] hover:bg-[#6759F5] text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {importLoading ? (
+                <>
+                  <Sparkles className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Import with AI
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setImportText('')}
+              className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+
+          {/* Loading State */}
+          {importLoading && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <AILoadingScreen itemName="your list" />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Banner after adding items */}
@@ -915,12 +1115,50 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
         </div>
       )}
 
+      {/* Bulk Action Bar */}
+      {selectedItems.size > 0 && (
+        <div className="sticky top-4 z-10 p-4 bg-[#7B6CF6] text-white rounded-xl shadow-lg animate-fade-in flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-medium">
+              {selectedItems.size} item{selectedItems.size > 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkMoveToWishlist}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-[#7B6CF6] rounded-lg font-medium hover:bg-gray-100 transition-colors"
+            >
+              <Gift className="w-4 h-4" />
+              Move to Wishlist
+            </button>
+            <button
+              onClick={() => setSelectedItems(new Set())}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg font-medium hover:bg-white/30 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Saved Ideas Header */}
       {items.length > 0 && (
         <div className="flex items-center justify-between">
-          <h3 className="text-[18px] font-semibold text-gray-900">
-            Saved Ideas <span className="text-gray-500 font-normal">({items.length})</span>
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-[18px] font-semibold text-gray-900">
+              Saved Ideas <span className="text-gray-500 font-normal">({items.length})</span>
+            </h3>
+            {items.length > 1 && (
+              <button
+                onClick={toggleSelectAll}
+                className="text-[14px] text-[#7B6CF6] hover:text-[#6759F5] font-medium transition-colors"
+              >
+                {selectedItems.size === items.length ? 'Deselect All' : 'Select All'}
+              </button>
+            )}
+          </div>
           <p className="text-[14px] text-gray-600">Click any card to expand and edit</p>
         </div>
       )}
@@ -940,7 +1178,9 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
             return (
               <div
                 key={item.id}
-                className="border-2 border-sand rounded-2xl bg-white shadow-sm hover:shadow-md transition-all overflow-hidden"
+                className={`border-2 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all overflow-hidden ${
+                  selectedItems.has(item.id) ? 'border-[#7B6CF6] bg-[#F5F4FD]' : 'border-sand'
+                }`}
               >
                 {/* Main card - clickable */}
                 <button
@@ -950,6 +1190,21 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 flex-1">
+                      {/* Checkbox for multi-select */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelectItem(item.id);
+                        }}
+                        className="flex-shrink-0"
+                        title={selectedItems.has(item.id) ? 'Deselect' : 'Select'}
+                      >
+                        {selectedItems.has(item.id) ? (
+                          <CheckCircle className="w-5 h-5 text-[#7B6CF6]" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-gray-300 hover:text-gray-400" />
+                        )}
+                      </button>
                       <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0" />
                       {isEditing ? (
                         <input
