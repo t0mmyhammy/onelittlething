@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const inviteToken = requestUrl.searchParams.get('invite');
   const origin = requestUrl.origin;
 
   if (code) {
@@ -16,6 +17,11 @@ export async function GET(request: Request) {
     }
 
     if (data.user) {
+      // If there's an invite token, handle invite flow
+      if (inviteToken) {
+        return NextResponse.redirect(`${origin}/invite/${inviteToken}`);
+      }
+
       // Check if user already has a family
       const { data: existingMember } = await supabase
         .from('family_members')
