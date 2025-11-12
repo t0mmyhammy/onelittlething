@@ -7,10 +7,11 @@ const openai = new OpenAI({
 });
 
 export const runtime = 'edge';
+export const maxDuration = 30; // 30 second timeout
 
 export async function POST(req: Request) {
   try {
-    const { itemName, category, size, brand, existingNotes, childName, additionalContext } = await req.json();
+    const { itemName, category, size, brand, existingNotes, childName, additionalContext, researchFocus } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -19,15 +20,36 @@ export async function POST(req: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check for API key
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set');
+      return new Response(
+        JSON.stringify({ error: 'AI service not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Build prompt for idea research
-    const systemPrompt = buildIdeaResearchPrompt(itemName, category, size, brand, existingNotes, childName, additionalContext);
+    const systemPrompt = buildIdeaResearchPrompt(
+      itemName,
+      category,
+      size,
+      brand,
+      existingNotes,
+      childName,
+      additionalContext,
+      researchFocus
+    );
 
     // Call OpenAI API (non-streaming for structured response)
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4o-mini', // More reliable and faster than gpt-4-turbo-preview
       messages: [
         {
           role: 'system',
@@ -35,11 +57,13 @@ export async function POST(req: Request) {
         },
         {
           role: 'user',
-          content: `Please provide helpful research and recommendations for "${itemName}" for ${childName}.`,
+          content: researchFocus
+            ? `Research focus: ${researchFocus}. Please provide updated research and recommendations for "${itemName}" for ${childName}.`
+            : `Please provide helpful research and recommendations for "${itemName}" for ${childName}.`,
         },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 800, // Increased for better JSON responses
     });
 
     const content = response.choices[0]?.message?.content || '';
@@ -93,12 +117,18 @@ function buildIdeaResearchPrompt(
   brand: string | null,
   existingNotes: string | null,
   childName: string,
-  additionalContext: string | null
+  additionalContext: string | null,
+  researchFocus: string | null
 ): string {
+  const hasExistingNotes = existingNotes && existingNotes.trim().length > 0;
+
   return `You are a helpful shopping assistant that provides product recommendations for children's items.
 
 ## Task:
-Provide a brief TLDR summary and recommend 3-5 specific products for this item.
+${hasExistingNotes && researchFocus
+  ? `The user already has research on this item. They want you to provide DIFFERENT/ADDITIONAL research focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations.`
+  : 'Provide a brief TLDR summary and recommend 3-5 specific products for this item.'
+}
 
 ## Context:
 - Item: ${itemName}
@@ -106,8 +136,9 @@ Provide a brief TLDR summary and recommend 3-5 specific products for this item.
 ${category ? `- Category: ${category}` : ''}
 ${size ? `- Size: ${size}` : ''}
 ${brand ? `- Preferred Brand: ${brand}` : ''}
-${existingNotes ? `- Existing Notes: ${existingNotes}` : ''}
+${hasExistingNotes ? `- Previous Research (DO NOT REPEAT): ${existingNotes}` : ''}
 ${additionalContext ? `- Special Considerations: ${additionalContext}` : ''}
+${researchFocus ? `- NEW Research Focus: ${researchFocus}` : ''}
 
 ## Response Format:
 Return ONLY a JSON object with this exact structure (no markdown, no code blocks):
@@ -128,7 +159,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 ## Guidelines:
 1. TLDR should be concise, friendly, and helpful - like advice from a friend
 2. Recommend 3-5 specific, real products
-3. Include realistic price ranges (e.g., "$25-35", "$50")
+${hasExistingNotes && researchFocus ? '3. DO NOT recommend products already mentioned in previous research - find DIFFERENT options' : '3. Include realistic price ranges (e.g., "$25-35", "$50")'}
 4. List 3-4 key features for each product
 5. Leave URL empty (will be filled by user)
 6. Focus on popular, well-reviewed options

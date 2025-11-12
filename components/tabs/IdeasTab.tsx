@@ -232,16 +232,18 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
 
   const handleAIResearch = (item: IdeaItem) => {
     // Show prompt modal first
+    const hasExistingNotes = item.notes && item.notes.trim().length > 0;
     setAiPromptModal({
       isOpen: true,
       item,
-      additionalContext: '',
+      additionalContext: hasExistingNotes ? '' : '', // Reset context for both cases
     });
   };
 
   const startAIResearch = async () => {
     const item = aiPromptModal.item;
     const additionalContext = aiPromptModal.additionalContext;
+    const hasExistingNotes = item?.notes && item.notes.trim().length > 0;
 
     if (!item) return;
 
@@ -266,26 +268,35 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
           size: item.size,
           brand: item.brand,
           existingNotes: item.notes,
-          additionalContext,
+          additionalContext: hasExistingNotes ? '' : additionalContext, // Only use for initial research
+          researchFocus: hasExistingNotes ? additionalContext : null, // Use as focus for re-research
           childName,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get research');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get research');
+      }
 
       const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       setAiModal(prev => ({
         ...prev,
         loading: false,
         research: data.research || 'Unable to generate research.',
         products: data.products || [],
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI research error:', error);
       setAiModal(prev => ({
         ...prev,
         loading: false,
-        research: 'Unable to generate research. Please try again.',
+        research: `Error: ${error.message || 'Unable to generate research. Please try again.'}`,
         products: [],
       }));
     }
@@ -775,17 +786,37 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
               </div>
             </div>
 
-            <p className="text-sm text-gray-700 mb-4">
-              Is there anything I should take into consideration as I do this research?
-            </p>
-
-            <textarea
-              value={aiPromptModal.additionalContext}
-              onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
-              placeholder="e.g., Looking for eco-friendly options, budget under $50, specific colors, etc."
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
-            />
+            {aiPromptModal.item?.notes && aiPromptModal.item.notes.trim().length > 0 ? (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">You already have research for this item</p>
+                  <p className="text-xs text-amber-700">I'll provide different options and avoid duplicating your existing research.</p>
+                </div>
+                <p className="text-sm text-gray-700 mb-4 font-medium">
+                  What do you want to research differently?
+                </p>
+                <textarea
+                  value={aiPromptModal.additionalContext}
+                  onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
+                  placeholder="e.g., Different price range, alternative brands, premium options, sustainable choices, etc."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-700 mb-4">
+                  Is there anything I should take into consideration as I do this research?
+                </p>
+                <textarea
+                  value={aiPromptModal.additionalContext}
+                  onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
+                  placeholder="e.g., Looking for eco-friendly options, budget under $50, specific colors, etc."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
+                />
+              </>
+            )}
 
             <div className="flex gap-3">
               <button
