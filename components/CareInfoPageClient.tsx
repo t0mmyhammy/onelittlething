@@ -5,7 +5,7 @@ import { User, Baby, Home, FileText, Share2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ChildCareInfoTabV2 from './care-info/ChildCareInfoTabV2';
 import FamilyCareInfoTabV2 from './care-info/FamilyCareInfoTabV2';
-import ShareModal from './care-info/ShareModal';
+import ShareModalV2 from './care-info/ShareModalV2';
 
 interface Child {
   id: string;
@@ -152,6 +152,18 @@ export default function CareInfoPageClient({
 
   return (
     <div className="relative">
+      {/* Header with Share Button */}
+      <div className="flex items-center justify-end mb-4">
+        <button
+          onClick={() => setIsShareModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-xl font-medium hover:bg-sage/90 transition-colors shadow-sm"
+        >
+          <Share2 className="w-4 h-4" />
+          <span className="hidden sm:inline">{getContextualShareLabel()}</span>
+          <span className="sm:hidden">Share</span>
+        </button>
+      </div>
+
       {/* Sticky Tab Navigation */}
       <div className="sticky top-0 z-20 bg-[#FAF9F8] pb-4 -mt-8 pt-8">
         <div className="bg-white rounded-2xl shadow-sm border border-sand overflow-hidden">
@@ -260,18 +272,8 @@ export default function CareInfoPageClient({
         )}
       </div>
 
-      {/* Floating Share Button */}
-      <button
-        onClick={() => setIsShareModalOpen(true)}
-        className="fixed bottom-8 right-8 flex items-center gap-2 px-5 py-3 bg-sage text-white rounded-2xl font-medium hover:bg-sage/90 transition-all shadow-lg hover:shadow-xl z-30 hover:scale-105"
-      >
-        <Share2 className="w-5 h-5" />
-        <span className="hidden sm:inline">{getContextualShareLabel()}</span>
-        <span className="sm:hidden">Share</span>
-      </button>
-
       {/* Share Modal */}
-      <ShareModal
+      <ShareModalV2
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         children={children}
