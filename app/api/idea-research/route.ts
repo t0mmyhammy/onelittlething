@@ -151,7 +151,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
       "brand": "Brand Name",
       "price": "$XX-XX",
       "features": ["Key feature 1", "Key feature 2", "Key feature 3"],
-      "url": ""
+      "url": "https://www.amazon.com/product-url"
     }
   ]
 }
@@ -161,7 +161,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 2. Recommend 3-5 specific, real products
 ${hasExistingNotes && researchFocus ? '3. DO NOT recommend products already mentioned in previous research - find DIFFERENT options' : '3. Include realistic price ranges (e.g., "$25-35", "$50")'}
 4. List 3-4 key features for each product
-5. Leave URL empty (will be filled by user)
+5. IMPORTANT: Include a real, working Amazon URL for each product (use amazon.com search URLs like https://www.amazon.com/s?k=product+name or direct product links if you know them)
 6. Focus on popular, well-reviewed options
 7. If brand specified, prioritize that brand but include alternatives
 8. Consider the child's age and appropriate products

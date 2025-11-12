@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle, Link as LinkIcon } from 'lucide-react';
+import { Lightbulb, ShoppingBag, Plus, User, Trash2, Edit2, Check, X, ChevronDown, ChevronUp, Sparkles, Brain, Wand2, CheckCircle, Circle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface IdeaItem {
@@ -75,10 +75,6 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     item: IdeaItem | null;
     additionalContext: string;
   }>({ isOpen: false, item: null, additionalContext: '' });
-  const [urlInputModal, setUrlInputModal] = useState<{
-    isOpen: boolean;
-    products: Array<{ name: string; brand?: string; price: string; features: string[]; url: string }>;
-  }>({ isOpen: false, products: [] });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -330,26 +326,14 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     }));
   };
 
-  const handleAddSelectedProducts = () => {
+  const handleAddSelectedProducts = async () => {
     if (!aiModal.item || aiModal.selectedProducts.length === 0) return;
 
-    // Get selected products with empty URL fields for user input
-    const selectedProds = aiModal.selectedProducts.map(index => ({
-      ...aiModal.products[index],
-      url: ''
-    }));
-
-    setUrlInputModal({
-      isOpen: true,
-      products: selectedProds
-    });
-  };
-
-  const handleSaveProductsWithUrls = async () => {
-    if (!aiModal.item) return;
+    // Get selected products with AI-generated URLs
+    const selectedProds = aiModal.selectedProducts.map(index => aiModal.products[index]);
 
     // Build formatted notes with all selected products and hyperlinks
-    const productNotes = urlInputModal.products.map(product => {
+    const productNotes = selectedProds.map(product => {
       const productName = product.brand ? `${product.name} by ${product.brand}` : product.name;
       const nameWithLink = product.url ? `[${productName}](${product.url})` : productName;
 
@@ -371,9 +355,8 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
       setItems(prev => prev.map(i =>
         i.id === aiModal.item?.id ? { ...i, notes: productNotes } : i
       ));
-      setUrlInputModal({ isOpen: false, products: [] });
       setAiModal({ isOpen: false, item: null, loading: false, research: '', products: [], selectedProducts: [] });
-      showToast(`${urlInputModal.products.length} product${urlInputModal.products.length > 1 ? 's' : ''} added to idea!`);
+      showToast(`${selectedProds.length} product${selectedProds.length > 1 ? 's' : ''} added to idea!`);
     }
   };
 
@@ -939,8 +922,8 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                       onClick={handleAddSelectedProducts}
                       className="flex-1 px-4 py-2.5 bg-[#7B6CF6] text-white rounded-lg hover:bg-[#6759F5] font-medium transition-all flex items-center justify-center gap-2"
                     >
-                      <LinkIcon className="w-4 h-4" />
-                      Add Selected Products ({aiModal.selectedProducts.length})
+                      <Check className="w-4 h-4" />
+                      Add to Notes ({aiModal.selectedProducts.length})
                     </button>
                   )}
                   <button
@@ -952,78 +935,6 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* URL Input Modal */}
-      {urlInputModal.isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => setUrlInputModal({ isOpen: false, products: [] })}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-[#F5F4FD] rounded-lg">
-                <LinkIcon className="w-6 h-6 text-[#7B6CF6]" />
-              </div>
-              <div>
-                <h3 className="text-xl font-serif text-gray-900">
-                  Add Product Links
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Paste URLs for each product (optional)
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              {urlInputModal.products.map((product, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900 text-sm">
-                        {product.name}
-                      </h5>
-                      {product.brand && (
-                        <p className="text-xs text-gray-500">{product.brand}</p>
-                      )}
-                    </div>
-                    <span className="text-xs font-semibold text-sage ml-3">{product.price}</span>
-                  </div>
-                  <input
-                    type="url"
-                    value={product.url}
-                    onChange={(e) => {
-                      const newProducts = [...urlInputModal.products];
-                      newProducts[index] = { ...newProducts[index], url: e.target.value };
-                      setUrlInputModal({ ...urlInputModal, products: newProducts });
-                    }}
-                    placeholder="https://www.example.com/product-page"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7B6CF6] focus:border-transparent text-sm"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleSaveProductsWithUrls}
-                className="flex-1 px-4 py-2.5 bg-[#7B6CF6] text-white rounded-lg hover:bg-[#6759F5] font-medium transition-all flex items-center justify-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Add to Idea
-              </button>
-              <button
-                onClick={() => setUrlInputModal({ isOpen: false, products: [] })}
-                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
