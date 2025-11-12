@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AddressAutocompleteProps {
   value: string;
@@ -19,7 +19,6 @@ interface AddressAutocompleteProps {
 declare global {
   interface Window {
     google: any;
-    initAutocomplete?: () => void;
   }
 }
 
@@ -30,104 +29,148 @@ export default function AddressAutocomplete({
   placeholder = "Enter address",
   className = ""
 }: AddressAutocompleteProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
-      initializeAutocomplete();
-    } else {
-      // Load Google Maps script
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        initializeAutocomplete();
-      };
-      document.head.appendChild(script);
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-      return () => {
-        document.head.removeChild(script);
-      };
+    // If no API key, fall back to regular input
+    if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+      setError('No API key configured');
+      return;
     }
+
+    // Check if already loaded
+    if (window.google?.maps?.places?.PlaceAutocompleteElement) {
+      initializeAutocomplete();
+      return;
+    }
+
+    // Load Google Maps script with new Places library
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async&callback=initMap`;
+    script.async = true;
+    script.defer = true;
+
+    // Define callback
+    (window as any).initMap = () => {
+      setIsLoaded(true);
+      initializeAutocomplete();
+    };
+
+    script.onerror = () => {
+      setError('Failed to load Google Maps. Check your API key and billing settings.');
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      delete (window as any).initMap;
+      try {
+        document.head.removeChild(script);
+      } catch (e) {
+        // Script may have already been removed
+      }
+    };
   }, []);
 
   const initializeAutocomplete = () => {
-    if (!inputRef.current || !window.google) return;
+    if (!containerRef.current || !window.google?.maps?.places?.PlaceAutocompleteElement) {
+      return;
+    }
 
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        types: ['address'],
-        componentRestrictions: { country: 'us' } // Restrict to US addresses
-      }
-    );
+    try {
+      // Clear existing content
+      containerRef.current.innerHTML = '';
 
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
+      // Create new PlaceAutocompleteElement
+      const autocompleteElement = new window.google.maps.places.PlaceAutocompleteElement({
+        componentRestrictions: { country: 'us' },
+        fields: ['address_components', 'formatted_address'],
+      });
 
-      if (!place.address_components) return;
+      // Add event listener
+      autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
+        const place = event.place;
 
-      // Extract address components
-      let street_number = '';
-      let route = '';
-      let city = '';
-      let state = '';
-      let zip_code = '';
-      let country = '';
+        if (!place.address_components) return;
 
-      place.address_components.forEach((component: any) => {
-        const types = component.types;
+        // Extract address components
+        let street_number = '';
+        let route = '';
+        let city = '';
+        let state = '';
+        let zip_code = '';
+        let country = '';
 
-        if (types.includes('street_number')) {
-          street_number = component.long_name;
-        }
-        if (types.includes('route')) {
-          route = component.long_name;
-        }
-        if (types.includes('locality')) {
-          city = component.long_name;
-        }
-        if (types.includes('administrative_area_level_1')) {
-          state = component.short_name;
-        }
-        if (types.includes('postal_code')) {
-          zip_code = component.long_name;
-        }
-        if (types.includes('country')) {
-          country = component.long_name;
+        place.address_components.forEach((component: any) => {
+          const types = component.types;
+
+          if (types.includes('street_number')) {
+            street_number = component.long_name;
+          }
+          if (types.includes('route')) {
+            route = component.long_name;
+          }
+          if (types.includes('locality')) {
+            city = component.long_name;
+          }
+          if (types.includes('administrative_area_level_1')) {
+            state = component.short_name;
+          }
+          if (types.includes('postal_code')) {
+            zip_code = component.long_name;
+          }
+          if (types.includes('country')) {
+            country = component.long_name;
+          }
+        });
+
+        const street_address = `${street_number} ${route}`.trim();
+        const formatted_address = place.formatted_address || '';
+
+        // Update the input value
+        onChange(formatted_address);
+
+        // Call the callback with structured data
+        if (onAddressSelect) {
+          onAddressSelect({
+            street_address,
+            city,
+            state,
+            zip_code,
+            country
+          });
         }
       });
 
-      const street_address = `${street_number} ${route}`.trim();
-      const formatted_address = place.formatted_address || '';
-
-      // Update the input value
-      onChange(formatted_address);
-
-      // Call the callback with structured data
-      if (onAddressSelect) {
-        onAddressSelect({
-          street_address,
-          city,
-          state,
-          zip_code,
-          country
-        });
-      }
-    });
+      containerRef.current.appendChild(autocompleteElement);
+      setIsLoaded(true);
+    } catch (err) {
+      console.error('Autocomplete initialization error:', err);
+      setError('Failed to initialize autocomplete');
+    }
   };
 
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={className}
-    />
-  );
+  // Fallback to regular input if there's an error or no API key
+  if (error) {
+    return (
+      <div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={className}
+        />
+        <p className="text-xs text-amber-600 mt-1">
+          Address autocomplete unavailable. Using manual entry.
+        </p>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className="w-full" />;
 }
