@@ -3,7 +3,7 @@
 import { Eye, EyeOff, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import InfoTooltip from '../InfoTooltip';
-import { getFieldGuideline, calculateAgeInMonths } from '@/lib/cdcGuidelines';
+import { getFieldGuideline, calculateAgeInMonths, getParentingTips } from '@/lib/cdcGuidelines';
 
 interface RoutinesSectionProps {
   data: any;
@@ -44,6 +44,7 @@ export default function RoutinesSection({
             <InfoTooltip
               title="Sleep Guidelines"
               cdcGuidelines={getFieldGuideline('wake_time', ageInMonths) || undefined}
+              parentingTips={getParentingTips('wake_time') || undefined}
               ageInMonths={ageInMonths}
             />
           </div>

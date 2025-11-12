@@ -110,3 +110,26 @@ export function getFieldGuideline(field: string, ageInMonths: number): string | 
   const category = fieldMap[field];
   return category ? guidelines[category] : null;
 }
+
+// Parenting methodology tips that complement CDC guidelines
+export function getParentingTips(field: string, parentingStyles?: string[]): string | null {
+  const tips: Record<string, string> = {
+    'wake_time': "Consistency is key. Same wake time every day helps regulate your child's internal clock. Gentle wake-up routines with natural light can make mornings easier.",
+    'naps': "Watch for sleep cues (rubbing eyes, yawning). Overtired kids have harder time falling asleep. Dark room and white noise can help.",
+    'bedtime': "Create a calming routine: bath, pajamas, books, cuddles. Screen-free hour before bed helps. Keep it consistent even on weekends.",
+    'bedtime_routine': "The routine itself matters more than timing. Predictability helps kids feel secure. Let them choose one book or one song for control.",
+    'meals': "Division of responsibility: Parents decide when, where, and what. Child decides whether and how much. No pressure to clean plate.",
+    'screen_time': "Model healthy screen habits yourself. Make screen time a privilege, not a default. Co-view when possible and discuss content.",
+    'calming_tips': "Validate feelings first ('I see you're upset'). Then offer tools (deep breaths, counting, hug). Stay calm yourself - kids mirror us.",
+    'allergies': "Teach your child to recognize their symptoms. Practice how to ask for help. Never minimize their concerns about feeling 'different.'",
+    'dos': "Focus on what they CAN do, not just limits. Give choices within boundaries ('Do you want to play inside or outside?').",
+    'donts': "Explain the 'why' in simple terms. Keep rules consistent. Follow through every time - empty threats erode trust.",
+    'warnings': "Name fears without judgment. 'You're scared of the dog. That's okay.' Build confidence gradually with small steps.",
+  };
+
+  // You can customize tips based on parenting styles if needed
+  // For example: if Love & Logic, emphasize natural consequences
+  // If Positive Discipline, emphasize connection before correction
+
+  return tips[field] || null;
+}
