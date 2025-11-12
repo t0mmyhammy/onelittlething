@@ -1,15 +1,19 @@
 'use client';
 
-import { Eye, EyeOff, Plus, X } from 'lucide-react';
+import { Eye, EyeOff, Plus, X, Save } from 'lucide-react';
 import { useState } from 'react';
+import InfoTooltip from '../InfoTooltip';
+import { getFieldGuideline, calculateAgeInMonths } from '@/lib/cdcGuidelines';
 
 interface RoutinesSectionProps {
   data: any;
   notes: string;
   redactedFields: string[];
+  childBirthdate: string | null;
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
+  onManualSave?: () => void;
 }
 
 const COMMON_WAKE_TIMES = ['6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM', '8:00 AM'];
@@ -19,22 +23,44 @@ export default function RoutinesSection({
   data,
   notes,
   redactedFields,
+  childBirthdate,
   onUpdate,
   onNotesUpdate,
-  onRedactionToggle
+  onRedactionToggle,
+  onManualSave
 }: RoutinesSectionProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const isRedacted = (field: string) => redactedFields.includes(field);
+  const ageInMonths = calculateAgeInMonths(childBirthdate);
 
   return (
     <div className="space-y-6">
+      {/* Manual Save Button */}
+      {onManualSave && (
+        <div className="flex justify-end">
+          <button
+            onClick={onManualSave}
+            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-sage/90 transition-colors text-sm font-medium"
+          >
+            <Save className="w-4 h-4" />
+            Save Now
+          </button>
+        </div>
+      )}
       {/* Wake Time */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Wake time
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Wake time
+            </label>
+            <InfoTooltip
+              title="Sleep Guidelines"
+              cdcGuidelines={getFieldGuideline('wake_time', ageInMonths) || undefined}
+              ageInMonths={ageInMonths}
+            />
+          </div>
           <button
             onClick={() => onRedactionToggle('wake_time')}
             className="text-gray-400 hover:text-gray-600 transition-colors"

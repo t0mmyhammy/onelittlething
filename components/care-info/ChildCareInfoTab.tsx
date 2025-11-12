@@ -74,22 +74,36 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
   useEffect(() => {
     if (!careInfo) {
       const initializeCareInfo = async () => {
-        const { data, error } = await supabase
+        // First, check if care info already exists for this child
+        const { data: existing } = await supabase
           .from('child_care_info')
-          .insert({
-            child_id: child.id,
-            routines: {},
-            health: {},
-            comfort: {},
-            safety: {},
-            contacts: {},
-          })
-          .select()
+          .select('*')
+          .eq('child_id', child.id)
           .single();
 
-        if (!error && data) {
-          setCareInfo(data);
-          onUpdate(data);
+        if (existing) {
+          // Use existing data
+          setCareInfo(existing);
+          onUpdate(existing);
+        } else {
+          // Create new care info
+          const { data, error } = await supabase
+            .from('child_care_info')
+            .insert({
+              child_id: child.id,
+              routines: {},
+              health: {},
+              comfort: {},
+              safety: {},
+              contacts: {},
+            })
+            .select()
+            .single();
+
+          if (!error && data) {
+            setCareInfo(data);
+            onUpdate(data);
+          }
         }
       };
 
