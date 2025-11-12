@@ -489,8 +489,41 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       </div>
 
       {/* Wishlist Items */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredItems.map(item => {
+      {shoppingItems.length === 0 ? (
+        <div className="text-center py-16 bg-gradient-to-br from-[#F0FDF4] to-white rounded-2xl border-2 border-dashed border-[#D1FAE5]">
+          <div className="mb-4 inline-flex p-4 bg-white rounded-full shadow-sm">
+            <Gift className="w-8 h-8 text-[#A7C4A0]" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Your wishlist is empty</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Move ideas from the Ideas tab to create your wishlist. Perfect for sharing with family and friends!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-[#A094F7]/10 flex items-center justify-center">
+                <span className="text-[#A094F7] font-semibold">1</span>
+              </div>
+              <span>Create ideas</span>
+            </div>
+            <div className="hidden sm:block text-gray-300">→</div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-[#A7C4A0]/10 flex items-center justify-center">
+                <span className="text-[#A7C4A0] font-semibold">2</span>
+              </div>
+              <span>Send to Wishlist</span>
+            </div>
+            <div className="hidden sm:block text-gray-300">→</div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-rose/10 flex items-center justify-center">
+                <span className="text-rose font-semibold">3</span>
+              </div>
+              <span>Share with others</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredItems.map(item => {
           const isSelected = item.status === 'selected';
           const isReserved = item.status === 'reserved';
           const isPurchased = item.status === 'purchased';
@@ -889,12 +922,13 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           );
         })}
 
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No items in this section</p>
-          </div>
-        )}
-      </div>
+          {filteredItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No items in this section</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmModal.isOpen && (

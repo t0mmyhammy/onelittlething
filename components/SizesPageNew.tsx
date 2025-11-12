@@ -79,13 +79,45 @@ export default function SizesPageNew({
   familyId,
 }: SizesPageNewProps) {
   const supabase = createClient();
-  const [selectedChildId, setSelectedChildId] = useState<string>(children[0]?.id || '');
-  const [activeTab, setActiveTab] = useState<TabType>('sizes');
+
+  // Initialize state from localStorage
+  const [selectedChildId, setSelectedChildId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('selectedChildId');
+      if (saved && children.find(c => c.id === saved)) {
+        return saved;
+      }
+    }
+    return children[0]?.id || '';
+  });
+
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('activeTab');
+      if (saved && ['sizes', 'ideas', 'wishlist'].includes(saved)) {
+        return saved as TabType;
+      }
+    }
+    return 'sizes';
+  });
+
   const [showShareModal, setShowShareModal] = useState(false);
 
   // Local state for data that can be refreshed
   const [localInventoryItems, setLocalInventoryItems] = useState<InventoryItem[]>(inventoryItems);
   const [localShoppingItems, setLocalShoppingItems] = useState<ShoppingItem[]>(shoppingItems);
+
+  // Persist child selection
+  useEffect(() => {
+    if (selectedChildId) {
+      localStorage.setItem('selectedChildId', selectedChildId);
+    }
+  }, [selectedChildId]);
+
+  // Persist tab selection
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   // Refresh data function
   const refreshData = useCallback(async () => {
@@ -127,9 +159,9 @@ export default function SizesPageNew({
   }
 
   const tabs = [
-    { id: 'sizes' as TabType, label: 'Sizes', icon: Ruler },
-    { id: 'ideas' as TabType, label: 'Ideas', icon: Lightbulb },
-    { id: 'wishlist' as TabType, label: 'Wishlist', icon: Gift },
+    { id: 'sizes' as TabType, label: 'Sizes', icon: Ruler, count: null },
+    { id: 'ideas' as TabType, label: 'Ideas', icon: Lightbulb, count: childInventory.length },
+    { id: 'wishlist' as TabType, label: 'Wishlist', icon: Gift, count: childShopping.length },
   ];
 
   return (
@@ -188,6 +220,17 @@ export default function SizesPageNew({
                   >
                     <Icon className="w-4 h-4" />
                     <span>{tab.label}</span>
+                    {tab.count !== null && tab.count > 0 && (
+                      <span
+                        className={`ml-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                          isActive
+                            ? 'bg-sage text-white'
+                            : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
                   </button>
                 );
               })}

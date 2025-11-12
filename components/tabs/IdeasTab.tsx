@@ -1204,9 +1204,36 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
 
       {/* Items Grid */}
       {items.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-sand">
-          <Lightbulb className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No ideas yet. Start brainstorming!</p>
+        <div className="text-center py-16 bg-gradient-to-br from-[#F5F4FD] to-white rounded-2xl border-2 border-dashed border-[#E8E7F0]">
+          <div className="mb-4 inline-flex p-4 bg-white rounded-full shadow-sm">
+            <Lightbulb className="w-8 h-8 text-[#A094F7]" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No ideas yet</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Start exploring! Use the AI search above to discover gift ideas, or paste a list to import items.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-[#A094F7]/10 flex items-center justify-center">
+                <span className="text-[#A094F7] font-semibold">1</span>
+              </div>
+              <span>Search with AI</span>
+            </div>
+            <div className="hidden sm:block text-gray-300">→</div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-[#A094F7]/10 flex items-center justify-center">
+                <span className="text-[#A094F7] font-semibold">2</span>
+              </div>
+              <span>Review & refine</span>
+            </div>
+            <div className="hidden sm:block text-gray-300">→</div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-[#A7C4A0]/10 flex items-center justify-center">
+                <span className="text-[#A7C4A0] font-semibold">3</span>
+              </div>
+              <span>Move to Wishlist</span>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
