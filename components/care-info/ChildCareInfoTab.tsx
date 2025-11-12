@@ -69,6 +69,37 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
   // Refs for debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<{ section: SectionType; data: any; notes: string | null } | null>(null);
+
+  // Cleanup: Flush any pending saves when component unmounts (e.g., switching tabs)
+  useEffect(() => {
+    return () => {
+      // Clear timers
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+
+      // If there's pending data, save it immediately
+      if (pendingSaveRef.current && careInfo) {
+        const { section, data, notes } = pendingSaveRef.current;
+        const updateData: any = {
+          [`${section}`]: data,
+          [`${section}_notes`]: notes,
+          [`${section}_updated_at`]: new Date().toISOString(),
+        };
+
+        // Fire and forget - we can't await in cleanup
+        supabase
+          .from('child_care_info')
+          .update(updateData)
+          .eq('id', careInfo.id)
+          .then();
+      }
+    };
+  }, [careInfo, supabase]);
 
   // Sync local state when prop changes (when switching between children)
   useEffect(() => {
@@ -192,10 +223,15 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
         setShowUndoToast(false);
       }, 10000);
 
+      // Track pending save
+      const notes = prev[`${section}_notes`] || null;
+      pendingSaveRef.current = { section, data: newData, notes };
+
       // Debounced save
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
-        saveSection(section, newData, prev[`${section}_notes`] || null);
+        saveSection(section, newData, notes);
+        pendingSaveRef.current = null; // Clear after save
       }, 1000);
 
       return {
@@ -212,10 +248,16 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
     setCareInfo(prev => {
       if (!prev) return prev;
 
+      const data = prev[section] || {};
+
+      // Track pending save
+      pendingSaveRef.current = { section, data, notes };
+
       // Debounced save
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
-        saveSection(section, prev[section] || {}, notes);
+        saveSection(section, data, notes);
+        pendingSaveRef.current = null; // Clear after save
       }, 1000);
 
       return {
