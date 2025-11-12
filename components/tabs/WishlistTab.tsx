@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical, Lightbulb } from 'lucide-react';
+import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical, Lightbulb, ChevronDown, ChevronUp, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ShoppingItem {
@@ -247,6 +247,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     });
   };
 
+  const handleCardClick = (itemId: string) => {
+    if (editingId === itemId) return; // Don't expand/collapse while editing
+    setExpandedId(expandedId === itemId ? null : itemId);
+  };
+
   const handleDelete = async () => {
     if (!deleteConfirmModal.itemId) return;
 
@@ -484,7 +489,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       </div>
 
       {/* Wishlist Items */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filteredItems.map(item => {
           const isSelected = item.status === 'selected';
           const isReserved = item.status === 'reserved';
@@ -492,16 +497,17 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
           const isReserving = reservingId === item.id;
           const isEditing = editingId === item.id;
           const showActions = showActionsId === item.id;
+          const isExpanded = expandedId === item.id;
 
           return (
             <div
               key={item.id}
-              className={`bg-white border rounded-xl p-5 transition-all ${
+              className={`border-2 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all overflow-hidden ${
                 isSelected
                   ? 'border-sage ring-2 ring-sage/20'
                   : isPurchased
-                  ? 'border-sand bg-gray-50 opacity-75'
-                  : 'border-sand hover:border-sage hover:shadow-sm'
+                  ? 'border-sand bg-gray-50'
+                  : 'border-sand'
               }`}
             >
               {isEditing ? (
@@ -605,121 +611,142 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                   </div>
                 </div>
               ) : (
-                /* View Mode */
+                /* View Mode - Collapsible */
                 <>
-                  <div className="flex gap-4">
-                    {/* Thumbnail - only show if image exists */}
-                    {item.url && item.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
-                      <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        <img src={item.url} alt={item.item_name} className="w-full h-full object-cover" />
+                  {/* Main card - clickable to expand/collapse */}
+                  <button
+                    onClick={() => handleCardClick(item.id)}
+                    className="w-full p-4 text-left"
+                    disabled={isEditing}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <Gift className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        <h3 className="font-semibold text-gray-900 text-lg">{item.item_name}</h3>
                       </div>
-                    )}
-
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{item.item_name}</h4>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {item.brand && (
-                              <span className="text-sm text-gray-600">{item.brand}</span>
-                            )}
-                            {item.size && (
-                              <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
-                                Size {item.size}
-                              </span>
-                            )}
-                            {item.color && (
-                              <span className="px-2 py-0.5 bg-sand text-gray-700 text-xs rounded-full">
-                                {item.color}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.price && (
-                            <div className="flex items-center gap-1 text-gray-900 font-bold text-lg">
-                              <DollarSign className="w-5 h-5" />
-                              {item.price.toFixed(2)}
-                            </div>
-                          )}
-                          {/* More Actions Menu */}
-                          {!isPurchased && !isEditing && (
-                            <div className="relative" ref={showActions ? actionsMenuRef : null}>
-                              <button
-                                onClick={() => setShowActionsId(showActions ? null : item.id)}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                              {showActions && (
-                                <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
-                                  <button
-                                    onClick={() => handleEdit(item)}
-                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleArchive(item.id)}
-                                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                  >
-                                    <Archive className="w-4 h-4" />
-                                    {item.archived ? 'Unarchive' : 'Archive'}
-                                  </button>
-                                  <button
-                                    onClick={() => setDeleteConfirmModal({
-                                      isOpen: true,
-                                      itemId: item.id,
-                                      itemName: item.item_name
-                                    })}
-                                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Price badge */}
+                        {item.price && !isExpanded && (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md font-semibold">
+                            ${item.price.toFixed(2)}
+                          </span>
+                        )}
+                        {/* Status badges */}
+                        {isSelected && !isExpanded && (
+                          <Star className="w-4 h-4 text-amber-500 fill-current" />
+                        )}
+                        {isReserved && !isExpanded && (
+                          <UserPlus className="w-4 h-4 text-blue-500" />
+                        )}
+                        {isPurchased && !isExpanded && (
+                          <Check className="w-4 h-4 text-green-600" />
+                        )}
+                        {!isEditing && (
+                          <>
+                            {/* Delete Button - always visible */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirmModal({
+                                  isOpen: true,
+                                  itemId: item.id,
+                                  itemName: item.item_name
+                                });
+                              }}
+                              className="text-gray-400 hover:text-red-600 transition-colors"
+                              title="Delete item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
                       </div>
+                    </div>
 
-                      {item.notes && (
-                        <p className="text-sm text-gray-600 mb-3">{item.notes}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {item.category && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md font-medium">
+                          {item.category}
+                        </span>
                       )}
+                      {item.size && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                          Size {item.size}
+                        </span>
+                      )}
+                      {item.brand && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                          {item.brand}
+                        </span>
+                      )}
+                      {item.color && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                          {item.color}
+                        </span>
+                      )}
+                    </div>
+                  </button>
 
-                      <div className="flex items-center gap-4 mb-3">
+                  {/* Expanded Content */}
+                  {isExpanded && !isEditing && (
+                    <div className="px-4 pb-4 space-y-4 border-t border-gray-100">
+                      {/* Price and URL */}
+                      <div className="pt-4 flex flex-wrap items-center gap-3">
+                        {item.price && (
+                          <div className="flex items-center gap-1 text-gray-900 font-bold text-lg">
+                            <DollarSign className="w-5 h-5" />
+                            {item.price.toFixed(2)}
+                          </div>
+                        )}
                         {item.url && (
                           <a
                             href={item.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 text-sm text-sage hover:text-rose font-medium"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="w-4 h-4" />
                             View product
                           </a>
                         )}
+                      </div>
+
+                      {/* Notes */}
+                      {item.notes && (
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Notes:</label>
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap">{item.notes}</p>
+                        </div>
+                      )}
+
+                      {/* Reserved/Purchased info */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         {item.reserved_at && (
-                          <span className="text-xs text-gray-500">
-                            Reserved {new Date(item.reserved_at).toLocaleDateString()}
-                          </span>
+                          <span>Reserved {new Date(item.reserved_at).toLocaleDateString()}</span>
+                        )}
+                        {item.reserved_by && (
+                          <span>by {item.reserved_by}</span>
                         )}
                         {item.purchased_at && (
-                          <span className="text-xs text-gray-500">
-                            Purchased {new Date(item.purchased_at).toLocaleDateString()}
-                          </span>
+                          <span>Purchased {new Date(item.purchased_at).toLocaleDateString()}</span>
                         )}
                       </div>
 
                       {/* Action Buttons */}
-                      {!isPurchased && !isEditing && (
-                        <div className="flex flex-wrap items-center gap-2 mt-3">
+                      {!isPurchased && (
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
                           <button
-                            onClick={() => handleSelect(item.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelect(item.id);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                               isSelected
                                 ? 'bg-sage text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -730,8 +757,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                           </button>
 
                           <button
-                            onClick={() => handleBuy(item.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all whitespace-nowrap"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBuy(item.id);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700 transition-all"
                           >
                             <ShoppingCart className="w-4 h-4" />
                             Buy
@@ -739,8 +769,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
                           {!isReserved && !isReserving && (
                             <button
-                              onClick={() => handleReserve(item.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReserve(item.id);
+                              }}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-all"
                             >
                               <UserPlus className="w-4 h-4" />
                               Reserve
@@ -749,32 +782,54 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
 
                           {/* Move to Ideas Button */}
                           <button
-                            onClick={() => handleMoveToIdeas(item.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-all whitespace-nowrap"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveToIdeas(item.id);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-all"
                             title="Move to Ideas"
                           >
                             <Lightbulb className="w-4 h-4" />
                             Move to Ideas
                           </button>
 
+                          {/* Edit Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(item);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+
                           {isReserving && (
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="flex items-center gap-2 w-full">
                               <input
                                 type="text"
                                 value={reservedByInput}
                                 onChange={(e) => setReservedByInput(e.target.value)}
                                 placeholder="Reserved by..."
-                                className="flex-1 px-3 py-1.5 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                                className="flex-1 px-3 py-2 border border-sand rounded-lg text-sm focus:ring-2 focus:ring-sage focus:border-transparent outline-none"
+                                onClick={(e) => e.stopPropagation()}
                               />
                               <button
-                                onClick={() => handleReserve(item.id)}
-                                className="p-1.5 text-sage hover:bg-sage/10 rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReserve(item.id);
+                                }}
+                                className="p-2 text-sage hover:bg-sage/10 rounded"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setReservingId(null)}
-                                className="p-1.5 text-gray-400 hover:bg-gray-100 rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReservingId(null);
+                                }}
+                                className="p-2 text-gray-400 hover:bg-gray-100 rounded"
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -782,7 +837,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                           )}
 
                           {isReserved && item.reserved_by && (
-                            <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
+                            <span className="px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg flex items-center gap-1.5">
                               <UserPlus className="w-4 h-4" />
                               Reserved by {item.reserved_by}
                             </span>
@@ -791,52 +846,43 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                       )}
 
                       {isPurchased && (
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="px-3 py-1.5 bg-green-100 text-green-700 text-sm rounded-lg inline-flex items-center gap-1.5">
+                        <div className="pt-2 flex items-center justify-between">
+                          <div className="px-3 py-2 bg-green-100 text-green-700 text-sm rounded-lg inline-flex items-center gap-1.5">
                             <Check className="w-4 h-4" />
                             Purchased
                           </div>
-                          <div className="relative">
-                            <button
-                              onClick={() => setShowActionsId(showActions ? null : item.id)}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                            {showActions && (
-                              <div className="absolute right-0 mt-1 bg-white border border-sand rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
-                                <button
-                                  onClick={() => handleEdit(item)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleArchive(item.id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                                >
-                                  <Archive className="w-4 h-4" />
-                                  {item.archived ? 'Unarchive' : 'Archive'}
-                                </button>
-                                <button
-                                  onClick={() => setDeleteConfirmModal({
-                                    isOpen: true,
-                                    itemId: item.id,
-                                    itemName: item.item_name
-                                  })}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(item);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
+
+                  {/* Move to Ideas Button - Visible in collapsed view */}
+                  {!isExpanded && !isEditing && !isPurchased && (
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMoveToIdeas(item.id);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 transition-all"
+                        title="Move to Ideas"
+                      >
+                        <Lightbulb className="w-4 h-4" />
+                        Move to Ideas
+                      </button>
+                    </div>
+                  )}
+
                 </>
               )}
             </div>
