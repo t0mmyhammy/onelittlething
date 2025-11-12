@@ -109,7 +109,10 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     isOpen: boolean;
     item: IdeaItem | null;
     additionalContext: string;
-  }>({ isOpen: false, item: null, additionalContext: '' });
+    selectedRetailers: string[];
+    customRetailers: string;
+    budget: string;
+  }>({ isOpen: false, item: null, additionalContext: '', selectedRetailers: [], customRetailers: '', budget: '' });
 
   // Update items when child changes or inventoryItems prop changes
   useEffect(() => {
@@ -263,11 +266,13 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
 
   const handleAIResearch = (item: IdeaItem) => {
     // Show prompt modal first
-    const hasExistingNotes = item.notes && item.notes.trim().length > 0;
     setAiPromptModal({
       isOpen: true,
       item,
-      additionalContext: hasExistingNotes ? '' : '', // Reset context for both cases
+      additionalContext: '',
+      selectedRetailers: [],
+      customRetailers: '',
+      budget: '',
     });
   };
 
@@ -276,10 +281,16 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
     const additionalContext = aiPromptModal.additionalContext;
     const hasExistingNotes = item?.notes && item.notes.trim().length > 0;
 
+    // Combine selected retailers with custom ones
+    const allRetailers = [
+      ...aiPromptModal.selectedRetailers,
+      ...aiPromptModal.customRetailers.split(',').map(r => r.trim()).filter(Boolean)
+    ];
+
     if (!item) return;
 
     // Close prompt modal and open research modal with loading
-    setAiPromptModal({ isOpen: false, item: null, additionalContext: '' });
+    setAiPromptModal({ isOpen: false, item: null, additionalContext: '', selectedRetailers: [], customRetailers: '', budget: '' });
     setAiModal({
       isOpen: true,
       item,
@@ -301,6 +312,8 @@ export default function IdeasTab({ childId, childName, inventoryItems, childSize
           existingNotes: item.notes,
           additionalContext: hasExistingNotes ? '' : additionalContext, // Only use for initial research
           researchFocus: hasExistingNotes ? additionalContext : null, // Use as focus for re-research
+          retailers: allRetailers.length > 0 ? allRetailers : null, // Only search specified retailers
+          budget: aiPromptModal.budget || null,
           childName,
         }),
       });
@@ -795,7 +808,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
       {aiPromptModal.isOpen && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-          onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '' })}
+          onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '', selectedRetailers: [], customRetailers: '', budget: '' })}
         >
           <div
             className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl"
@@ -815,33 +828,82 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
               </div>
             </div>
 
+            {/* Retailer Selection */}
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Where should I search? (select all that apply)</p>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {['Amazon', 'Target', 'Walmart', 'Nike', 'Pottery Barn Kids', 'Crate & Kids'].map(retailer => (
+                  <button
+                    key={retailer}
+                    onClick={() => {
+                      setAiPromptModal(prev => ({
+                        ...prev,
+                        selectedRetailers: prev.selectedRetailers.includes(retailer)
+                          ? prev.selectedRetailers.filter(r => r !== retailer)
+                          : [...prev.selectedRetailers, retailer]
+                      }));
+                    }}
+                    className={`px-3 py-2 text-sm rounded-lg border-2 transition-all ${
+                      aiPromptModal.selectedRetailers.includes(retailer)
+                        ? 'border-[#7B6CF6] bg-[#F5F4FD] text-[#7B6CF6] font-medium'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {aiPromptModal.selectedRetailers.includes(retailer) && '✓ '}
+                    {retailer}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={aiPromptModal.customRetailers}
+                onChange={(e) => setAiPromptModal(prev => ({ ...prev, customRetailers: e.target.value }))}
+                placeholder="Other retailers (comma-separated, e.g., M-Den, Fanatics, Dick's)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">If none selected, I'll search all retailers</p>
+            </div>
+
+            {/* Budget */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Budget (optional)</label>
+              <input
+                type="text"
+                value={aiPromptModal.budget}
+                onChange={(e) => setAiPromptModal(prev => ({ ...prev, budget: e.target.value }))}
+                placeholder="e.g., Under $50, $20-40, $100 max"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              />
+            </div>
+
+            {/* Additional Context */}
             {aiPromptModal.item?.notes && aiPromptModal.item.notes.trim().length > 0 ? (
               <>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
                   <p className="text-xs font-semibold text-amber-800 mb-1">You already have research for this item</p>
                   <p className="text-xs text-amber-700">I'll provide different options and avoid duplicating your existing research.</p>
                 </div>
-                <p className="text-sm text-gray-700 mb-4 font-medium">
+                <p className="text-sm text-gray-700 mb-2 font-medium">
                   What do you want to research differently?
                 </p>
                 <textarea
                   value={aiPromptModal.additionalContext}
                   onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
                   placeholder="e.g., Different price range, alternative brands, premium options, sustainable choices, etc."
-                  rows={3}
+                  rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
                 />
               </>
             ) : (
               <>
-                <p className="text-sm text-gray-700 mb-4">
-                  Is there anything I should take into consideration as I do this research?
+                <p className="text-sm text-gray-700 mb-2 font-medium">
+                  Any other considerations?
                 </p>
                 <textarea
                   value={aiPromptModal.additionalContext}
                   onChange={(e) => setAiPromptModal(prev => ({ ...prev, additionalContext: e.target.value }))}
-                  placeholder="e.g., Looking for eco-friendly options, budget under $50, specific colors, etc."
-                  rows={3}
+                  placeholder="e.g., Eco-friendly options, specific colors, organic materials, etc."
+                  rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none mb-4"
                 />
               </>
@@ -856,7 +918,7 @@ ${product.features.map(f => `• ${f}`).join('\n')}`;
                 Go Research
               </button>
               <button
-                onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '' })}
+                onClick={() => setAiPromptModal({ isOpen: false, item: null, additionalContext: '', selectedRetailers: [], customRetailers: '', budget: '' })}
                 className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 Maybe Later

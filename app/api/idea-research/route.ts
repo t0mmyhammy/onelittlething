@@ -12,7 +12,7 @@ export const maxDuration = 60; // 60 second timeout for web search
 
 export async function POST(req: Request) {
   try {
-    const { itemName, category, size, brand, existingNotes, childName, additionalContext, researchFocus } = await req.json();
+    const { itemName, category, size, brand, existingNotes, childName, additionalContext, researchFocus, retailers, budget } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -45,7 +45,9 @@ export async function POST(req: Request) {
       existingNotes,
       childName,
       additionalContext,
-      researchFocus
+      researchFocus,
+      retailers,
+      budget
     );
 
     // Call Perplexity API with web search capabilities
@@ -58,9 +60,25 @@ export async function POST(req: Request) {
         },
         {
           role: 'user',
-          content: researchFocus
-            ? `Search the web now for: ${itemName} ${researchFocus}. Find 3-5 real products from DIFFERENT retailers (specialized stores, brand sites, department stores, online retailers). Include exact product page URLs for ${childName}.`
-            : `Search the web now for: ${itemName}. Find 3-5 real, currently available products for ${childName} from various retailers. Prioritize specialized stores when relevant (e.g., university bookstores for college gear, baby stores for nursery items, sporting goods stores for athletic wear). Include exact product page URLs from each retailer.`,
+          content: (() => {
+            let message = researchFocus
+              ? `Search ${retailers && retailers.length > 0 ? 'ONLY these retailers: ' + retailers.join(', ') : 'the web'} now for: ${itemName} ${researchFocus}. `
+              : `Search ${retailers && retailers.length > 0 ? 'ONLY these retailers: ' + retailers.join(', ') : 'the web'} now for: ${itemName}. `;
+
+            if (budget) {
+              message += `Budget: ${budget}. `;
+            }
+
+            message += `Find 3-5 real, currently available products for ${childName}. `;
+
+            if (!retailers || retailers.length === 0) {
+              message += `Prioritize specialized stores when relevant. `;
+            }
+
+            message += `Include exact product page URLs from each retailer.`;
+
+            return message;
+          })(),
         },
       ],
       temperature: 0.3, // Lower for more factual, accurate results
@@ -119,16 +137,19 @@ function buildIdeaResearchPrompt(
   existingNotes: string | null,
   childName: string,
   additionalContext: string | null,
-  researchFocus: string | null
+  researchFocus: string | null,
+  retailers: string[] | null,
+  budget: string | null
 ): string {
   const hasExistingNotes = existingNotes && existingNotes.trim().length > 0;
+  const hasRetailerRestriction = retailers && retailers.length > 0;
 
-  return `You are a helpful shopping assistant with real-time web search capabilities. You can search the entire internet RIGHT NOW to find actual, currently available products from ANY retailer.
+  return `You are a helpful shopping assistant with real-time web search capabilities. ${hasRetailerRestriction ? `You must ONLY search the following retailers: ${retailers.join(', ')}.` : 'You can search the entire internet RIGHT NOW to find actual, currently available products from ANY retailer.'}
 
 ## Task:
 ${hasExistingNotes && researchFocus
-  ? `The user already has research on this item. SEARCH THE WEB NOW for DIFFERENT products focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations from various retailers.`
-  : 'SEARCH THE WEB NOW across ALL retailers and provide a brief TLDR summary and recommend 3-5 specific products that are currently available for purchase. Include diverse sources - specialized stores, brand websites, department stores, online retailers, etc.'
+  ? `The user already has research on this item. ${hasRetailerRestriction ? `SEARCH ONLY ${retailers.join(', ')}` : 'SEARCH THE WEB'} NOW for DIFFERENT products focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations.`
+  : `${hasRetailerRestriction ? `SEARCH ONLY ${retailers.join(', ')}` : 'SEARCH THE WEB NOW across ALL retailers'} and provide a brief TLDR summary and recommend 3-5 specific products that are currently available for purchase.${hasRetailerRestriction ? '' : ' Include diverse sources - specialized stores, brand websites, department stores, online retailers, etc.'}`
 }
 
 ## Context:
@@ -137,6 +158,8 @@ ${hasExistingNotes && researchFocus
 ${category ? `- Category: ${category}` : ''}
 ${size ? `- Size: ${size}` : ''}
 ${brand ? `- Preferred Brand: ${brand}` : ''}
+${budget ? `- Budget: ${budget}` : ''}
+${hasRetailerRestriction ? `- ONLY search these retailers: ${retailers.join(', ')}` : ''}
 ${hasExistingNotes ? `- Previous Research (DO NOT REPEAT): ${existingNotes}` : ''}
 ${additionalContext ? `- Special Considerations: ${additionalContext}` : ''}
 ${researchFocus ? `- NEW Research Focus: ${researchFocus}` : ''}
@@ -158,16 +181,11 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 }
 
 ## Guidelines:
-1. **USE YOUR WEB SEARCH**: Search across ALL retailers RIGHT NOW for real products
-2. **PRIORITIZE SPECIALIZED RETAILERS** when relevant:
-   - University merchandise → Search university bookstores, campus stores, Fanatics
-   - Baby/nursery items → Search Babylist, Pottery Barn Kids, Crate & Kids, West Elm Kids
-   - Athletic wear → Search Nike.com, Adidas.com, Dick's Sporting Goods, Academy Sports
-   - Toys → Search Target, specialist toy stores, brand websites
-   - General items → Include Amazon, Walmart, Target, but also specialty shops
-3. TLDR should be concise, friendly, and helpful - based on current market research
-4. Recommend 3-5 specific products from DIVERSE SOURCES (don't just pick Amazon)
-${hasExistingNotes && researchFocus ? '5. DO NOT recommend products already mentioned in previous research - search for DIFFERENT retailers and options' : '5. Include current price ranges from your search results'}
+1. **USE YOUR WEB SEARCH**: ${hasRetailerRestriction ? `Search ONLY ${retailers.join(', ')} - DO NOT search other retailers` : 'Search across ALL retailers RIGHT NOW for real products'}
+2. ${hasRetailerRestriction ? `**RETAILER RESTRICTION**: You must ONLY return products from: ${retailers.join(', ')}. Ignore products from any other retailers.` : '**PRIORITIZE SPECIALIZED RETAILERS** when relevant:'}${!hasRetailerRestriction ? '\n   - University merchandise → Search university bookstores, campus stores, Fanatics\n   - Baby/nursery items → Search Babylist, Pottery Barn Kids, Crate & Kids, West Elm Kids\n   - Athletic wear → Search Nike.com, Adidas.com, Dick\'s Sporting Goods, Academy Sports\n   - Toys → Search Target, specialist toy stores, brand websites\n   - General items → Include Amazon, Walmart, Target, but also specialty shops' : ''}
+3. ${budget ? `**BUDGET CONSTRAINT**: ${budget} - Only recommend products within this budget` : 'TLDR should be concise, friendly, and helpful - based on current market research'}
+4. Recommend 3-5 specific products${hasRetailerRestriction ? ` from ${retailers.join(', ')} ONLY` : ' from DIVERSE SOURCES'}
+${hasExistingNotes && researchFocus ? '5. DO NOT recommend products already mentioned in previous research - search for DIFFERENT options' : '5. Include current price ranges from your search results'}
 6. List 3-4 key features for each product based on actual product descriptions
 7. **CRITICAL - GET REAL URLs FROM YOUR SEARCH**:
    - Extract the ACTUAL product page URL from your search results
@@ -180,9 +198,9 @@ ${hasExistingNotes && researchFocus ? '5. DO NOT recommend products already ment
    - Examples of BAD URLs: /search?q=, /category/, /browse/
    - Every URL must link to a specific product you actually found
 8. Focus on popular, well-reviewed products with good ratings when available
-9. If brand specified, prioritize that brand but include alternatives from different retailers
+9. If brand specified, prioritize that brand but include alternatives${hasRetailerRestriction ? ` (from the allowed retailers only)` : ' from different retailers'}
 10. Consider the child's age and appropriate products for their developmental stage
-11. **VARY YOUR SOURCES** - try to include products from at least 2-3 different retailers
+11. ${hasRetailerRestriction ? `**STRICT ENFORCEMENT**: Double-check that ALL products are from: ${retailers.join(', ')}` : '**VARY YOUR SOURCES** - try to include products from at least 2-3 different retailers'}
 
 Return ONLY the JSON object, nothing else.`;
 }
