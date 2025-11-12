@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical, Lightbulb, ChevronDown, ChevronUp, Gift } from 'lucide-react';
+import { Star, ShoppingCart, UserPlus, Pencil, Check, X, Plus, DollarSign, ExternalLink, Image as ImageIcon, Trash2, Archive, MoreVertical, Lightbulb, ChevronDown, ChevronUp, Gift, ClipboardList, Bookmark, CheckCircle, Package } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface ShoppingItem {
@@ -356,11 +356,11 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
     }
   };
 
-  const filterButtons: { id: FilterType; label: string; icon: string }[] = [
-    { id: 'active', label: 'Active', icon: '📋' },
-    { id: 'reserved', label: 'Reserved', icon: '🔖' },
-    { id: 'purchased', label: 'Purchased', icon: '✅' },
-    { id: 'archived', label: 'Archived', icon: '📦' },
+  const filterButtons: { id: FilterType; label: string; icon: React.ElementType }[] = [
+    { id: 'active', label: 'Active', icon: ClipboardList },
+    { id: 'reserved', label: 'Reserved', icon: Bookmark },
+    { id: 'purchased', label: 'Purchased', icon: CheckCircle },
+    { id: 'archived', label: 'Archived', icon: Package },
   ];
 
   // Calculate counts for each filter
@@ -384,6 +384,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
       <div className="flex gap-2 overflow-x-auto pb-1">
         {filterButtons.map(btn => {
           const count = filterCounts[btn.id];
+          const Icon = btn.icon;
           return (
             <button
               key={btn.id}
@@ -394,7 +395,7 @@ export default function WishlistTab({ childId, childName, shoppingItems, familyI
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
               }`}
             >
-              <span>{btn.icon}</span>
+              <Icon className="w-4 h-4" />
               <span>{btn.label}</span>
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                 filter === btn.id ? 'bg-white/20' : 'bg-gray-200'

@@ -58,6 +58,7 @@ export default function CompactField({
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           rows={rows}
+          maxLength={2000}
           className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm resize-none bg-white"
         />
       ) : (
@@ -66,6 +67,7 @@ export default function CompactField({
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
+          maxLength={500}
           className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm bg-white"
         />
       )}

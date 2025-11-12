@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Clock, Heart, Shield, Phone, AlertCircle, Sun, Moon, Utensils, Baby } from 'lucide-react';
 import SectionCard from './SectionCard';
 import SectionGroup from './SectionGroup';
@@ -49,10 +50,95 @@ type SectionType = 'routines' | 'health' | 'comfort' | 'safety' | 'contacts';
 
 export default function ChildCareInfoTabV2({
   child,
-  careInfo,
+  careInfo: initialCareInfo,
   onUpdate
 }: ChildCareInfoTabV2Props) {
+  const supabase = createClient();
+  const [careInfo, setCareInfo] = useState(initialCareInfo);
   const [expandedSection, setExpandedSection] = useState<SectionType | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Autosave function
+  const saveChanges = useCallback(async (section: SectionType, data: any, notes?: string) => {
+    if (!careInfo) return;
+
+    try {
+      const updateData: any = {
+        [section]: data,
+        [`${section}_updated_at`]: new Date().toISOString(),
+      };
+
+      if (notes !== undefined) {
+        updateData[`${section}_notes`] = notes;
+      }
+
+      const { data: updated, error } = await supabase
+        .from('child_care_info')
+        .update(updateData)
+        .eq('id', careInfo.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (updated) {
+        setCareInfo(updated);
+        onUpdate(updated);
+      }
+    } catch (error) {
+      console.error('Error saving child care info:', error);
+    }
+  }, [careInfo, supabase, onUpdate]);
+
+  // Debounced update for field changes
+  const updateField = useCallback((section: SectionType, field: string, value: string) => {
+    setCareInfo(prev => {
+      if (!prev) return prev;
+
+      const updatedData = {
+        ...prev,
+        [section]: {
+          ...(prev[section] || {}),
+          [field]: value
+        }
+      };
+
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout to save after 1 second of inactivity
+      saveTimeoutRef.current = setTimeout(() => {
+        saveChanges(section, updatedData[section]);
+      }, 1000);
+
+      return updatedData;
+    });
+  }, [saveChanges]);
+
+  // Update notes field
+  const updateNotes = useCallback((section: SectionType, notes: string) => {
+    setCareInfo(prev => {
+      if (!prev) return prev;
+
+      const updatedData = {
+        ...prev,
+        [`${section}_notes`]: notes
+      };
+
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout to save after 1 second of inactivity
+      saveTimeoutRef.current = setTimeout(() => {
+        saveChanges(section, prev[section], notes);
+      }, 1000);
+
+      return updatedData;
+    });
+  }, [saveChanges]);
 
   // Generate summary text for collapsed view
   const getSummary = (section: SectionType): string => {
@@ -107,6 +193,15 @@ export default function ChildCareInfoTabV2({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-8 pb-8">
       {/* Daily Rhythms Group */}
@@ -136,12 +231,14 @@ export default function ChildCareInfoTabV2({
                   value={careInfo?.routines?.wake_time || ''}
                   placeholder="7:00 AM"
                   icon={Sun}
+                  onChange={(value) => updateField('routines', 'wake_time', value)}
                 />
                 <CompactField
                   label="Bedtime"
                   value={careInfo?.routines?.bedtime || ''}
                   placeholder="8:00 PM"
                   icon={Moon}
+                  onChange={(value) => updateField('routines', 'bedtime', value)}
                 />
               </div>
               <CompactField
@@ -150,6 +247,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="1:00-3:00 PM"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('routines', 'naps', value)}
               />
               <CompactField
                 label="Bedtime routine"
@@ -157,6 +255,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Bath, books, lullaby, lights out"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('routines', 'bedtime_routine', value)}
               />
             </div>
 
@@ -172,6 +271,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Breakfast 7:30, Lunch 12:00, Dinner 5:30"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('routines', 'meals', value)}
               />
             </div>
 
@@ -184,6 +284,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="30 min after homework, educational only"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('routines', 'screen_time', value)}
               />
               <CompactField
                 label="Potty/Diaper routine"
@@ -191,6 +292,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Pull-up at night, asks to use potty"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('routines', 'potty', value)}
               />
             </div>
 
@@ -202,6 +304,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Any other daily routine details..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('routines', value)}
               />
             </div>
           </div>
@@ -248,6 +351,7 @@ export default function ChildCareInfoTabV2({
                 label="Known allergies"
                 value={careInfo?.health?.allergies?.join(', ') || ''}
                 placeholder="Peanuts, shellfish, penicillin"
+                onChange={(value) => updateField('health', 'allergies', value)}
               />
               <CompactField
                 label="What to do if exposed"
@@ -255,6 +359,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Give EpiPen immediately, call 911"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('health', 'allergy_reaction', value)}
               />
             </div>
 
@@ -267,6 +372,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Vitamin D 400 IU with breakfast"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('health', 'medications', value)}
               />
               <CompactField
                 label="As-needed medications"
@@ -274,6 +380,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Tylenol for fever, Benadryl for reactions"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('health', 'as_needed_meds', value)}
               />
             </div>
 
@@ -285,6 +392,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Asthma (mild), eczema"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('health', 'conditions', value)}
               />
             </div>
 
@@ -296,6 +404,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Any other medical details..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('health', value)}
               />
             </div>
           </div>
@@ -323,6 +432,7 @@ export default function ChildCareInfoTabV2({
               placeholder="Deep breaths, counting to 10, gentle back rubs"
               multiline
               rows={3}
+              onChange={(value) => updateField('comfort', 'calming_tips', value)}
             />
             <CompactField
               label="Comfort items"
@@ -330,6 +440,7 @@ export default function ChildCareInfoTabV2({
               placeholder="Blue blankie, teddy bear, pacifier"
               multiline
               rows={2}
+              onChange={(value) => updateField('comfort', 'comfort_items', value)}
             />
             <CompactField
               label="Favorites"
@@ -337,6 +448,7 @@ export default function ChildCareInfoTabV2({
               placeholder="Loves Daniel Tiger, playing with cars, reading books"
               multiline
               rows={3}
+              onChange={(value) => updateField('comfort', 'favorites', value)}
             />
             <CompactField
               label="Dislikes & triggers"
@@ -344,6 +456,7 @@ export default function ChildCareInfoTabV2({
               placeholder="Loud noises, scratchy tags, green foods"
               multiline
               rows={3}
+              onChange={(value) => updateField('comfort', 'dislikes', value)}
             />
             <CompactField
               label="Behavioral notes"
@@ -351,6 +464,7 @@ export default function ChildCareInfoTabV2({
               placeholder="Gets shy around new people, needs warning before transitions"
               multiline
               rows={3}
+              onChange={(value) => updateField('comfort', 'behavior', value)}
             />
 
             {/* Notes */}
@@ -361,6 +475,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Any other comfort details..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('comfort', value)}
               />
             </div>
           </div>
@@ -390,6 +505,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Play in backyard with supervision, ride bike with helmet"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('safety', 'dos', value)}
               />
             </div>
 
@@ -401,6 +517,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="No pool without adult, no climbing on furniture"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('safety', 'donts', value)}
               />
             </div>
 
@@ -412,6 +529,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Runs toward street, puts small objects in mouth"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('safety', 'warnings', value)}
               />
             </div>
 
@@ -422,6 +540,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Forward-facing Graco, 30-65 lbs, in back seat"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('safety', 'car_seat', value)}
               />
             </div>
 
@@ -433,6 +552,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Any other safety details..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('safety', value)}
               />
             </div>
           </div>
@@ -455,17 +575,20 @@ export default function ChildCareInfoTabV2({
                 label="Name"
                 value={careInfo?.contacts?.parent1_name || ''}
                 placeholder="Full name"
+                onChange={(value) => updateField('contacts', 'parent1_name', value)}
               />
               <div className="grid grid-cols-2 gap-3">
                 <CompactField
                   label="Phone"
                   value={careInfo?.contacts?.parent1_phone || ''}
                   placeholder="(555) 123-4567"
+                  onChange={(value) => updateField('contacts', 'parent1_phone', value)}
                 />
                 <CompactField
                   label="Email"
                   value={careInfo?.contacts?.parent1_email || ''}
                   placeholder="parent@email.com"
+                  onChange={(value) => updateField('contacts', 'parent1_email', value)}
                 />
               </div>
             </div>
@@ -477,17 +600,20 @@ export default function ChildCareInfoTabV2({
                 label="Name"
                 value={careInfo?.contacts?.parent2_name || ''}
                 placeholder="Full name"
+                onChange={(value) => updateField('contacts', 'parent2_name', value)}
               />
               <div className="grid grid-cols-2 gap-3">
                 <CompactField
                   label="Phone"
                   value={careInfo?.contacts?.parent2_phone || ''}
                   placeholder="(555) 123-4567"
+                  onChange={(value) => updateField('contacts', 'parent2_phone', value)}
                 />
                 <CompactField
                   label="Email"
                   value={careInfo?.contacts?.parent2_email || ''}
                   placeholder="parent@email.com"
+                  onChange={(value) => updateField('contacts', 'parent2_email', value)}
                 />
               </div>
             </div>
@@ -499,16 +625,19 @@ export default function ChildCareInfoTabV2({
                 label="Doctor name"
                 value={careInfo?.contacts?.doctor_name || ''}
                 placeholder="Dr. Smith"
+                onChange={(value) => updateField('contacts', 'doctor_name', value)}
               />
               <CompactField
                 label="Clinic name"
                 value={careInfo?.contacts?.doctor_clinic || ''}
                 placeholder="Children's Medical Group"
+                onChange={(value) => updateField('contacts', 'doctor_clinic', value)}
               />
               <CompactField
                 label="Phone"
                 value={careInfo?.contacts?.doctor_phone || ''}
                 placeholder="(555) 123-4567"
+                onChange={(value) => updateField('contacts', 'doctor_phone', value)}
               />
             </div>
 
@@ -520,6 +649,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Grandma: (555) 123-4567, Neighbor: (555) 765-4321"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('contacts', 'emergency_contacts', value)}
               />
               <CompactField
                 label="Authorized pickup"
@@ -527,6 +657,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Grandma, Aunt Sarah, Neighbor Tom"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('contacts', 'authorized_pickup', value)}
               />
             </div>
 
@@ -538,6 +669,7 @@ export default function ChildCareInfoTabV2({
                 placeholder="Any other contact details..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('contacts', value)}
               />
             </div>
           </div>

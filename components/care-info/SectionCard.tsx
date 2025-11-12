@@ -30,10 +30,7 @@ export default function SectionCard({
       isExpanded ? 'border-sage/30 shadow-md' : 'border-sand shadow-sm hover:shadow-md'
     }`}>
       {/* Card Header - Always Visible */}
-      <button
-        onClick={onToggle}
-        className="w-full p-5 flex items-start gap-4 text-left transition-colors hover:bg-gray-50/50 rounded-t-2xl"
-      >
+      <div className="p-5 flex items-start gap-4">
         {/* Icon */}
         <div className="flex-shrink-0 mt-1">
           <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -41,8 +38,11 @@ export default function SectionCard({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
+        {/* Content - Clickable to expand/collapse */}
+        <button
+          onClick={onToggle}
+          className="flex-1 min-w-0 text-left"
+        >
           <div className="flex items-center gap-3 mb-1">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             <UpdatedBadge timestamp={updatedAt} />
@@ -54,34 +54,41 @@ export default function SectionCard({
           ) : (
             <p className="text-sm text-gray-400 italic">No information yet</p>
           )}
-        </div>
+        </button>
 
-        {/* Expand/Collapse */}
-        <div className="flex-shrink-0 mt-1">
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+        {/* Right side actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Edit button - only show when expanded and not editing */}
+          {isExpanded && !isEditing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-sage hover:bg-sage/10 rounded-lg transition-colors"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
           )}
+
+          {/* Expand/Collapse button */}
+          <button
+            onClick={onToggle}
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
         </div>
-      </button>
+      </div>
 
       {/* Expanded Content */}
       {isExpanded && (
         <div className="border-t border-gray-100">
-          {/* Edit Mode Toggle */}
-          {!isEditing && (
-            <div className="px-5 py-3 bg-gray-50/50 flex justify-end border-b border-gray-100">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-sage hover:bg-sage/10 rounded-lg transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-            </div>
-          )}
-
           {/* Content Area */}
           <div className={`p-5 ${isEditing ? 'bg-white' : 'bg-gray-50/30'}`}>
             {children}

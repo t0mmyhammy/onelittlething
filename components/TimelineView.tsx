@@ -3,8 +3,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import EditEntryModal from './EditEntryModal';
-import { PencilIcon, FunnelIcon } from '@heroicons/react/24/outline';
-import { getColorClasses } from '@/lib/labelColors';
+import { FunnelIcon } from '@heroicons/react/24/outline';
+import TimelineNode from './timeline/TimelineNode';
+import DateHeader from './timeline/DateHeader';
+import MomentCard from './timeline/MomentCard';
 
 // Helper to parse date string without timezone conversion
 const parseLocalDate = (dateStr: string): Date => {
@@ -126,6 +128,21 @@ export default function TimelineView({
     return entries;
   }, [initialEntries, selectedChildFilter, sortOrder]);
 
+  // Group entries by date
+  const groupedEntries = useMemo(() => {
+    const groups: { [key: string]: Entry[] } = {};
+
+    filteredAndSortedEntries.forEach((entry) => {
+      const dateKey = entry.entry_date; // YYYY-MM-DD format
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(entry);
+    });
+
+    return groups;
+  }, [filteredAndSortedEntries]);
+
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm">
@@ -228,66 +245,67 @@ export default function TimelineView({
           )}
         </div>
 
-        {/* Entries List */}
-        <div className="p-6">
+        {/* Timeline - Memory Lane Layout */}
+        <div className="p-6 relative">
           {filteredAndSortedEntries.length > 0 ? (
-            <div className="space-y-4">
-              {filteredAndSortedEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-4 border border-sand rounded-lg hover:border-sage transition-colors group relative"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex gap-2 flex-wrap items-center">
-                      {/* Creator Initial Badge */}
-                      {mounted && creatorInfo[entry.created_by] && (
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
-                          {getCreatorInitial(creatorInfo[entry.created_by])}
-                        </div>
-                      )}
-                      {/* Child Tags */}
-                      {entry.entry_children?.map((ec: any) => {
-                        const colors = getColorClasses(ec.children.label_color || undefined);
-                        return (
-                          <span
-                            key={ec.children.id}
-                            style={{ backgroundColor: colors.hex }}
-                            className={`text-xs px-2 py-1 rounded-full ${colors.text}`}
-                          >
-                            {ec.children.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">
-                        {parseLocalDate(entry.entry_date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
+            <div className="relative">
+              {/* Vertical Timeline Line */}
+              <div className="absolute left-[5.75rem] top-0 bottom-0 w-0.5 bg-gray-200" />
+
+              {/* Date Groups */}
+              <div className="space-y-8">
+                {Object.keys(groupedEntries).map((dateKey) => {
+                  const date = parseLocalDate(dateKey);
+                  const entriesForDate = groupedEntries[dateKey];
+
+                  return (
+                    <div key={dateKey}>
+                      {/* Date Header */}
+                      <DateHeader date={date} />
+
+                      {/* Entries for this date */}
+                      <div className="space-y-6">
+                        {entriesForDate.map((entry) => {
+                          // Get children for this entry
+                          const entryChildren = entry.entry_children?.map((ec: any) => ({
+                            id: ec.children.id,
+                            name: ec.children.name,
+                            photo_url: ec.children.photo_url || null,
+                            label_color: ec.children.label_color || null,
+                          })) || [];
+
+                          return (
+                            <div key={entry.id} className="flex items-start gap-4">
+                              {/* Left spacer for date */}
+                              <div className="flex-shrink-0 w-20" />
+
+                              {/* Timeline Node */}
+                              <TimelineNode
+                                children={entryChildren}
+                                creatorInitial={
+                                  mounted && creatorInfo[entry.created_by]
+                                    ? getCreatorInitial(creatorInfo[entry.created_by])
+                                    : undefined
+                                }
+                              />
+
+                              {/* Moment Card */}
+                              <div className="flex-1 min-w-0">
+                                <MomentCard
+                                  content={entry.content}
+                                  photoUrl={entry.photo_url}
+                                  entryChildren={entry.entry_children}
+                                  onEditClick={() => handleEditClick(entry)}
+                                />
+                              </div>
+                            </div>
+                          );
                         })}
-                      </span>
-                      <button
-                        onClick={() => handleEditClick(entry)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sage"
-                        aria-label="Edit moment"
-                      >
-                        <PencilIcon className="w-5 h-5" />
-                      </button>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-gray-700">{entry.content}</p>
-                  {entry.photo_url && (
-                    <div className="mt-3">
-                      <img
-                        src={entry.photo_url}
-                        alt="Moment photo"
-                        className="rounded-lg max-w-full h-auto max-h-96 object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">

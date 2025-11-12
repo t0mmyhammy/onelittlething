@@ -4,8 +4,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import NewEntryModal from './NewEntryModal';
 import EditEntryModal from './EditEntryModal';
-import { PencilIcon, BarsArrowUpIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { getColorClasses } from '@/lib/labelColors';
+import { BarsArrowUpIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import TimelineNode from './timeline/TimelineNode';
+import MomentCard from './timeline/MomentCard';
 
 // Helper to parse date string without timezone conversion
 const parseLocalDate = (dateStr: string): Date => {
@@ -295,11 +296,11 @@ export default function EntriesSection({
 
         {filteredAndSortedEntries.length > 0 ? (
           <div className="relative">
-            {/* Timeline vertical line - mobile: thin line on left, desktop: centered */}
-            <div className="absolute left-2.5 md:left-[94px] top-3 bottom-3 w-[1px] md:w-0.5 bg-gradient-to-b from-sage/40 via-sage/20 to-transparent" />
+            {/* Timeline vertical line */}
+            <div className="absolute left-[5.75rem] top-0 bottom-0 w-0.5 bg-gray-200" />
 
             {/* Timeline entries grouped by date */}
-            <div className="space-y-7 md:space-y-10">
+            <div className="space-y-8">
               {Object.entries(visibleGroupedEntries)
                 .sort((a, b) => {
                   const dateA = parseLocalDate(a[0]).getTime();
@@ -308,150 +309,63 @@ export default function EntriesSection({
                 })
                 .map(([dateStr, dateEntries]) => {
                   const date = parseLocalDate(dateStr);
-                  const shortDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                  const fullDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                  const hasMultiple = dateEntries.length > 1;
+                  const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+                  const day = date.getDate();
 
                   return (
-                    <div key={dateStr} className="relative">
-                      {/* Mobile: Timeline node + date on left side */}
-                      <div className="md:hidden flex items-start gap-3 mb-3">
-                        {/* Timeline node on the line */}
-                        <div className="flex-shrink-0 relative z-10 mt-1">
-                          <div className="w-2 h-2 rounded-full bg-sage ring-2 ring-cream shadow-sm" />
-                        </div>
-                        <div className="text-[13px] font-medium text-gray-500 uppercase tracking-wide pt-0.5">
-                          {shortDate}
-                        </div>
-                      </div>
-
-                      {/* Desktop: Date + Timeline layout */}
-                      <div className="hidden md:flex gap-4">
-                        {/* Date on the left */}
-                        <div className="flex-shrink-0 w-24 pt-1 text-right">
-                          <div className="text-[13px] font-medium text-gray-500 uppercase tracking-wide">{shortDate}</div>
-                        </div>
-
-                        {/* Timeline node - perfectly centered on the line */}
-                        <div className="flex-shrink-0 relative z-10 -ml-1.5">
-                          <div className="w-3 h-3 rounded-full bg-sage ring-4 ring-cream mt-1.5 shadow-sm" />
-                        </div>
-
-                        {/* Entry content(s) */}
-                        <div className="flex-1 pb-2 min-w-0">
-                          <div className={`flex flex-wrap gap-3 ${hasMultiple ? '' : ''}`}>
-                            {dateEntries.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className={`group ${
-                                hasMultiple
-                                  ? 'w-full sm:flex-1 sm:min-w-[280px] sm:max-w-[calc(50%-0.375rem)]'
-                                  : 'w-full'
-                              }`}
-                            >
-                              <div className="bg-[#FDFCFB] rounded-xl p-4 shadow-sm hover:shadow-md transition-all h-full">
-                                <div className="flex justify-between items-start gap-3 mb-2.5">
-                                  <div className="flex gap-1.5 flex-wrap items-center">
-                                    {/* Creator Initial Badge */}
-                                    {mounted && creatorInfo[entry.created_by] && (
-                                      <div className="flex-shrink-0 w-[22px] h-[22px] rounded-full bg-sage/15 text-sage flex items-center justify-center text-[11px] font-semibold">
-                                        {getCreatorInitial(creatorInfo[entry.created_by])}
-                                      </div>
-                                    )}
-                                    {/* Child Tags */}
-                                    {entry.entry_children?.map((ec: any) => {
-                                      const colors = getColorClasses(ec.children.label_color || undefined);
-                                      return (
-                                        <span
-                                          key={ec.children.id}
-                                          style={{ backgroundColor: colors.hex }}
-                                          className={`text-[12px] px-2 py-0.5 rounded-full ${colors.text} font-semibold`}
-                                        >
-                                          {ec.children.name}
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                  <button
-                                    onClick={() => handleEditClick(entry)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sage flex-shrink-0"
-                                    aria-label="Edit moment"
-                                    title={fullDate}
-                                  >
-                                    <PencilIcon className="w-4 h-4" />
-                                  </button>
-                                </div>
-                                <p className="text-[15px] text-gray-700 leading-relaxed">{entry.content}</p>
-                                {entry.photo_url && (
-                                  <div className="mt-3">
-                                    <img
-                                      src={entry.photo_url}
-                                      alt="Moment photo"
-                                      className="rounded-lg max-w-full h-auto max-h-96 object-cover"
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            ))}
+                    <div key={dateStr}>
+                      {/* Date Header */}
+                      <div className="flex items-start gap-6 mb-6">
+                        <div className="flex-shrink-0 w-20 text-right pt-1">
+                          <div className="text-sm font-medium text-gray-400 tracking-wide">
+                            {month} {day}
                           </div>
                         </div>
+                        <div className="flex-shrink-0 w-11" />
+                        <div className="flex-1" />
                       </div>
 
-                      {/* Mobile: Full-width entries with left padding for timeline */}
-                      <div className="md:hidden space-y-3 pl-7">
-                          {dateEntries.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className="group bg-[#FDFCFB] rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all"
-                            >
-                              <div className="flex justify-between items-start gap-2 mb-2">
-                                <div className="flex gap-1.5 flex-wrap items-center">
-                                  {/* Creator Initial Badge */}
-                                  {creatorInfo[entry.created_by] && (
-                                    <div className="flex-shrink-0 w-[22px] h-[22px] rounded-full bg-sage/15 text-sage flex items-center justify-center text-[11px] font-semibold">
-                                      {getCreatorInitial(creatorInfo[entry.created_by])}
-                                    </div>
-                                  )}
-                                  {/* Child Tags */}
-                                  {entry.entry_children?.map((ec: any) => {
-                                    const colors = getColorClasses(ec.children.label_color || undefined);
-                                    return (
-                                      <span
-                                        key={ec.children.id}
-                                        style={{ backgroundColor: colors.hex }}
-                                        className={`text-[12px] px-2 py-0.5 rounded-full ${colors.text} font-semibold`}
-                                      >
-                                        {ec.children.name}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                                <button
-                                  onClick={() => handleEditClick(entry)}
-                                  className="text-gray-400 hover:text-sage flex-shrink-0"
-                                  aria-label="Edit moment"
-                                  title={fullDate}
-                                >
-                                  <PencilIcon className="w-4 h-4" />
-                                </button>
+                      {/* Entries for this date */}
+                      <div className="space-y-6">
+                        {dateEntries.map((entry) => {
+                          const entryChildren = entry.entry_children?.map((ec: any) => ({
+                            id: ec.children.id,
+                            name: ec.children.name,
+                            photo_url: ec.children.photo_url || null,
+                            label_color: ec.children.label_color || null,
+                          })) || [];
+
+                          return (
+                            <div key={entry.id} className="flex items-start gap-4">
+                              {/* Left spacer for date */}
+                              <div className="flex-shrink-0 w-20" />
+
+                              {/* Timeline Node */}
+                              <TimelineNode
+                                children={entryChildren}
+                                creatorInitial={
+                                  mounted && creatorInfo[entry.created_by]
+                                    ? getCreatorInitial(creatorInfo[entry.created_by])
+                                    : undefined
+                                }
+                              />
+
+                              {/* Moment Card */}
+                              <div className="flex-1 min-w-0">
+                                <MomentCard
+                                  content={entry.content}
+                                  photoUrl={entry.photo_url}
+                                  entryChildren={entry.entry_children}
+                                  onEditClick={() => handleEditClick(entry)}
+                                />
                               </div>
-                              <p className="text-[15px] text-gray-700 leading-relaxed">{entry.content}</p>
-                              {entry.photo_url && (
-                                <div className="mt-2">
-                                  <img
-                                    src={entry.photo_url}
-                                    alt="Moment photo"
-                                    className="rounded-lg max-w-full h-auto max-h-96 object-cover"
-                                  />
-                                </div>
-                              )}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
             </div>
 
             {/* Expand/View All Button */}

@@ -418,8 +418,7 @@ export default function SizesTab({ childId, childName, childGender, familyId }: 
                               : 'bg-white shadow-sm hover:shadow-md hover:scale-105'
                           }`}
                         >
-                          <div className="text-2xl mb-1">{item.emoji}</div>
-                          <div className="text-xs font-medium text-gray-700">{item.name}</div>
+                          <div className="text-sm font-medium text-gray-900">{item.name}</div>
                         </button>
                       );
                     })}
@@ -510,17 +509,14 @@ export default function SizesTab({ childId, childName, childGender, familyId }: 
               >
                 {/* Category Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{emoji}</span>
-                    <div>
-                      <h3 className="text-[17px] font-semibold text-gray-900">{category.category}</h3>
-                      {category.updated_at && !isEditing && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          {formatTimestamp(category.updated_at)}
-                        </p>
-                      )}
-                    </div>
+                  <div>
+                    <h3 className="text-[17px] font-semibold text-gray-900">{category.category}</h3>
+                    {category.updated_at && !isEditing && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        {formatTimestamp(category.updated_at)}
+                      </p>
+                    )}
                   </div>
                   {!isEditing && (
                     <div className="flex items-center gap-2">

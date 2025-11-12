@@ -44,6 +44,89 @@ export default function FamilyCareInfoTabV2({
   const supabase = createClient();
   const [familyCareInfo, setFamilyCareInfo] = useState(initialFamilyCareInfo);
   const [expandedSection, setExpandedSection] = useState<SectionType | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Autosave function
+  const saveChanges = useCallback(async (section: SectionType, data: any, notes?: string) => {
+    if (!familyCareInfo) return;
+
+    try {
+      const updateData: any = {
+        [section]: data,
+        [`${section}_updated_at`]: new Date().toISOString(),
+      };
+
+      if (notes !== undefined) {
+        updateData[`${section}_notes`] = notes;
+      }
+
+      const { data: updated, error } = await supabase
+        .from('family_care_info')
+        .update(updateData)
+        .eq('id', familyCareInfo.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (updated) {
+        setFamilyCareInfo(updated);
+        onUpdate(updated);
+      }
+    } catch (error) {
+      console.error('Error saving family care info:', error);
+    }
+  }, [familyCareInfo, supabase, onUpdate]);
+
+  // Debounced update for field changes
+  const updateField = useCallback((section: SectionType, field: string, value: string) => {
+    setFamilyCareInfo(prev => {
+      if (!prev) return prev;
+
+      const updatedData = {
+        ...prev,
+        [section]: {
+          ...(prev[section] || {}),
+          [field]: value
+        }
+      };
+
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout to save after 1 second of inactivity
+      saveTimeoutRef.current = setTimeout(() => {
+        saveChanges(section, updatedData[section]);
+      }, 1000);
+
+      return updatedData;
+    });
+  }, [saveChanges]);
+
+  // Update notes field
+  const updateNotes = useCallback((section: SectionType, notes: string) => {
+    setFamilyCareInfo(prev => {
+      if (!prev) return prev;
+
+      const updatedData = {
+        ...prev,
+        [`${section}_notes`]: notes
+      };
+
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout to save after 1 second of inactivity
+      saveTimeoutRef.current = setTimeout(() => {
+        saveChanges(section, prev[section], notes);
+      }, 1000);
+
+      return updatedData;
+    });
+  }, [saveChanges]);
 
   // Generate summary text for collapsed view
   const getSummary = (section: SectionType): string => {
@@ -87,6 +170,15 @@ export default function FamilyCareInfoTabV2({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-8 pb-8">
       {/* Family Basics Group */}
@@ -114,22 +206,26 @@ export default function FamilyCareInfoTabV2({
                 label="Street address"
                 value={familyCareInfo?.home_base?.street_address || ''}
                 placeholder="123 Main Street"
+                onChange={(value) => updateField('home_base', 'street_address', value)}
               />
               <div className="grid grid-cols-3 gap-3">
                 <CompactField
                   label="City"
                   value={familyCareInfo?.home_base?.city || ''}
                   placeholder="San Francisco"
+                  onChange={(value) => updateField('home_base', 'city', value)}
                 />
                 <CompactField
                   label="State"
                   value={familyCareInfo?.home_base?.state || ''}
                   placeholder="CA"
+                  onChange={(value) => updateField('home_base', 'state', value)}
                 />
                 <CompactField
                   label="ZIP"
                   value={familyCareInfo?.home_base?.zip_code || ''}
                   placeholder="94102"
+                  onChange={(value) => updateField('home_base', 'zip_code', value)}
                 />
               </div>
             </div>
@@ -145,12 +241,14 @@ export default function FamilyCareInfoTabV2({
                 value={familyCareInfo?.home_base?.wifi_network || ''}
                 placeholder="MyNetwork"
                 icon={Wifi}
+                onChange={(value) => updateField('home_base', 'wifi_network', value)}
               />
               <CompactField
                 label="Password"
                 value={familyCareInfo?.home_base?.wifi_password || ''}
                 placeholder="••••••••"
                 isSecure
+                onChange={(value) => updateField('home_base', 'wifi_password', value)}
               />
             </div>
 
@@ -167,6 +265,7 @@ export default function FamilyCareInfoTabV2({
                 multiline
                 rows={3}
                 isSecure
+                onChange={(value) => updateField('home_base', 'access', value)}
               />
             </div>
 
@@ -182,6 +281,7 @@ export default function FamilyCareInfoTabV2({
                 placeholder="Park in driveway or on street"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('home_base', 'parking', value)}
               />
             </div>
 
@@ -193,6 +293,7 @@ export default function FamilyCareInfoTabV2({
                 placeholder="Anything else about your home..."
                 multiline
                 rows={3}
+                onChange={(value) => updateNotes('home_base', value)}
               />
             </div>
           </div>
@@ -214,6 +315,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="30 min after homework, no screens during meals"
               multiline
               rows={2}
+              onChange={(value) => updateField('house_rules', 'screen_rules', value)}
             />
             <CompactField
               label="Food & snacks"
@@ -221,6 +323,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Snacks in pantry. Ask before opening fridge."
               multiline
               rows={2}
+              onChange={(value) => updateField('house_rules', 'food_rules', value)}
             />
             <CompactField
               label="Pet rules"
@@ -228,6 +331,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Dog stays outside. Don't feed table scraps."
               multiline
               rows={2}
+              onChange={(value) => updateField('house_rules', 'pet_rules', value)}
             />
             <CompactField
               label="Visitor rules"
@@ -235,6 +339,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="No friends over unless parent approves"
               multiline
               rows={2}
+              onChange={(value) => updateField('house_rules', 'visitor_rules', value)}
             />
             <CompactField
               label="Off-limits areas"
@@ -242,6 +347,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Master bedroom, garage, basement"
               multiline
               rows={2}
+              onChange={(value) => updateField('house_rules', 'off_limits', value)}
             />
           </div>
         </SectionCard>
@@ -262,6 +368,7 @@ export default function FamilyCareInfoTabV2({
                 label="School name"
                 value={familyCareInfo?.schedule?.school_name || ''}
                 placeholder="Lincoln Elementary"
+                onChange={(value) => updateField('schedule', 'school_name', value)}
               />
               <CompactField
                 label="Address"
@@ -269,17 +376,20 @@ export default function FamilyCareInfoTabV2({
                 placeholder="123 School St"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('schedule', 'school_address', value)}
               />
               <div className="grid grid-cols-2 gap-3">
                 <CompactField
                   label="Drop-off time"
                   value={familyCareInfo?.schedule?.school_dropoff || ''}
                   placeholder="8:00 AM"
+                  onChange={(value) => updateField('schedule', 'school_dropoff', value)}
                 />
                 <CompactField
                   label="Pickup time"
                   value={familyCareInfo?.schedule?.school_pickup || ''}
                   placeholder="3:00 PM"
+                  onChange={(value) => updateField('schedule', 'school_pickup', value)}
                 />
               </div>
             </div>
@@ -291,6 +401,7 @@ export default function FamilyCareInfoTabV2({
                 placeholder="Mon: Soccer 4pm, Wed: Piano 5pm"
                 multiline
                 rows={3}
+                onChange={(value) => updateField('schedule', 'activities', value)}
               />
             </div>
 
@@ -300,6 +411,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Bus #12, carpool with neighbors"
               multiline
               rows={2}
+              onChange={(value) => updateField('schedule', 'transportation', value)}
             />
 
             <CompactField
@@ -308,6 +420,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Complete before screen time"
               multiline
               rows={2}
+              onChange={(value) => updateField('schedule', 'homework', value)}
             />
           </div>
         </SectionCard>
@@ -341,6 +454,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="Call 911 first, then call parents. First aid kit in bathroom."
               multiline
               rows={3}
+              onChange={(value) => updateField('emergency', 'emergency_plan', value)}
             />
 
             <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -349,6 +463,7 @@ export default function FamilyCareInfoTabV2({
                 label="Hospital name"
                 value={familyCareInfo?.emergency?.hospital_name || ''}
                 placeholder="St. Mary's Hospital"
+                onChange={(value) => updateField('emergency', 'hospital_name', value)}
               />
               <CompactField
                 label="Address"
@@ -356,11 +471,13 @@ export default function FamilyCareInfoTabV2({
                 placeholder="456 Medical Dr"
                 multiline
                 rows={2}
+                onChange={(value) => updateField('emergency', 'hospital_address', value)}
               />
               <CompactField
                 label="Distance"
                 value={familyCareInfo?.emergency?.hospital_distance || ''}
                 placeholder="5 min drive"
+                onChange={(value) => updateField('emergency', 'hospital_distance', value)}
               />
             </div>
 
@@ -370,6 +487,7 @@ export default function FamilyCareInfoTabV2({
               placeholder="ABC Urgent Care, 789 Care St"
               multiline
               rows={2}
+              onChange={(value) => updateField('emergency', 'urgent_care', value)}
             />
 
             <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -378,18 +496,21 @@ export default function FamilyCareInfoTabV2({
                 label="Provider"
                 value={familyCareInfo?.emergency?.insurance_provider || ''}
                 placeholder="Blue Cross Blue Shield"
+                onChange={(value) => updateField('emergency', 'insurance_provider', value)}
               />
               <CompactField
                 label="Policy number"
                 value={familyCareInfo?.emergency?.insurance_policy || ''}
                 placeholder="ABC123456"
                 isSecure
+                onChange={(value) => updateField('emergency', 'insurance_policy', value)}
               />
               <CompactField
                 label="Group number"
                 value={familyCareInfo?.emergency?.insurance_group || ''}
                 placeholder="XYZ789"
                 isSecure
+                onChange={(value) => updateField('emergency', 'insurance_group', value)}
               />
             </div>
 
