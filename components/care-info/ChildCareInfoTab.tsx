@@ -268,24 +268,44 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
   return (
     <div className="space-y-4">
       {/* Header with child info */}
-      <div className="bg-white rounded-xl border border-sand p-4 flex items-center gap-4">
-        {child.photo_url ? (
-          <img
-            src={child.photo_url}
-            alt={child.name}
-            className="w-16 h-16 rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-full bg-sage/20 flex items-center justify-center">
-            <span className="text-2xl font-serif text-sage">{child.name[0]}</span>
+      <div className="bg-white rounded-xl border border-sand p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {child.photo_url ? (
+            <img
+              src={child.photo_url}
+              alt={child.name}
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-sage/20 flex items-center justify-center">
+              <span className="text-2xl font-serif text-sage">{child.name[0]}</span>
+            </div>
+          )}
+          <div>
+            <h2 className="text-xl font-serif text-gray-900">{child.name}</h2>
+            <p className="text-sm text-gray-600">
+              Complete these sections to create care guides
+            </p>
           </div>
-        )}
-        <div>
-          <h2 className="text-xl font-serif text-gray-900">{child.name}</h2>
-          <p className="text-sm text-gray-600">
-            Complete these sections to create care guides
-          </p>
         </div>
+
+        {/* Save All Button */}
+        <button
+          onClick={() => {
+            // Clear any pending autosave
+            if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+            // Save all sections
+            const sections: SectionType[] = ['routines', 'health', 'comfort', 'safety', 'contacts'];
+            sections.forEach(section => {
+              saveSection(section, careInfo[section] || {}, careInfo[`${section}_notes`] || null);
+            });
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-sage/90 transition-colors text-sm font-medium flex-shrink-0"
+        >
+          <Check className="w-4 h-4" />
+          Save All
+        </button>
       </div>
 
       {/* Sections */}
@@ -363,11 +383,6 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('routines', field, value)}
                     onNotesUpdate={(notes) => updateNotes('routines', notes)}
-                    onManualSave={() => {
-                      // Trigger immediate save
-                      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                      saveSection('routines', careInfo.routines, careInfo.routines_notes || null);
-                    }}
                     onRedactionToggle={(field) => {
                       // Handle redaction toggle
                       const current = careInfo.routines_redacted_fields || [];

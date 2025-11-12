@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff, Plus, X, Save } from 'lucide-react';
+import { Eye, EyeOff, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import InfoTooltip from '../InfoTooltip';
 import { getFieldGuideline, calculateAgeInMonths } from '@/lib/cdcGuidelines';
@@ -13,7 +13,6 @@ interface RoutinesSectionProps {
   onUpdate: (field: string, value: any) => void;
   onNotesUpdate: (notes: string) => void;
   onRedactionToggle: (field: string) => void;
-  onManualSave?: () => void;
 }
 
 const COMMON_WAKE_TIMES = ['6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM', '8:00 AM'];
@@ -26,8 +25,7 @@ export default function RoutinesSection({
   childBirthdate,
   onUpdate,
   onNotesUpdate,
-  onRedactionToggle,
-  onManualSave
+  onRedactionToggle
 }: RoutinesSectionProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -36,18 +34,6 @@ export default function RoutinesSection({
 
   return (
     <div className="space-y-6">
-      {/* Manual Save Button */}
-      {onManualSave && (
-        <div className="flex justify-end">
-          <button
-            onClick={onManualSave}
-            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-sage/90 transition-colors text-sm font-medium"
-          >
-            <Save className="w-4 h-4" />
-            Save Now
-          </button>
-        </div>
-      )}
       {/* Wake Time */}
       <div>
         <div className="flex items-center justify-between mb-2">
