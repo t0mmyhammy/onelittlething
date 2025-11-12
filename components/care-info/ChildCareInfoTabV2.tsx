@@ -46,7 +46,6 @@ interface ChildCareInfoTabV2Props {
 }
 
 type SectionType = 'routines' | 'health' | 'comfort' | 'safety' | 'contacts';
-type CompletionState = 'complete' | 'partial' | 'empty';
 
 export default function ChildCareInfoTabV2({
   child,
@@ -54,18 +53,6 @@ export default function ChildCareInfoTabV2({
   onUpdate
 }: ChildCareInfoTabV2Props) {
   const [expandedSection, setExpandedSection] = useState<SectionType | null>(null);
-
-  // Calculate completion state for each section
-  const getCompletionState = (section: SectionType): CompletionState => {
-    if (!careInfo) return 'empty';
-
-    const data = careInfo[section] || {};
-    const keys = Object.keys(data).filter(k => data[k]);
-
-    if (keys.length === 0) return 'empty';
-    if (keys.length < 3) return 'partial';
-    return 'complete';
-  };
 
   // Generate summary text for collapsed view
   const getSummary = (section: SectionType): string => {
@@ -131,7 +118,6 @@ export default function ChildCareInfoTabV2({
         <SectionCard
           title="Routines"
           icon={Clock}
-          completionState={getCompletionState('routines')}
           summary={getSummary('routines')}
           updatedAt={careInfo?.routines_updated_at || undefined}
           isExpanded={expandedSection === 'routines'}
@@ -231,7 +217,6 @@ export default function ChildCareInfoTabV2({
         <SectionCard
           title="Health Information"
           icon={AlertCircle}
-          completionState={getCompletionState('health')}
           summary={getSummary('health')}
           updatedAt={careInfo?.health_updated_at || undefined}
           isExpanded={expandedSection === 'health'}
@@ -320,7 +305,6 @@ export default function ChildCareInfoTabV2({
         <SectionCard
           title="Comfort & Behavior"
           icon={Heart}
-          completionState={getCompletionState('comfort')}
           summary={getSummary('comfort')}
           updatedAt={careInfo?.comfort_updated_at || undefined}
           isExpanded={expandedSection === 'comfort'}
@@ -392,7 +376,6 @@ export default function ChildCareInfoTabV2({
         <SectionCard
           title="Safety Rules"
           icon={Shield}
-          completionState={getCompletionState('safety')}
           summary={getSummary('safety')}
           updatedAt={careInfo?.safety_updated_at || undefined}
           isExpanded={expandedSection === 'safety'}
@@ -459,7 +442,6 @@ export default function ChildCareInfoTabV2({
         <SectionCard
           title="Emergency Contacts"
           icon={Phone}
-          completionState={getCompletionState('contacts')}
           summary={getSummary('contacts')}
           updatedAt={careInfo?.contacts_updated_at || undefined}
           isExpanded={expandedSection === 'contacts'}

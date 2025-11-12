@@ -2,13 +2,11 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Edit2, Check, X } from 'lucide-react';
-
-type CompletionState = 'complete' | 'partial' | 'empty';
+import UpdatedBadge from './UpdatedBadge';
 
 interface SectionCardProps {
   title: string;
   icon: React.ElementType;
-  completionState: CompletionState;
   summary?: string;
   updatedAt?: string;
   children: React.ReactNode;
@@ -19,7 +17,6 @@ interface SectionCardProps {
 export default function SectionCard({
   title,
   icon: Icon,
-  completionState,
   summary,
   updatedAt,
   children,
@@ -28,78 +25,34 @@ export default function SectionCard({
 }: SectionCardProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const stateConfig = {
-    complete: {
-      icon: '🟢',
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-      border: 'border-green-200'
-    },
-    partial: {
-      icon: '🟡',
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-      border: 'border-amber-200'
-    },
-    empty: {
-      icon: '⚪',
-      color: 'text-gray-400',
-      bg: 'bg-gray-50',
-      border: 'border-gray-200'
-    }
-  };
-
-  const config = stateConfig[completionState];
-
-  const getRelativeTime = (dateString?: string) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Updated today';
-    if (diffDays === 1) return 'Updated yesterday';
-    if (diffDays < 7) return `Updated ${diffDays}d ago`;
-    if (diffDays < 30) return `Updated ${Math.floor(diffDays / 7)}w ago`;
-    return `Updated ${Math.floor(diffDays / 30)}mo ago`;
-  };
-
   return (
     <div className={`bg-white rounded-2xl border-2 transition-all ${
-      isExpanded ? `${config.border} shadow-md` : 'border-sand shadow-sm hover:shadow-md'
+      isExpanded ? 'border-sage/30 shadow-md' : 'border-sand shadow-sm hover:shadow-md'
     }`}>
       {/* Card Header - Always Visible */}
       <button
         onClick={onToggle}
         className="w-full p-5 flex items-start gap-4 text-left transition-colors hover:bg-gray-50/50 rounded-t-2xl"
       >
-        {/* Icon & State */}
+        {/* Icon */}
         <div className="flex-shrink-0 mt-1">
-          <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
-            <Icon className={`w-5 h-5 ${config.color}`} />
+          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+            <Icon className="w-5 h-5 text-gray-600" />
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-3 mb-1">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            <span className="text-lg">{config.icon}</span>
+            <UpdatedBadge timestamp={updatedAt} />
           </div>
 
-          {/* Summary or Status */}
-          {summary && completionState !== 'empty' ? (
+          {/* Summary */}
+          {summary ? (
             <p className="text-sm text-gray-600 line-clamp-2">{summary}</p>
-          ) : completionState === 'empty' ? (
-            <p className="text-sm text-gray-400 italic">Not started</p>
-          ) : null}
-
-          {/* Metadata */}
-          {updatedAt && (
-            <p className="text-xs text-gray-400 mt-1">
-              {getRelativeTime(updatedAt)}
-            </p>
+          ) : (
+            <p className="text-sm text-gray-400 italic">No information yet</p>
           )}
         </div>
 

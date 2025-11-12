@@ -35,7 +35,6 @@ interface FamilyCareInfoTabV2Props {
 }
 
 type SectionType = 'home_base' | 'house_rules' | 'schedule' | 'emergency';
-type CompletionState = 'complete' | 'partial' | 'empty';
 
 export default function FamilyCareInfoTabV2({
   familyId,
@@ -45,18 +44,6 @@ export default function FamilyCareInfoTabV2({
   const supabase = createClient();
   const [familyCareInfo, setFamilyCareInfo] = useState(initialFamilyCareInfo);
   const [expandedSection, setExpandedSection] = useState<SectionType | null>(null);
-
-  // Calculate completion state for each section
-  const getCompletionState = (section: SectionType): CompletionState => {
-    if (!familyCareInfo) return 'empty';
-
-    const data = familyCareInfo[section] || {};
-    const keys = Object.keys(data).filter(k => data[k]);
-
-    if (keys.length === 0) return 'empty';
-    if (keys.length < 3) return 'partial';
-    return 'complete';
-  };
 
   // Generate summary text for collapsed view
   const getSummary = (section: SectionType): string => {
@@ -111,7 +98,6 @@ export default function FamilyCareInfoTabV2({
         <SectionCard
           title="Home Base"
           icon={Home}
-          completionState={getCompletionState('home_base')}
           summary={getSummary('home_base')}
           updatedAt={familyCareInfo?.home_base_updated_at || undefined}
           isExpanded={expandedSection === 'home_base'}
@@ -216,7 +202,6 @@ export default function FamilyCareInfoTabV2({
         <SectionCard
           title="House Rules"
           icon={Scale}
-          completionState={getCompletionState('house_rules')}
           summary={getSummary('house_rules')}
           updatedAt={familyCareInfo?.house_rules_updated_at || undefined}
           isExpanded={expandedSection === 'house_rules'}
@@ -265,7 +250,6 @@ export default function FamilyCareInfoTabV2({
         <SectionCard
           title="Schedule"
           icon={Calendar}
-          completionState={getCompletionState('schedule')}
           summary={getSummary('schedule')}
           updatedAt={familyCareInfo?.schedule_updated_at || undefined}
           isExpanded={expandedSection === 'schedule'}
@@ -338,7 +322,6 @@ export default function FamilyCareInfoTabV2({
         <SectionCard
           title="Emergency Information"
           icon={AlertCircle}
-          completionState={getCompletionState('emergency')}
           summary={getSummary('emergency')}
           updatedAt={familyCareInfo?.emergency_updated_at || undefined}
           isExpanded={expandedSection === 'emergency'}
