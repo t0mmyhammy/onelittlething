@@ -1,218 +1,294 @@
-# OneLittleThing - Family Parenting Journal
+# OneLittleThing
 
-A beautiful, private parenting app designed to capture daily moments about your children. Record "one little thing" each day to build a meaningful timeline of memories.
+**Help parents capture small moments, organize practical info, and share what caregivers need with confidence.**
 
-![Version](https://img.shields.io/badge/version-1.6-sage)
-![Status](https://img.shields.io/badge/status-MVP%20Complete-success)
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
+Calm, human, private by default.
+
+![Version](https://img.shields.io/badge/version-1.7-sage)
+![Status](https://img.shields.io/badge/status-Active%20Development-success)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-blue)
 
-## ✨ Features
+---
 
-### 📝 Core Journaling
-- **Quick Entry**: Sub-10-second moment capture with smart defaults
-- **Multi-child tagging**: Tag moments with one or multiple children
-- **Timeline view**: Beautiful vertical timeline with grouped entries
-- **On This Day**: Nostalgic feature showing memories from past years
-- **Photo attachments**: Add photos to your moments
-- **Voice capture**: Record moments hands-free with speech-to-text
+## What is OneLittleThing?
 
-### 👶 Family Management
-- **Child profiles**: Names, photos, birthdates, custom label colors
-- **Pregnancy tracker**: Week-by-week countdown with size comparisons
-- **Archive functionality**: Soft-delete children while preserving memories
+A private parenting app organized around three simple intents:
 
-### 📊 Progress Tracking
-- **Weekly streak widget**: Encouraging messages and visual progress
-- **This Week's Progress**: Personalized messages based on daily capture count
-- **Daily Anchor**: Inspirational quotes and personal mantras
+1. **Capture** - Record daily moments, photos, and memories
+2. **Organize** - Track sizes, get AI ideas, build care guides
+3. **Share** - Generate guides for babysitters, teachers, family
 
-### 🎁 Sizes & Needs Management
-- **Sizes tracking**: Current and next sizes for clothing, shoes, etc.
-- **Smart inventory**: Need/Have/Hide toggles for organized tracking
-- **Wishlist**: Gift management with share functionality
-- **Privacy controls**: Hide specific items from sharing
+Unlike social parenting apps, OneLittleThing keeps everything private, calm, and focused on what matters to you.
 
-### 🤖 AI Parenting Coach - "Liv"
-- **Conversational advice**: OpenAI-powered parenting coach
-- **Custom styles**: Taking Cara Babies, Love & Logic, Positive Discipline, and more
-- **Conversation history**: Save and revisit past advice
-- **Child context-aware**: Provides age-appropriate guidance
+---
 
-### 🎨 Design & UX
-- **Micro-animations**: Staggered card loading, pulse effects, subtle bounces
-- **Mobile-first**: Hamburger navigation on all devices
-- **Soft pastel palette**: Calm, warm colors (cream, sage, rose, cornflower)
-- **Serif headings**: Playfair Display for warmth and personality
-
-## 🚀 Tech Stack
-
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v3
-- **Backend**: Supabase (PostgreSQL, Auth, Storage, RLS)
-- **AI**: OpenAI GPT-4 with streaming responses
-- **Icons**: Lucide React, Heroicons
-- **Hosting**: Vercel
-- **Domain**: littlevictors.com
-
-## 📦 Installation
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
 - Supabase account
 - OpenAI API key (for AI features)
 
-### Setup
+### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/onelittlething.git
-   cd onelittlething
-   ```
+```bash
+# Clone and install
+git clone https://github.com/trustedcareers/onelittlething.git
+cd onelittlething
+npm install
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your keys
+```
 
-3. **Set up environment variables**
+### Environment Variables
 
-   Create `.env.local`:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   OPENAI_API_KEY=your_openai_key
-   ```
+Create `.env.local`:
 
-4. **Run database migrations**
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-   Apply all migrations in `/supabase/migrations/` in order to your Supabase project.
+# OpenAI
+OPENAI_API_KEY=sk-...
 
-5. **Create storage buckets**
-   - `child-photos` (public)
-   - `profile-photos` (public)
-   - `entry-photos` (public)
+# Email (optional)
+RESEND_API_KEY=re_...
+```
 
-6. **Start development server**
-   ```bash
-   npm run dev
-   ```
+### Database Setup
 
-   Visit `http://localhost:3000`
+```bash
+# Apply migrations (if using Supabase CLI)
+npx supabase db push
 
-## 🗂️ Project Structure
+# Or manually apply migrations from supabase/migrations/ in order
+```
+
+### Storage Buckets
+
+Create these public buckets in Supabase Storage:
+- `child-photos`
+- `profile-photos`
+- `entry-photos`
+
+### Run Development Server
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000`
+
+---
+
+## Core Features
+
+### Capture
+- **Home** - Daily anchor with quick moment capture
+- **Timeline** - Rolling journal with filters by child and type
+- **Voice Input** - Hands-free moment recording
+- **Photos** - Attach images to memories
+- **On This Day** - See past memories from this date
+
+### Organize
+- **Sizes** - Track current and next sizes for clothing, shoes, etc.
+- **Ideas** - AI-powered suggestions for things to buy
+- **Wishlist** - Gift management with reserve/purchase status
+- **Care Guides** - Build comprehensive info for child and family
+  - Routines, Health, Comfort, Safety, Contacts
+  - Family: Home Base, House Rules, Schedule, Emergency
+
+### Share & Support
+- **Share Guides** - Generate and copy formatted care guides
+- **Share Links** (planned) - Create expiring links with passcode protection
+- **Chat with Liv** (planned) - AI parenting assistant
+- **Access Logs** (planned) - See who viewed shared guides
+
+### Account
+- **Profile** - Display name, photo, preferences
+- **Family** - Manage children, invitations
+- **Pregnancy Tracker** - Week-by-week countdown when expecting
+
+---
+
+## Development
+
+### Commands
+
+```bash
+npm run dev          # Start dev server (localhost:3000)
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npx tsc --noEmit     # Type-check without build
+```
+
+### Project Structure
 
 ```
 onelittlething/
-├── app/                    # Next.js App Router pages
-│   ├── dashboard/         # Main dashboard
-│   ├── timeline/          # Timeline view
-│   ├── sizes/             # Sizes & Needs management
-│   ├── advice/            # AI parenting coach
-│   ├── settings/          # User settings
-│   └── api/               # API routes
-├── components/            # React components
-│   ├── tabs/              # Tab components (Sizes, Needs, Wishlist, Ideas)
-│   └── ...                # Shared components
-├── lib/                   # Utilities and helpers
-│   ├── supabase/          # Supabase clients
-│   ├── utils/             # Helper functions
-│   ├── pregnancy.ts       # Pregnancy calculations
-│   └── parentingStyles.ts # AI style definitions
+├── app/                      # Next.js App Router pages
+│   ├── dashboard/           # Home page (capture)
+│   ├── timeline/            # Journal timeline
+│   ├── sizes/               # Sizes & Ideas & Wishlist
+│   ├── care-info/           # Care guides
+│   ├── advice/              # AI parenting coach
+│   ├── settings/            # Account & family settings
+│   └── api/                 # API routes
+├── components/              # React components
+│   ├── care-info/          # Care guide sections
+│   ├── tabs/               # Tab components
+│   └── ...                 # Shared components
+├── lib/                     # Utilities and helpers
+│   ├── supabase/           # Supabase clients
+│   ├── guideGenerator.ts   # Guide template system
+│   ├── pregnancy.ts        # Pregnancy calculations
+│   └── parentingStyles.ts  # AI style definitions
 ├── supabase/
-│   └── migrations/        # Database migrations
-└── public/                # Static assets
+│   └── migrations/         # Database migrations
+├── docs/                    # Product documentation
+│   ├── PRODUCT_OVERVIEW.md
+│   ├── DATA_MODEL.md
+│   ├── IA_AND_NAV.md
+│   ├── UX_GUIDELINES.md
+│   └── API_SURFACE.md
+└── public/                  # Static assets
 ```
 
-## 🔐 Security
+### Feature Flags
 
-- **Row Level Security (RLS)**: All tables protected with RLS policies
-- **Multi-tenancy**: Family isolation with secure data access
-- **Authentication**: Supabase Auth with Google OAuth support
-- **Storage policies**: User-specific folder permissions
+To enable experimental features, add to `.env.local`:
 
-## 📱 Browser Support
+```env
+NEXT_PUBLIC_ENABLE_PREGNANCY_TILE=true
+NEXT_PUBLIC_ENABLE_AI_IDEAS=true
+NEXT_PUBLIC_ENABLE_SHARE_LINKS=false
+```
 
-- ✅ Chrome/Edge (latest)
-- ✅ Safari (iOS & macOS)
-- ✅ Firefox (latest)
-- ✅ Mobile responsive (iOS & Android)
+---
 
-## 🎨 Design System
+## Documentation
+
+- **[PRODUCT_OVERVIEW.md](./docs/PRODUCT_OVERVIEW.md)** - Vision, IA, core journeys, acceptance checks
+- **[DATA_MODEL.md](./docs/DATA_MODEL.md)** - Database schema, redaction model, versioning
+- **[IA_AND_NAV.md](./docs/IA_AND_NAV.md)** - Navigation, tabs, empty states, mobile patterns
+- **[UX_GUIDELINES.md](./docs/UX_GUIDELINES.md)** - Design system, components, motion, copy patterns
+- **[API_SURFACE.md](./docs/API_SURFACE.md)** - Endpoints, payloads, errors, rate limits
+- **[CLAUDE.md](./CLAUDE.md)** - AI assistant instructions
+- **[firstprinciples.md](./firstprinciples.md)** - Troubleshooting methodology
+
+---
+
+## Design System
 
 ### Colors
-- **Cream** (#F8F3EC) - Background
-- **Sand** (#E9DFD0) - Borders
-- **Rose** (#D8A7A0) - Primary actions
-- **Sage** (#B6C1A9) - Secondary actions
-- **Cornflower** (#AAB7C4) - Info states
-- **Amber** (#FFD79D) - Highlights
+```
+Sage:   #8B9D83  - Primary actions, active states
+Rose:   #D4A5A5  - Child-focused features, highlights
+Sand:   #F5E6D3  - Borders, subtle backgrounds
+Cream:  #FBF7F0  - Page background
+Amber:  #F59E0B  - Warnings, incomplete states
+```
 
 ### Typography
 - **Headings**: Playfair Display (serif)
 - **Body**: Inter (sans-serif)
 
-## 🚦 Development
-
-### Commands
-```bash
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run type-check   # TypeScript validation
+### Spacing Scale
+```
+4px (xs), 8px (sm), 12px (base), 16px (md), 24px (lg), 32px (xl), 48px (2xl)
 ```
 
-### Database Migrations
-New migrations should be added to `/supabase/migrations/` with format:
+### Border Radius
 ```
-YYYYMMDDHHMMSS_description.sql
+8px (small), 12px (base), 16px (large), 24px (xl)
 ```
 
-## 📄 Documentation
+---
 
-- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Detailed project status and feature list
-- **[CLAUDE.md](./CLAUDE.md)** - AI assistant instructions
-- **[firstprinciples.md](./firstprinciples.md)** - Troubleshooting methodology
+## Tech Stack
 
-## 🐛 Known Issues
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v3
+- **Database**: Supabase (PostgreSQL, Auth, Storage, RLS)
+- **AI**: OpenAI GPT-4 with streaming responses
+- **Icons**: Lucide React
+- **Hosting**: Vercel
+- **Domain**: littlevictors.com
 
-See [PROJECT_STATUS.md](./PROJECT_STATUS.md) for current known issues and solutions.
+---
 
-## 🗺️ Roadmap
+## Security
 
-### MVP Phase 2
-- [ ] Export functionality (PDF books, calendars)
-- [ ] Email notifications and reminders
+- **Row Level Security (RLS)**: All tables protected with Supabase RLS policies
+- **Multi-tenancy**: Family isolation with secure data access
+- **Authentication**: Supabase Auth with Google OAuth
+- **Storage policies**: User-specific folder permissions
+- **Field-level privacy**: Eye-on/eye-off toggles for sensitive data
+- **Share link security**: Optional passcode, expiry, revocation
+
+---
+
+## Roadmap
+
+### Current Sprint
+- [x] Care guide generation (markdown templates)
+- [x] Share guide copy-to-clipboard
+- [ ] Share links with tokens and expiry
+- [ ] Access logs and revocation
+- [ ] Ideas tab with AI mode
+- [ ] Wishlist functionality
+
+### Next Up
+- [ ] Chat with Liv (AI assistant)
+- [ ] Email notifications
 - [ ] Monthly recap summaries
 - [ ] Family member invitations
-- [ ] Voice note transcription
-- [ ] Smart auto-tagging
+- [ ] Export to PDF
 
 ### Future
-- [ ] Mobile native app (React Native)
+- [ ] Mobile native app
 - [ ] Offline support
 - [ ] Advanced AI insights
 - [ ] Milestone tracking
 - [ ] Growth charts
 
-## 📝 License
+---
 
-Private project - All rights reserved
+## Acceptance Tests
 
-## 👥 Authors
-
-- Tom Hamilton - Project Lead
-
-## 🙏 Acknowledgments
-
-- Built with Next.js, React, and Supabase
-- Icons from Lucide and Heroicons
-- AI powered by OpenAI
-- Inspired by parents everywhere capturing precious moments
+✅ I can capture a moment from Home in two taps and see it in Timeline
+⏳ I can open Ideas in AI mode, save two cards, and see them in my list
+✅ I can create a Babysitter Pack and copy it to clipboard
+⏳ I can generate a passcode link that expires and revoke it later
+✅ Autosave works on every form section and I can undo within 10 seconds
 
 ---
 
-**Last Updated**: November 11, 2025
-**Version**: 1.6 - UX Polish Complete ✅
+## Contributing
+
+This is a private project. For questions or feedback, contact the maintainer.
+
+---
+
+## License
+
+Private project - All rights reserved
+
+---
+
+## Authors
+
+**Tom Hamilton** - Project Lead
+
+Built with ❤️ by parents, for parents.
+
+---
+
+**Last Updated**: January 12, 2025
+**Version**: 1.7 - Product Documentation & Vision Alignment
