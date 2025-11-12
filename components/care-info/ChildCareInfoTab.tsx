@@ -360,8 +360,14 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
                     data={careInfo.routines}
                     notes={careInfo.routines_notes || ''}
                     redactedFields={careInfo.routines_redacted_fields || []}
+                    childBirthdate={child.birthdate}
                     onUpdate={(field, value) => updateSection('routines', field, value)}
                     onNotesUpdate={(notes) => updateNotes('routines', notes)}
+                    onManualSave={() => {
+                      // Trigger immediate save
+                      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                      saveSection('routines', careInfo.routines, careInfo.routines_notes || null);
+                    }}
                     onRedactionToggle={(field) => {
                       // Handle redaction toggle
                       const current = careInfo.routines_redacted_fields || [];
