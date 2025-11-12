@@ -70,6 +70,25 @@ export default function ChildCareInfoTab({ child, careInfo: initialCareInfo, onU
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Sync local state when prop changes (when switching between children)
+  useEffect(() => {
+    // Clear any pending saves
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+
+    // Reset state for the new child
+    setCareInfo(initialCareInfo);
+    setUndoStack([]);
+    setShowUndoToast(false);
+    setSaveState({ section: null, status: 'idle' });
+  }, [child.id, initialCareInfo]);
+
   // Initialize care info if it doesn't exist
   useEffect(() => {
     if (!careInfo) {
