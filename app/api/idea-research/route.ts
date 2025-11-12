@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Initialize Perplexity client (uses OpenAI SDK with custom base URL)
+const perplexity = new OpenAI({
+  apiKey: process.env.PERPLEXITY_API_KEY,
+  baseURL: 'https://api.perplexity.ai',
 });
 
 export const runtime = 'edge';
-export const maxDuration = 30; // 30 second timeout
+export const maxDuration = 60; // 60 second timeout for web search
 
 export async function POST(req: Request) {
   try {
@@ -27,8 +28,8 @@ export async function POST(req: Request) {
     }
 
     // Check for API key
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not set');
+    if (!process.env.PERPLEXITY_API_KEY) {
+      console.error('PERPLEXITY_API_KEY is not set');
       return new Response(
         JSON.stringify({ error: 'AI service not configured' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -47,9 +48,9 @@ export async function POST(req: Request) {
       researchFocus
     );
 
-    // Call OpenAI API (non-streaming for structured response)
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // More reliable and faster than gpt-4-turbo-preview
+    // Call Perplexity API with web search capabilities
+    const response = await perplexity.chat.completions.create({
+      model: 'sonar', // Perplexity's web-search model (sonar or sonar-pro)
       messages: [
         {
           role: 'system',
@@ -58,12 +59,12 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: researchFocus
-            ? `Research focus: ${researchFocus}. Please provide updated research and recommendations for "${itemName}" for ${childName}.`
-            : `Please provide helpful research and recommendations for "${itemName}" for ${childName}.`,
+            ? `Search Amazon.com right now for: ${itemName} ${researchFocus}. Find 3-5 real products for ${childName} with exact product page URLs.`
+            : `Search Amazon.com right now for: ${itemName}. Find 3-5 real, currently available products for ${childName} with exact product page URLs (amazon.com/dp/ASIN format).`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 800, // Increased for better JSON responses
+      temperature: 0.3, // Lower for more factual, accurate results
+      max_tokens: 1000,
     });
 
     const content = response.choices[0]?.message?.content || '';
@@ -122,12 +123,12 @@ function buildIdeaResearchPrompt(
 ): string {
   const hasExistingNotes = existingNotes && existingNotes.trim().length > 0;
 
-  return `You are a helpful shopping assistant that provides product recommendations for children's items.
+  return `You are a helpful shopping assistant with real-time web search capabilities. You can search Amazon.com RIGHT NOW to find actual, currently available products.
 
 ## Task:
 ${hasExistingNotes && researchFocus
-  ? `The user already has research on this item. They want you to provide DIFFERENT/ADDITIONAL research focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations.`
-  : 'Provide a brief TLDR summary and recommend 3-5 specific products for this item.'
+  ? `The user already has research on this item. SEARCH AMAZON.COM NOW for DIFFERENT products focused on: "${researchFocus}". Do NOT repeat the existing research - provide NEW insights and DIFFERENT product recommendations that are currently available.`
+  : 'SEARCH AMAZON.COM NOW and provide a brief TLDR summary and recommend 3-5 specific products that are currently available for purchase.'
 }
 
 ## Context:
@@ -157,21 +158,22 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
 }
 
 ## Guidelines:
-1. TLDR should be concise, friendly, and helpful - like advice from a friend
-2. Recommend 3-5 specific, real products that actually exist
-${hasExistingNotes && researchFocus ? '3. DO NOT recommend products already mentioned in previous research - find DIFFERENT options' : '3. Include realistic price ranges (e.g., "$25-35", "$50")'}
-4. List 3-4 key features for each product
-5. **CRITICAL**: Each product MUST have a direct Amazon product page URL, not a search URL
-   - Use format: https://www.amazon.com/dp/ASIN or https://www.amazon.com/product-name/dp/ASIN
-   - DO NOT use search URLs like /s?k=
-   - The URL must go directly to the product detail page
-   - If you don't know the exact ASIN, construct the most likely product page URL based on the product name and brand
-   - Example: https://www.amazon.com/Nike-Revolution-Running-Black-White/dp/B08N5WRWNW
-6. Focus on popular, well-reviewed, currently available products
-7. If brand specified, prioritize that brand but include alternatives
-8. Consider the child's age and appropriate products for their developmental stage
-9. If special considerations are provided, factor those into your recommendations
-10. Focus on value and quality - recommend products you would actually buy
+1. **USE YOUR WEB SEARCH**: Search Amazon.com RIGHT NOW for real products
+2. TLDR should be concise, friendly, and helpful - based on current market research
+3. Recommend 3-5 specific products that are CURRENTLY AVAILABLE on Amazon
+${hasExistingNotes && researchFocus ? '4. DO NOT recommend products already mentioned in previous research - search for DIFFERENT options' : '4. Include current price ranges from your search results'}
+5. List 3-4 key features for each product based on actual product descriptions
+6. **CRITICAL - GET REAL URLs FROM YOUR SEARCH**:
+   - Extract the ACTUAL Amazon product page URL from your search results
+   - Format MUST be: https://www.amazon.com/dp/ASIN (e.g., https://www.amazon.com/dp/B0BX7CJZW9)
+   - Or: https://www.amazon.com/product-name/dp/ASIN
+   - DO NOT use search URLs (/s?k=), listing URLs (/gp/), or guessed URLs
+   - Every URL must be a direct link to an actual product page you found
+   - Verify the ASIN exists in your search results
+7. Focus on popular, well-reviewed products with good ratings (4+ stars if possible)
+8. If brand specified, prioritize that brand but include alternatives
+9. Consider the child's age and appropriate products for their developmental stage
+10. Recommend products based on actual current availability and reviews
 
 Return ONLY the JSON object, nothing else.`;
 }
