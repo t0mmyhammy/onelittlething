@@ -11,7 +11,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 
 interface MobileNavProps {
@@ -27,6 +28,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
     { href: '/dashboard', label: 'Home', icon: HomeIcon },
     { href: '/timeline', label: 'Timeline', icon: CalendarDaysIcon },
     { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
+    { href: '/care-info', label: 'Care Guides', icon: ClipboardDocumentListIcon },
     { href: '/advice', label: 'Chat with Liv', icon: LightBulbIcon },
   ];
 
