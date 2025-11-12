@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, EyeOff, Home, Wifi, Key, Car } from 'lucide-react';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 interface HomeBaseSectionProps {
   data: any;
@@ -31,16 +32,25 @@ export default function HomeBaseSection({
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Street address</label>
-            <input
-              type="text"
-              value={data?.street_address || ''}
-              onChange={(e) => onUpdate('street_address', e.target.value)}
-              placeholder="123 Main Street"
+            <label className="block text-xs font-medium text-gray-600 mb-1">Full address</label>
+            <AddressAutocomplete
+              value={data?.formatted_address || ''}
+              onChange={(value) => onUpdate('formatted_address', value)}
+              onAddressSelect={(address) => {
+                // Update all address fields at once
+                onUpdate('street_address', address.street_address);
+                onUpdate('city', address.city);
+                onUpdate('state', address.state);
+                onUpdate('zip_code', address.zip_code);
+              }}
+              placeholder="Start typing your address..."
               className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Start typing and select from the suggestions
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
               <input
@@ -49,6 +59,18 @@ export default function HomeBaseSection({
                 onChange={(e) => onUpdate('city', e.target.value)}
                 placeholder="San Francisco"
                 className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
+                readOnly
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+              <input
+                type="text"
+                value={data?.state || ''}
+                onChange={(e) => onUpdate('state', e.target.value)}
+                placeholder="CA"
+                className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
+                readOnly
               />
             </div>
             <div>
@@ -59,6 +81,7 @@ export default function HomeBaseSection({
                 onChange={(e) => onUpdate('zip_code', e.target.value)}
                 placeholder="94102"
                 className="w-full px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-sage/20 focus:border-sage text-sm"
+                readOnly
               />
             </div>
           </div>
