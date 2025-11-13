@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CheckCircleIcon, CalendarIcon, UserIcon, TagIcon, ShareIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
+import EditReminderModal from './EditReminderModal';
 
 interface Child {
   id: string;
@@ -62,6 +63,7 @@ export default function ReminderCard({
 }: ReminderCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const supabase = createClient();
 
   const handleToggleComplete = async () => {
@@ -225,7 +227,8 @@ export default function ReminderCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h3
-                className={`text-base font-medium ${
+                onClick={() => setShowEditModal(true)}
+                className={`text-base font-medium cursor-pointer hover:text-sage transition-colors ${
                   reminder.is_completed ? 'line-through text-gray-500' : 'text-gray-900'
                 }`}
               >
@@ -257,7 +260,10 @@ export default function ReminderCard({
             </div>
 
             {/* Meta Info */}
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
+            <div
+              onClick={() => setShowEditModal(true)}
+              className="flex flex-wrap items-center gap-3 mt-2 text-sm cursor-pointer"
+            >
               {/* Due Date */}
               {dueDateInfo && (
                 <span
@@ -305,7 +311,12 @@ export default function ReminderCard({
 
             {/* Notes (if expanded or no subtasks) */}
             {reminder.notes && (isExpanded || !reminder.is_todo_list) && (
-              <p className="mt-2 text-sm text-gray-600">{reminder.notes}</p>
+              <p
+                onClick={() => setShowEditModal(true)}
+                className="mt-2 text-sm text-gray-600 cursor-pointer"
+              >
+                {reminder.notes}
+              </p>
             )}
           </div>
         </div>
@@ -339,6 +350,17 @@ export default function ReminderCard({
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditReminderModal
+          reminder={reminder}
+          children={children}
+          familyMembers={familyMembers}
+          userId={userId}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </div>
   );
 }
