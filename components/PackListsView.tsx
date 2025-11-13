@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import CreatePackListModal from './CreatePackListModal';
+import GeneratePackListModal from './GeneratePackListModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -16,11 +17,18 @@ interface PackList {
   created_at: string;
 }
 
+interface Child {
+  id: string;
+  name: string;
+  birthdate: string | null;
+}
+
 interface PackListsViewProps {
   packLists: PackList[];
   archivedPackLists: PackList[];
   familyId: string;
   userId: string;
+  children: Child[];
 }
 
 export default function PackListsView({
@@ -28,8 +36,10 @@ export default function PackListsView({
   archivedPackLists,
   familyId,
   userId,
+  children,
 }: PackListsViewProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -177,13 +187,23 @@ export default function PackListsView({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-serif text-gray-900">Pack Lists</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            <PlusIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">New Pack List</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowGenerateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Generate with AI"
+            >
+              <SparklesIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Generate</span>
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <PlusIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">New Pack List</span>
+            </button>
+          </div>
         </div>
         <p className="text-gray-600">
           Reusable checklists for trips and special outings.
@@ -366,6 +386,16 @@ export default function PackListsView({
           familyId={familyId}
           userId={userId}
           onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Generate Pack List Modal */}
+      {showGenerateModal && (
+        <GeneratePackListModal
+          familyId={familyId}
+          userId={userId}
+          children={children}
+          onClose={() => setShowGenerateModal(false)}
         />
       )}
 

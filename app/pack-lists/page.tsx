@@ -53,6 +53,13 @@ export default async function PackListsPage() {
     .eq('is_archived', true)
     .order('last_used_at', { ascending: false });
 
+  // Get children for AI pack list generation
+  const { data: children } = await supabase
+    .from('children')
+    .select('id, name, birthdate')
+    .eq('family_id', familyId)
+    .order('birthdate', { ascending: true });
+
   return (
     <div className="min-h-screen bg-cream">
       <MobileNav
@@ -66,6 +73,7 @@ export default async function PackListsPage() {
           archivedPackLists={archivedPackLists || []}
           familyId={familyId}
           userId={user.id}
+          children={children || []}
         />
       </main>
     </div>
