@@ -4,7 +4,15 @@
       "Bash(git remote set-head origin -a)",
       "Bash(find:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Resolve TypeScript error in reminders page by transforming Supabase query result\n\nFixed type mismatch where Supabase foreign key query was returning user as an array instead of a single object. Added transformation to ensure familyMembers data matches the expected FamilyMember type. Also includes share functionality for reminder cards.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Persist notification dismissals using upsert instead of update\n\nChanged notification dismissal to use upsert to ensure dismissals are saved even when user_preferences record doesn''t exist yet. This fixes the issue where the welcome message would reappear on every dashboard visit.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Bash(supabase db push:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

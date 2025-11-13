@@ -29,9 +29,36 @@ export default async function TimelinePage() {
   const familyId = familyMember?.family_id || '';
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
+  // Temporarily disabled - debugging navigation issue
   // If user has no family, redirect to dashboard to set up
+  // if (!familyId) {
+  //   console.error('Timeline: No family_id found, should redirect to dashboard');
+  //   redirect('/dashboard');
+  // }
+
+  // Temporary: Show error instead of redirect
   if (!familyId) {
-    redirect('/dashboard');
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl p-8 max-w-md text-center border border-gray-200">
+          <h1 className="text-2xl font-serif text-gray-900 mb-4">No Family Found</h1>
+          <p className="text-gray-600 mb-4">
+            You need to be part of a family to access this page.
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            Family ID: {familyId || '(empty)'}
+            <br />
+            User ID: {user.id}
+          </p>
+          <a
+            href="/dashboard"
+            className="inline-block px-6 py-3 bg-sage text-white rounded-lg hover:opacity-90"
+          >
+            Go to Dashboard
+          </a>
+        </div>
+      </div>
+    );
   }
   // Get user preferences for profile
   const { data: userPrefs } = await supabase

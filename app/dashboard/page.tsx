@@ -35,8 +35,12 @@ export default async function DashboardPage() {
   // If user doesn't have a family, create one
   let familyId: string;
   if (!familyMember || !familyMember.family_id) {
+    console.log('User has no family, attempting to create one');
+    console.log('User ID:', user.id);
+    console.log('User email:', user.email);
+
     const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
-    
+
     // Try using RPC function first (if it exists)
     let newFamilyId: string | null = null;
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
@@ -46,9 +50,13 @@ export default async function DashboardPage() {
         member_user_id: user.id,
       }
     );
-    
+
+    console.log('RPC result:', rpcResult);
+    console.log('RPC error:', rpcError);
+
     if (!rpcError && rpcResult) {
       newFamilyId = rpcResult;
+      console.log('Family created via RPC:', newFamilyId);
     } else {
       // Fallback: try direct insert if RPC function doesn't exist
       console.log('RPC function not available, using direct insert:', rpcError);
@@ -84,6 +92,8 @@ export default async function DashboardPage() {
         );
       }
       
+      console.log('Created family:', newFamily.id);
+
       // Add user as family member
       const { error: memberError } = await supabase
         .from('family_members')
@@ -92,7 +102,9 @@ export default async function DashboardPage() {
           user_id: user.id,
           role: 'parent',
         });
-      
+
+      console.log('Family member insert result:', memberError ? 'ERROR' : 'SUCCESS');
+
       if (memberError) {
         console.error('Family member creation error:', memberError);
         // Try to clean up the family if member creation fails
