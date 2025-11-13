@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getHospitalBagTemplates } from '@/lib/hospital-bag-templates';
+import { getPackListTemplate } from '@/lib/hospital-bag-templates';
 
 export const runtime = 'edge';
 
@@ -17,10 +17,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { familyId, hasOlderChildren } = await request.json();
+    const { familyId, hasOlderChildren, templateId } = await request.json();
 
     if (!familyId) {
       return NextResponse.json({ error: 'Family ID is required' }, { status: 400 });
+    }
+
+    if (!templateId) {
+      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 });
     }
 
     // Verify user is a member of this family
@@ -35,8 +39,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Get appropriate hospital bag templates based on family context
-    const bagTemplates = getHospitalBagTemplates(hasOlderChildren || false);
+    // Get pack list templates based on template ID
+    const bagTemplates = getPackListTemplate(templateId, hasOlderChildren || false);
+
+    if (bagTemplates.length === 0) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
 
     const createdPackListIds: string[] = [];
 

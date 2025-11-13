@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon, SparklesIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon, SparklesIcon, ArrowUpTrayIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import CreatePackListModal from './CreatePackListModal';
 import GeneratePackListModal from './GeneratePackListModal';
 import ImportTextToPackListModal from './ImportTextToPackListModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import PackListTemplatesModal from './PackListTemplatesModal';
 import { createClient } from '@/lib/supabase/client';
 
 interface PackList {
@@ -30,6 +31,7 @@ interface PackListsViewProps {
   familyId: string;
   userId: string;
   children: Child[];
+  familyDueDate?: string | null;
 }
 
 export default function PackListsView({
@@ -38,15 +40,34 @@ export default function PackListsView({
   familyId,
   userId,
   children,
+  familyDueDate,
 }: PackListsViewProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePackListId, setDeletePackListId] = useState<string | null>(null);
   const supabase = createClient();
+
+  // Check if family has a due date in the relevant window (for baby templates)
+  const hasDueDate = (): boolean => {
+    if (!familyDueDate) return false;
+    const dueDate = new Date(familyDueDate);
+    const today = new Date();
+
+    // Show if due date is within 9 months from now
+    const nineMonthsFromNow = new Date();
+    nineMonthsFromNow.setMonth(today.getMonth() + 9);
+
+    // Show if baby was born within last 3 months
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+    return dueDate >= threeMonthsAgo && dueDate <= nineMonthsFromNow;
+  };
 
   const formatLastUsed = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -184,12 +205,54 @@ export default function PackListsView({
     setDeletePackListId(null);
   };
 
+  const handleGenerateTemplate = async (templateId: string) => {
+    try {
+      // Check if family has older children
+      const { data: existingChildren } = await supabase
+        .from('children')
+        .select('id, birthdate')
+        .eq('family_id', familyId)
+        .lte('birthdate', new Date().toISOString());
+
+      const hasOlderChildren = (existingChildren?.length || 0) > 0;
+
+      const response = await fetch('/api/generate-hospital-bags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId,
+          hasOlderChildren,
+          templateId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh the page to show newly created pack lists
+        window.location.reload();
+      } else {
+        alert('Failed to generate pack lists. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating template:', error);
+      alert('Failed to generate pack lists. Please try again.');
+    }
+  };
+
   return (
     <>
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-serif text-gray-900">Pack Lists</h1>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowTemplatesModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Browse templates"
+            >
+              <WrenchScrewdriverIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Templates</span>
+            </button>
             <button
               onClick={() => setShowImportModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -417,6 +480,15 @@ export default function PackListsView({
           userId={userId}
           children={children}
           onClose={() => setShowImportModal(false)}
+        />
+      )}
+
+      {/* Templates Modal */}
+      {showTemplatesModal && (
+        <PackListTemplatesModal
+          onClose={() => setShowTemplatesModal(false)}
+          onGenerateTemplate={handleGenerateTemplate}
+          hasDueDate={hasDueDate()}
         />
       )}
 

@@ -418,6 +418,7 @@ export default function ReadyForBabyView({
         body: JSON.stringify({
           familyId,
           hasOlderChildren,
+          templateId: 'hospital-bags',
         }),
       });
 

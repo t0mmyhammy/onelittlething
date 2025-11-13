@@ -76,6 +76,7 @@ export default async function PackListsPage() {
           familyId={familyId}
           userId={user.id}
           children={children || []}
+          familyDueDate={familyDueDate}
         />
       </main>
     </div>

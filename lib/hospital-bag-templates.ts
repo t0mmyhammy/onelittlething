@@ -1,6 +1,6 @@
-// Hospital bag templates for auto-generating pack lists
+// Pack list templates for auto-generating pack lists
 
-export interface HospitalBagCategory {
+export interface PackListCategory {
   title: string;
   items: {
     label: string;
@@ -8,6 +8,9 @@ export interface HospitalBagCategory {
     notes?: string;
   }[];
 }
+
+// Alias for backward compatibility
+export type HospitalBagCategory = PackListCategory;
 
 export const MOM_HOSPITAL_BAG: HospitalBagCategory[] = [
   {
@@ -179,4 +182,187 @@ export function getHospitalBagTemplates(hasOlderChildren: boolean): {
   }
 
   return bags;
+}
+
+// Road Trip Pack List Template
+export const ROAD_TRIP_TEMPLATE: PackListCategory[] = [
+  {
+    title: 'Snacks & Drinks',
+    items: [
+      { label: 'Water bottles', quantity: 4, notes: 'Stay hydrated' },
+      { label: 'Protein bars or granola bars' },
+      { label: 'Trail mix or nuts' },
+      { label: 'Fresh fruit (apples, oranges)' },
+      { label: 'Crackers or pretzels' },
+      { label: 'Gum or mints', notes: 'For fresh breath' },
+      { label: 'Cooler with ice', notes: 'For perishables' },
+    ],
+  },
+  {
+    title: 'Entertainment',
+    items: [
+      { label: 'Phone chargers (car + portable)' },
+      { label: 'Music playlist or podcasts downloaded' },
+      { label: 'Audiobooks' },
+      { label: 'Travel games or cards' },
+      { label: 'Activity books or coloring supplies', notes: 'If traveling with kids' },
+    ],
+  },
+  {
+    title: 'Comfort & Safety',
+    items: [
+      { label: 'Sunglasses' },
+      { label: 'Sunscreen' },
+      { label: 'First aid kit' },
+      { label: 'Hand sanitizer & wipes' },
+      { label: 'Tissues or paper towels' },
+      { label: 'Blanket or travel pillow' },
+      { label: 'Extra phone charger' },
+      { label: 'Roadside emergency kit' },
+    ],
+  },
+  {
+    title: 'Navigation & Documents',
+    items: [
+      { label: 'GPS or phone navigation' },
+      { label: 'Driver\'s license' },
+      { label: 'Insurance documents' },
+      { label: 'Emergency contact list' },
+      { label: 'Printed directions or map backup' },
+    ],
+  },
+];
+
+// Beach Vacation Pack List Template
+export const BEACH_VACATION_TEMPLATE: PackListCategory[] = [
+  {
+    title: 'Beach Essentials',
+    items: [
+      { label: 'Swimsuits', quantity: 2, notes: 'One to wear, one to dry' },
+      { label: 'Beach towels', quantity: 2 },
+      { label: 'Sunscreen (SPF 30+)', notes: 'Waterproof formula' },
+      { label: 'Sunglasses with UV protection' },
+      { label: 'Wide-brimmed hat or cap' },
+      { label: 'Beach bag or tote' },
+      { label: 'Flip flops or water shoes' },
+      { label: 'Beach umbrella or tent', notes: 'For shade' },
+    ],
+  },
+  {
+    title: 'Water Activities',
+    items: [
+      { label: 'Snorkel and mask', notes: 'If snorkeling' },
+      { label: 'Boogie board or inflatable' },
+      { label: 'Waterproof phone case' },
+      { label: 'GoPro or waterproof camera' },
+    ],
+  },
+  {
+    title: 'Comfort & Protection',
+    items: [
+      { label: 'Aloe vera gel', notes: 'For sunburn relief' },
+      { label: 'After-sun lotion' },
+      { label: 'Insect repellent' },
+      { label: 'Lip balm with SPF' },
+      { label: 'Beach blanket or mat' },
+      { label: 'Cooler with drinks & snacks' },
+      { label: 'Reusable water bottles' },
+    ],
+  },
+  {
+    title: 'Clothing',
+    items: [
+      { label: 'Light cover-ups or sarongs' },
+      { label: 'Rash guard or swim shirt', notes: 'Extra sun protection' },
+      { label: 'Light, breathable clothes' },
+      { label: 'Sandals or beach shoes' },
+      { label: 'Evening outfit for dinner' },
+    ],
+  },
+];
+
+// Camping Trip Pack List Template
+export const CAMPING_TRIP_TEMPLATE: PackListCategory[] = [
+  {
+    title: 'Shelter & Sleep',
+    items: [
+      { label: 'Tent with stakes and guylines' },
+      { label: 'Ground tarp or footprint' },
+      { label: 'Sleeping bags', notes: 'Appropriate for temperature' },
+      { label: 'Sleeping pads or air mattresses' },
+      { label: 'Pillows' },
+      { label: 'Extra blankets', notes: 'Nights can be cold' },
+    ],
+  },
+  {
+    title: 'Cooking & Food',
+    items: [
+      { label: 'Camp stove and fuel' },
+      { label: 'Matches or lighter (waterproof)' },
+      { label: 'Cooler with ice' },
+      { label: 'Cooking pot and pan' },
+      { label: 'Plates, bowls, utensils' },
+      { label: 'Cutting board and knife' },
+      { label: 'Coffee maker or kettle' },
+      { label: 'Dish soap and sponge' },
+      { label: 'Trash bags' },
+      { label: 'Food storage containers' },
+      { label: 'Can opener' },
+    ],
+  },
+  {
+    title: 'Clothing & Personal',
+    items: [
+      { label: 'Layers (base, mid, outer)', notes: 'Weather can change' },
+      { label: 'Rain jacket and pants' },
+      { label: 'Warm jacket or fleece' },
+      { label: 'Hiking boots or shoes' },
+      { label: 'Extra socks', quantity: 3 },
+      { label: 'Hat and gloves', notes: 'If cold weather' },
+      { label: 'Toiletries and towel' },
+      { label: 'Sunscreen and bug spray' },
+      { label: 'Headlamp or flashlight with extra batteries' },
+    ],
+  },
+  {
+    title: 'Safety & Navigation',
+    items: [
+      { label: 'First aid kit' },
+      { label: 'Map and compass or GPS' },
+      { label: 'Multi-tool or knife' },
+      { label: 'Fire extinguisher', notes: 'For campfire safety' },
+      { label: 'Whistle' },
+      { label: 'Emergency contact info' },
+    ],
+  },
+  {
+    title: 'Fun & Comfort',
+    items: [
+      { label: 'Camp chairs' },
+      { label: 'Lantern or string lights' },
+      { label: 'Books or cards' },
+      { label: 'Camera' },
+      { label: 'Hammock', notes: 'Optional relaxation' },
+      { label: 'Portable speaker', notes: 'For music' },
+    ],
+  },
+];
+
+// Generic helper to get templates by ID
+export function getPackListTemplate(templateId: string, hasOlderChildren: boolean = false): {
+  name: string;
+  categories: PackListCategory[];
+}[] {
+  switch (templateId) {
+    case 'hospital-bags':
+      return getHospitalBagTemplates(hasOlderChildren);
+    case 'road-trip':
+      return [{ name: 'Road Trip Essentials', categories: ROAD_TRIP_TEMPLATE }];
+    case 'beach-vacation':
+      return [{ name: 'Beach Vacation Pack List', categories: BEACH_VACATION_TEMPLATE }];
+    case 'camping-trip':
+      return [{ name: 'Camping Trip Essentials', categories: CAMPING_TRIP_TEMPLATE }];
+    default:
+      return [];
+  }
 }
