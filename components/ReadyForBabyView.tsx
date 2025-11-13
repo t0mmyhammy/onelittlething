@@ -445,28 +445,47 @@ export default function ReadyForBabyView({
         </p>
       </div>
 
-      {/* Global Controls */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setHideCompleted(!hideCompleted)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          {hideCompleted ? (
-            <>
-              <EyeIcon className="w-4 h-4" />
-              Show completed
-            </>
-          ) : (
-            <>
-              <EyeSlashIcon className="w-4 h-4" />
-              Hide completed
-            </>
-          )}
-        </button>
-      </div>
+      {/* Error State - Baby Prep List Not Found */}
+      {!babyPrepList && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 font-medium mb-2">Unable to load your baby prep list</p>
+          <p className="text-red-700 text-sm mb-3">
+            There was an error creating or loading your preparation checklist. This could be due to a database permission issue.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
-      {/* Sections */}
-      <div className="space-y-4">
+      {/* Only show content if babyPrepList exists */}
+      {babyPrepList && (
+        <>
+          {/* Global Controls */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => setHideCompleted(!hideCompleted)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {hideCompleted ? (
+                <>
+                  <EyeIcon className="w-4 h-4" />
+                  Show completed
+                </>
+              ) : (
+                <>
+                  <EyeSlashIcon className="w-4 h-4" />
+                  Hide completed
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Sections */}
+          <div className="space-y-4">
         {/* The Essentials */}
         {(Object.keys(CATEGORY_CONFIG) as Array<keyof typeof CATEGORY_CONFIG>).map((category) => {
           const config = CATEGORY_CONFIG[category];
@@ -756,15 +775,17 @@ export default function ReadyForBabyView({
         </div>
       </div>
 
-      {/* Banner Reminder */}
-      <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-sm text-amber-900">
-          <strong>Coming soon:</strong> We'll automatically organize these tasks by trimester based on your due date. For now, all features are visible to explore.
-        </p>
-      </div>
+          {/* Banner Reminder */}
+          <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-900">
+              <strong>Coming soon:</strong> We'll automatically organize these tasks by trimester based on your due date. For now, all features are visible to explore.
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Recommendations Modal */}
-      {showRecommendationsModal && recommendationsCategory && (
+      {showRecommendationsModal && recommendationsCategory && babyPrepList && (
         <RecommendedTasksModal
           category={recommendationsCategory}
           categoryTitle={CATEGORY_CONFIG[recommendationsCategory as keyof typeof CATEGORY_CONFIG]?.title || ''}

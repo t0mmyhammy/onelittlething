@@ -48,15 +48,22 @@ export default async function ReadyForBabyPage() {
   const hasOlderChildren = (existingChildren?.length || 0) > 0;
 
   // Get or create baby prep list for this family
-  let { data: babyPrepList } = await supabase
+  let { data: babyPrepList, error: fetchError } = await supabase
     .from('baby_prep_lists')
     .select('*')
     .eq('family_id', familyId)
     .single();
 
+  // Log fetch result for debugging
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.error('Error fetching baby prep list:', fetchError);
+  }
+
   // If no list exists, create one
   if (!babyPrepList) {
-    const { data: newList } = await supabase
+    console.log('Creating new baby prep list for family:', familyId);
+
+    const { data: newList, error: insertError } = await supabase
       .from('baby_prep_lists')
       .insert({
         family_id: familyId,
@@ -66,7 +73,15 @@ export default async function ReadyForBabyPage() {
       .select()
       .single();
 
-    babyPrepList = newList;
+    if (insertError) {
+      console.error('CRITICAL: Failed to create baby prep list:', insertError);
+      console.error('Family ID:', familyId);
+      console.error('Has older children:', hasOlderChildren);
+      // Don't throw, let component handle null state gracefully
+    } else {
+      console.log('Successfully created baby prep list:', newList?.id);
+      babyPrepList = newList;
+    }
   } else if (babyPrepList && babyPrepList.is_second_child !== hasOlderChildren) {
     // Update if the status has changed
     await supabase
@@ -75,6 +90,13 @@ export default async function ReadyForBabyPage() {
       .eq('id', babyPrepList.id);
 
     babyPrepList.is_second_child = hasOlderChildren;
+  }
+
+  // Final check - log warning if still null
+  if (!babyPrepList) {
+    console.error('WARNING: babyPrepList is null after fetch/create attempts');
+    console.error('Family ID:', familyId);
+    console.error('User ID:', user.id);
   }
 
   // Get all tasks for this list
