@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import ReminderCard from './ReminderCard';
 import CreateReminderModal from './CreateReminderModal';
+import ImportTextToRemindersModal from './ImportTextToRemindersModal';
 
 interface Child {
   id: string;
@@ -66,6 +67,7 @@ export default function RemindersView({
 }: RemindersViewProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Filter reminders based on selected tab
   const filteredReminders = initialReminders.filter((reminder) => {
@@ -119,13 +121,23 @@ export default function RemindersView({
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            <PlusIcon className="w-5 h-5" />
-            <span className="hidden sm:inline">New Reminder</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Import from text"
+            >
+              <SparklesIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Import</span>
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <PlusIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">New Reminder</span>
+            </button>
+          </div>
         </div>
 
         {/* Reminders List */}
@@ -172,6 +184,19 @@ export default function RemindersView({
           children={children}
           familyMembers={familyMembers}
           onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Import Text to Reminders Modal */}
+      {showImportModal && (
+        <ImportTextToRemindersModal
+          familyId={familyId}
+          userId={userId}
+          onClose={() => setShowImportModal(false)}
+          onImportComplete={() => {
+            setShowImportModal(false);
+            window.location.reload();
+          }}
         />
       )}
     </>
