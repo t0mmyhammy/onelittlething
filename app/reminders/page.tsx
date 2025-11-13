@@ -72,7 +72,7 @@ export default async function RemindersPage() {
     user_id: member.user_id,
     role: member.role,
     user: Array.isArray(member.user) ? member.user[0] : member.user,
-  }));
+  })) || [];
 
   return (
     <div className="min-h-screen bg-cream">
