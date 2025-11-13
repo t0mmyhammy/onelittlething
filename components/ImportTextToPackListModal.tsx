@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 interface ParsedItem {
   label: string;
   quantity?: string;
+  assignedToName?: string;
 }
 
 interface ParsedCategory {
@@ -14,25 +15,41 @@ interface ParsedCategory {
   items: ParsedItem[];
 }
 
+interface Child {
+  id: string;
+  name: string;
+}
+
 interface ImportTextToPackListModalProps {
   familyId: string;
   userId: string;
+  children: Child[];
   onClose: () => void;
 }
 
 export default function ImportTextToPackListModal({
   familyId,
   userId,
+  children,
   onClose,
 }: ImportTextToPackListModalProps) {
   const [inputText, setInputText] = useState('');
   const [packListName, setPackListName] = useState('');
   const [durationDays, setDurationDays] = useState('');
+  const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [parsedCategories, setParsedCategories] = useState<ParsedCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'input' | 'review'>('input');
   const router = useRouter();
+
+  const toggleChild = (childId: string) => {
+    setSelectedChildren(prev =>
+      prev.includes(childId)
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+    );
+  };
 
   const handleParse = async () => {
     if (!inputText.trim()) {
@@ -47,7 +64,10 @@ export default function ImportTextToPackListModal({
       const response = await fetch('/api/parse-pack-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText }),
+        body: JSON.stringify({
+          text: inputText,
+          childrenNames: children.map(c => c.name),
+        }),
       });
 
       if (!response.ok) {
@@ -112,7 +132,9 @@ export default function ImportTextToPackListModal({
           userId,
           packListName: packListName.trim(),
           durationDays: durationDays ? parseInt(durationDays) : null,
+          participants: selectedChildren,
           categories: parsedCategories,
+          childrenMap: children.reduce((acc, child) => ({ ...acc, [child.name]: child.id }), {}),
         }),
       });
 
@@ -224,6 +246,31 @@ export default function ImportTextToPackListModal({
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
                   />
                 </div>
+
+                {/* Who's Going */}
+                {children.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Who's going on this trip?
+                    </label>
+                    <div className="space-y-2">
+                      {children.map((child) => (
+                        <label
+                          key={child.id}
+                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChildren.includes(child.id)}
+                            onChange={() => toggleChild(child.id)}
+                            className="w-4 h-4 text-sage focus:ring-sage border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{child.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="text-gray-600 text-sm mb-4">
@@ -258,12 +305,19 @@ export default function ImportTextToPackListModal({
                           className="flex items-center gap-2 text-sm"
                         >
                           <CheckIcon className="w-4 h-4 text-sage flex-shrink-0" />
-                          <input
-                            type="text"
-                            value={item.label}
-                            onChange={(e) => handleEditItem(catIndex, itemIndex, 'label', e.target.value)}
-                            className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-sage focus:border-transparent"
-                          />
+                          <div className="flex-1 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={item.label}
+                              onChange={(e) => handleEditItem(catIndex, itemIndex, 'label', e.target.value)}
+                              className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-sage focus:border-transparent"
+                            />
+                            {item.assignedToName && (
+                              <span className="text-xs bg-sage/20 text-sage px-2 py-0.5 rounded-full whitespace-nowrap">
+                                {item.assignedToName}
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="text"
                             value={item.quantity || ''}

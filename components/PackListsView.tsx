@@ -395,6 +395,7 @@ export default function PackListsView({
         <CreatePackListModal
           familyId={familyId}
           userId={userId}
+          children={children}
           onClose={() => setShowCreateModal(false)}
         />
       )}
@@ -414,6 +415,7 @@ export default function PackListsView({
         <ImportTextToPackListModal
           familyId={familyId}
           userId={userId}
+          children={children}
           onClose={() => setShowImportModal(false)}
         />
       )}

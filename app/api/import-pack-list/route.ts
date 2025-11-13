@@ -5,6 +5,7 @@ export const runtime = 'edge';
 interface ParsedItem {
   label: string;
   quantity?: string;
+  assignedToName?: string;
 }
 
 interface ParsedCategory {
@@ -14,7 +15,7 @@ interface ParsedCategory {
 
 export async function POST(req: Request) {
   try {
-    const { familyId, userId, packListName, durationDays, categories } = await req.json();
+    const { familyId, userId, packListName, durationDays, participants, categories, childrenMap } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
         created_by_user_id: userId,
         name: packListName.trim(),
         duration_days: durationDays ? parseInt(durationDays) : null,
+        participants: participants || [],
       })
       .select()
       .single();
@@ -100,13 +102,34 @@ export async function POST(req: Request) {
 
       // Create items for this category
       if (category.items && category.items.length > 0) {
-        const itemsData = category.items.map((item: ParsedItem, j: number) => ({
-          category_id: newCategory.id,
-          label: item.label,
-          quantity: item.quantity || null,
-          is_complete: false,
-          order_index: j,
-        }));
+        const itemsData = category.items.map((item: ParsedItem, j: number) => {
+          // Map assignedToName to actual child ID if available
+          let assignedTo = null;
+          let assignedType: 'child' | 'parent' | 'all' | null = null;
+
+          if (item.assignedToName && childrenMap && childrenMap[item.assignedToName]) {
+            // It's a child
+            assignedTo = childrenMap[item.assignedToName];
+            assignedType = 'child';
+          } else if (item.assignedToName) {
+            // It's a parent/adult (Mom, Dad, etc.) - for now, leave as null
+            // Future: could map to user IDs
+            assignedType = 'parent';
+          } else {
+            // No assignment means it's for all/shared
+            assignedType = 'all';
+          }
+
+          return {
+            category_id: newCategory.id,
+            label: item.label,
+            quantity: item.quantity || null,
+            assigned_to: assignedTo,
+            assigned_type: assignedType,
+            is_complete: false,
+            order_index: j,
+          };
+        });
 
         const { error: itemsError } = await supabase
           .from('pack_list_items')

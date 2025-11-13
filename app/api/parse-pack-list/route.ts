@@ -11,7 +11,7 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json();
+    const { text, childrenNames } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -42,16 +42,21 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build prompt for parsing pack list
+    // Build prompt for parsing pack list with child assignment intelligence
+    const childContext = childrenNames && childrenNames.length > 0
+      ? `\n\nChildren in the family: ${childrenNames.join(', ')}\n\nIMPORTANT: If you see child names mentioned near items, assign those items to that child using the assignedToName field. For example:\n- "Emma's swimsuit" → assignedToName: "Emma"\n- "Diapers for Lily" → assignedToName: "Lily"\n- "Mom's sunscreen" → assignedToName: "Mom"\n- "Dad's hiking boots" → assignedToName: "Dad"\n- Items without clear ownership → assignedToName: null (shared/all)`
+      : '';
+
     const systemPrompt = `You are a helpful assistant that extracts packing list items from text and organizes them into categories.
 
-Given any text (emails, notes, existing packing lists, etc.), extract items and group them into logical categories.
+Given any text (emails, notes, existing packing lists, etc.), extract items and group them into logical categories.${childContext}
 
 For each category, provide:
 - title: Category name like "Clothing", "Toiletries", "Electronics", "Kids Gear", etc.
 - items: Array of items in that category
   - label: Item name (required)
   - quantity: Quantity or count if mentioned (optional)
+  - assignedToName: Name of person this item belongs to (e.g., "Emma", "Mom", "Dad") or null if shared/all (optional)
 
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 
@@ -62,7 +67,8 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
       "items": [
         {
           "label": "Item name",
-          "quantity": "2"
+          "quantity": "2",
+          "assignedToName": "Emma"
         }
       ]
     }
@@ -75,7 +81,9 @@ Guidelines:
 - Use standard category names: Clothing, Toiletries, Electronics, Documents, Kids Gear, Beach Items, etc.
 - If items don't fit existing categories, create new appropriate ones
 - Be concise but specific in item labels
-- If the text is already organized by categories, preserve that organization`;
+- If the text is already organized by categories, preserve that organization
+- Detect child/person names near items and assign ownership accordingly
+- Look for patterns like "Emma's", "for Lily", "Mom needs", "Dad's", etc.`;
 
     // Call OpenAI API
     const response = await openai.chat.completions.create({

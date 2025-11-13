@@ -37,12 +37,21 @@ export default function GeneratePackListModal({
   const [tripType, setTripType] = useState('');
   const [durationDays, setDurationDays] = useState('');
   const [packListName, setPackListName] = useState('');
+  const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
   const [generatedCategories, setGeneratedCategories] = useState<GeneratedCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'input' | 'review'>('input');
   const router = useRouter();
   const supabase = createClient();
+
+  const toggleChild = (childId: string) => {
+    setSelectedChildren(prev =>
+      prev.includes(childId)
+        ? prev.filter(id => id !== childId)
+        : [...prev, childId]
+    );
+  };
 
   const handleGenerate = async () => {
     if (!tripType.trim()) {
@@ -136,6 +145,7 @@ export default function GeneratePackListModal({
           created_by_user_id: userId,
           name: packListName.trim(),
           duration_days: durationDays ? parseInt(durationDays) : null,
+          participants: selectedChildren,
         })
         .select()
         .single();
@@ -249,12 +259,28 @@ export default function GeneratePackListModal({
                   />
                 </div>
 
-                {/* Children Context */}
+                {/* Who's Going */}
                 {children.length > 0 && (
-                  <div className="bg-sage/10 border border-sage/20 rounded-lg p-3">
-                    <p className="text-sm text-gray-700">
-                      <strong>Tailoring for:</strong> {children.map(c => c.name).join(', ')}
-                    </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Who's going on this trip?
+                    </label>
+                    <div className="space-y-2">
+                      {children.map((child) => (
+                        <label
+                          key={child.id}
+                          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChildren.includes(child.id)}
+                            onChange={() => toggleChild(child.id)}
+                            className="w-4 h-4 text-sage focus:ring-sage border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{child.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
