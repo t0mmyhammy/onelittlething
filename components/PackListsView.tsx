@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon, SparklesIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import CreatePackListModal from './CreatePackListModal';
 import GeneratePackListModal from './GeneratePackListModal';
+import ImportTextToPackListModal from './ImportTextToPackListModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { createClient } from '@/lib/supabase/client';
 
@@ -40,6 +41,7 @@ export default function PackListsView({
 }: PackListsViewProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -188,6 +190,14 @@ export default function PackListsView({
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-3xl font-serif text-gray-900">Pack Lists</h1>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              title="Import from text"
+            >
+              <ArrowUpTrayIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Import</span>
+            </button>
             <button
               onClick={() => setShowGenerateModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -396,6 +406,15 @@ export default function PackListsView({
           userId={userId}
           children={children}
           onClose={() => setShowGenerateModal(false)}
+        />
+      )}
+
+      {/* Import Pack List Modal */}
+      {showImportModal && (
+        <ImportTextToPackListModal
+          familyId={familyId}
+          userId={userId}
+          onClose={() => setShowImportModal(false)}
         />
       )}
 
