@@ -21,10 +21,53 @@ Refer to `firstprinciples.md` for the complete framework, including:
 
 ## Project Context
 
-This appears to be a scraping/data collection project with:
-- Backend (Python)
-- Database (SQLite local, PostgreSQL production)
-- Deployment (Railway/Vercel)
-- Multiple environments to consider
+**OneLittleThing** is a private parenting app that helps families capture moments, organize practical info, and share what caregivers need.
+
+### Tech Stack
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS v3 (custom sage/rose/cream theme)
+- **Database**: Supabase (PostgreSQL with RLS)
+- **Auth**: Supabase Auth
+- **Storage**: Supabase Storage (child-photos, profile-photos, entry-photos)
+- **AI**: OpenAI GPT-4 with streaming
+- **Hosting**: Vercel
+- **Domain**: littlevictors.com
+
+### Architecture Patterns
+- Server Components by default
+- Client Components only when needed (forms, modals, interactive UI)
+- Edge runtime for API routes
+- Row Level Security (RLS) on all tables
+- Multi-tenancy via family_id
+- Real-time updates via Supabase subscriptions (where needed)
+
+### Key Features
+1. **Capture**: Timeline, moments, photos, "On This Day"
+2. **Organize**: Sizes, Reminders, Pack Lists, Ready for Baby, Care Guides
+3. **Share & Support**: Generate care guides, AI coach
+
+### Database Important Notes
+- All features require user to be part of a family (family_id)
+- Dashboard auto-creates family if user has none
+- Always check for family_id and redirect to /dashboard if missing
+- RLS policies enforce family isolation
+
+### Recent Major Features Added
+- **Reminders** (Nov 2025): Task management with family sharing
+- **Pack Lists** (Nov 2025): Reusable checklists with templates
+- **Ready for Baby** (Nov 2025): Pregnancy preparation hub
+- **Pack List Templates**: Hospital bags, road trip, beach, camping
+
+### Common Patterns
+- Use createClient() from '@/lib/supabase/server' for server components
+- Use createClient() from '@/lib/supabase/client' for client components
+- Always include familyDueDate prop in MobileNav
+- Use CATEGORY_CONFIG pattern for sections with icons/colors
+- Modal components close on successful operations
+
+### Known Issues
+- Users without family_id will get UUID errors - redirect to dashboard
+- babyPrepList can be null on first visit - handle gracefully
+- RLS policies must allow INSERT for new users
 
 Always verify assumptions and test changes in all relevant environments before deploying.

@@ -4,7 +4,7 @@
 
 Calm, human, private by default.
 
-![Version](https://img.shields.io/badge/version-1.7-sage)
+![Version](https://img.shields.io/badge/version-1.8-sage)
 ![Status](https://img.shields.io/badge/status-Active%20Development-success)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-blue)
@@ -99,6 +99,16 @@ Visit `http://localhost:3000`
 - **Sizes** - Track current and next sizes for clothing, shoes, etc.
 - **Ideas** - AI-powered suggestions for things to buy
 - **Wishlist** - Gift management with reserve/purchase status
+- **Reminders** - Task management with smart sharing to family members
+- **Pack Lists** - Reusable checklists for trips with template library
+  - Hospital bags (auto-generated based on family context)
+  - Road trip, beach vacation, camping templates
+  - Import from text, AI generation, manual creation
+- **Ready for Baby** - Comprehensive pregnancy preparation hub (shows when due date is near)
+  - The Essentials, Family & Home, Money & Admin, Emotional & Community
+  - Name Ideas with AI enhancement and family reactions
+  - Context-aware recommendations (first baby vs. second+)
+  - Auto-generate hospital bag pack lists
 - **Care Guides** - Build comprehensive info for child and family
   - Routines, Health, Comfort, Safety, Contacts
   - Family: Home Base, House Rules, Schedule, Emergency
@@ -136,21 +146,38 @@ onelittlething/
 │   ├── dashboard/           # Home page (capture)
 │   ├── timeline/            # Journal timeline
 │   ├── sizes/               # Sizes & Ideas & Wishlist
+│   ├── reminders/           # Task management
+│   ├── pack-lists/          # Reusable checklists
+│   ├── ready-for-baby/      # Pregnancy preparation hub
 │   ├── care-info/           # Care guides
 │   ├── advice/              # AI parenting coach
 │   ├── settings/            # Account & family settings
 │   └── api/                 # API routes
+│       ├── enhance-baby-name/      # AI name enhancement
+│       ├── generate-hospital-bags/ # Template pack list generation
+│       ├── generate-pack-list/     # AI pack list generation
+│       ├── import-reminders/       # Import reminders from text
+│       └── ...                     # Other API endpoints
 ├── components/              # React components
 │   ├── care-info/          # Care guide sections
 │   ├── tabs/               # Tab components
+│   ├── PackListTemplatesModal.tsx  # Pack list templates
+│   ├── RecommendedTasksModal.tsx   # Baby prep recommendations
+│   ├── ReminderCard.tsx            # Reminder display
 │   └── ...                 # Shared components
 ├── lib/                     # Utilities and helpers
 │   ├── supabase/           # Supabase clients
 │   ├── guideGenerator.ts   # Guide template system
 │   ├── pregnancy.ts        # Pregnancy calculations
-│   └── parentingStyles.ts  # AI style definitions
+│   ├── parentingStyles.ts  # AI style definitions
+│   ├── baby-prep-templates.ts      # Ready for Baby task templates
+│   └── hospital-bag-templates.ts   # Pack list templates
 ├── supabase/
 │   └── migrations/         # Database migrations
+│       ├── 20251113000004_create_pack_lists.sql
+│       ├── 20251113000005_add_reminders_table.sql
+│       ├── 20251113000006_add_baby_prep_tables.sql
+│       └── ...
 ├── docs/                    # Product documentation
 │   ├── PRODUCT_OVERVIEW.md
 │   ├── DATA_MODEL.md
@@ -236,15 +263,27 @@ Amber:  #F59E0B  - Warnings, incomplete states
 
 ## Roadmap
 
-### Current Sprint
+### Recently Completed ✅
 - [x] Care guide generation (markdown templates)
 - [x] Share guide copy-to-clipboard
+- [x] Reminders with family sharing
+- [x] Pack Lists with templates (hospital bags, travel)
+- [x] Ready for Baby pregnancy preparation hub
+- [x] AI name enhancement with family reactions
+- [x] Context-aware recommendations (first vs. second+ baby)
+- [x] Auto-generate hospital bag pack lists
+
+### Current Sprint
+- [ ] Fix babyPrepList null state issue
+- [ ] Polish Ready for Baby UX
+- [ ] Add more pack list templates
+- [ ] Improve reminder sharing flow
+
+### Next Up
 - [ ] Share links with tokens and expiry
 - [ ] Access logs and revocation
 - [ ] Ideas tab with AI mode
 - [ ] Wishlist functionality
-
-### Next Up
 - [ ] Chat with Liv (AI assistant)
 - [ ] Email notifications
 - [ ] Monthly recap summaries
@@ -290,5 +329,5 @@ Built with ❤️ by parents, for parents.
 
 ---
 
-**Last Updated**: January 12, 2025
-**Version**: 1.7 - Product Documentation & Vision Alignment
+**Last Updated**: November 13, 2025
+**Version**: 1.8 - Organize Section Expansion (Reminders, Pack Lists, Ready for Baby)

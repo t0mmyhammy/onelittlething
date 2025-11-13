@@ -1,17 +1,25 @@
 {
   "name": "one-little-thing",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "1.8.0",
+  "description": "Private parenting app to capture moments, organize info, and share care guides",
+  "author": "Tom Hamilton",
+  "license": "UNLICENSED",
+  "private": true,
+  "keywords": [
+    "parenting",
+    "family",
+    "baby",
+    "childcare",
+    "memories",
+    "pregnancy"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.7.0",
