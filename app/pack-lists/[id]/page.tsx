@@ -50,7 +50,20 @@ export default async function PackListDetailPage({ params }: { params: Promise<{
     notFound();
   }
 
-  // Get categories with items
+  // Get children for this family
+  const { data: children } = await supabase
+    .from('children')
+    .select('id, name, label_color')
+    .eq('family_id', familyId)
+    .order('birthdate', { ascending: true });
+
+  // Get family members (parents)
+  const { data: familyMembers } = await supabase
+    .from('family_members')
+    .select('user_id, role')
+    .eq('family_id', familyId);
+
+  // Get categories with items (including assignment data)
   const { data: categories } = await supabase
     .from('pack_list_categories')
     .select(`
@@ -86,6 +99,8 @@ export default async function PackListDetailPage({ params }: { params: Promise<{
           packList={packList}
           categories={categoriesWithSortedItems || []}
           userId={user.id}
+          children={children || []}
+          familyMembers={familyMembers || []}
         />
       </main>
     </div>

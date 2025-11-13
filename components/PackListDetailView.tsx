@@ -18,6 +18,8 @@ interface PackListItem {
   quantity: number | null;
   is_complete: boolean;
   completed_by_user_id: string | null;
+  assigned_to: string | null;
+  assigned_type: 'child' | 'parent' | 'all' | null;
   order_index: number;
 }
 
@@ -32,29 +34,49 @@ interface PackList {
   id: string;
   name: string;
   duration_days: number | null;
+  participants: string[];
   updated_at: string;
+}
+
+interface Child {
+  id: string;
+  name: string;
+  label_color?: string | null;
+}
+
+interface FamilyMember {
+  user_id: string;
+  role: string;
 }
 
 interface PackListDetailViewProps {
   packList: PackList;
   categories: PackListCategory[];
   userId: string;
+  children: Child[];
+  familyMembers: FamilyMember[];
 }
 
 export default function PackListDetailView({
   packList: initialPackList,
   categories: initialCategories,
   userId,
+  children,
+  familyMembers,
 }: PackListDetailViewProps) {
   const [packList, setPackList] = useState(initialPackList);
   const [categories, setCategories] = useState(initialCategories);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [personFilter, setPersonFilter] = useState<string | null>(null); // null = all, child ID, or "parent"
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(packList.name);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [newCategoryTitle, setNewCategoryTitle] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
   const supabase = createClient();
+
+  // Filter participants (children going on trip)
+  const participantChildren = children.filter(child => packList.participants?.includes(child.id));
 
   const handleUpdateTitle = async () => {
     if (titleValue.trim() === packList.name) {
@@ -194,11 +216,53 @@ export default function PackListDetailView({
   };
 
   const getVisibleItems = (items: PackListItem[]) => {
-    return hideCompleted ? items.filter(item => !item.is_complete) : items;
+    let filtered = items;
+
+    // Filter by person
+    if (personFilter !== null) {
+      if (personFilter === 'parent') {
+        filtered = filtered.filter(item =>
+          item.assigned_type === 'parent' || item.assigned_type === 'all' || item.assigned_type === null
+        );
+      } else {
+        // It's a child ID
+        filtered = filtered.filter(item =>
+          item.assigned_to === personFilter || item.assigned_type === 'all' || item.assigned_type === null
+        );
+      }
+    }
+
+    // Filter by completion status
+    return hideCompleted ? filtered.filter(item => !item.is_complete) : filtered;
   };
 
   const getCompletedCount = (items: PackListItem[]) => {
     return items.filter(item => item.is_complete).length;
+  };
+
+  const handleAssignItem = async (itemId: string, categoryId: string, assignTo: string | null, assignType: 'child' | 'parent' | 'all' | null) => {
+    const { error } = await supabase
+      .from('pack_list_items')
+      .update({
+        assigned_to: assignTo,
+        assigned_type: assignType,
+      })
+      .eq('id', itemId);
+
+    if (!error) {
+      setCategories(categories.map(category =>
+        category.id === categoryId
+          ? {
+              ...category,
+              pack_list_items: category.pack_list_items.map(item =>
+                item.id === itemId
+                  ? { ...item, assigned_to: assignTo, assigned_type: assignType }
+                  : item
+              ),
+            }
+          : category
+      ));
+    }
   };
 
   return (
@@ -249,6 +313,49 @@ export default function PackListDetailView({
           <p className="text-gray-600 text-sm">{packList.duration_days} days</p>
         )}
       </div>
+
+      {/* Person Tabs */}
+      {(participantChildren.length > 0 || familyMembers.length > 0) && (
+        <div className="mb-6 border-b border-gray-200">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setPersonFilter(null)}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+                personFilter === null
+                  ? 'bg-sage text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              All
+            </button>
+            {participantChildren.map((child) => (
+              <button
+                key={child.id}
+                onClick={() => setPersonFilter(child.id)}
+                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+                  personFilter === child.id
+                    ? 'bg-sage text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                {child.name}
+              </button>
+            ))}
+            {familyMembers.length > 0 && (
+              <button
+                onClick={() => setPersonFilter('parent')}
+                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
+                  personFilter === 'parent'
+                    ? 'bg-sage text-white'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Parents
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Global Controls */}
       <div className="flex items-center justify-between mb-6">
@@ -341,8 +448,10 @@ export default function PackListDetailView({
               onDeleteItem={handleDeleteItem}
               onDeleteCategory={handleDeleteCategory}
               onRenameCategory={handleRenameCategory}
+              onAssignItem={handleAssignItem}
               getVisibleItems={getVisibleItems}
               getCompletedCount={getCompletedCount}
+              children={participantChildren}
             />
           ))
         )}
@@ -360,8 +469,10 @@ function CategoryCard({
   onDeleteItem,
   onDeleteCategory,
   onRenameCategory,
+  onAssignItem,
   getVisibleItems,
   getCompletedCount,
+  children,
 }: {
   category: PackListCategory;
   hideCompleted: boolean;
@@ -370,8 +481,10 @@ function CategoryCard({
   onDeleteItem: (categoryId: string, itemId: string) => void;
   onDeleteCategory: (categoryId: string) => void;
   onRenameCategory: (categoryId: string, newTitle: string) => void;
+  onAssignItem: (itemId: string, categoryId: string, assignTo: string | null, assignType: 'child' | 'parent' | 'all' | null) => void;
   getVisibleItems: (items: PackListItem[]) => PackListItem[];
   getCompletedCount: (items: PackListItem[]) => number;
+  children: Child[];
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -466,33 +579,75 @@ function CategoryCard({
 
       {/* Items */}
       <div className="space-y-2">
-        {visibleItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg group"
-          >
-            <input
-              type="checkbox"
-              checked={item.is_complete}
-              onChange={() => onToggleItem(category.id, item.id, item.is_complete)}
-              className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer"
-            />
-            <span className={`flex-1 ${item.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-              {item.label}
-            </span>
-            {item.quantity && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                x{item.quantity}
-              </span>
-            )}
-            <button
-              onClick={() => onDeleteItem(category.id, item.id)}
-              className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity"
+        {visibleItems.map((item) => {
+          const assignedChild = item.assigned_to ? children.find(c => c.id === item.assigned_to) : null;
+
+          return (
+            <div
+              key={item.id}
+              className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg group"
             >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+              <input
+                type="checkbox"
+                checked={item.is_complete}
+                onChange={() => onToggleItem(category.id, item.id, item.is_complete)}
+                className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer"
+              />
+              <div className="flex-1 flex items-center gap-2">
+                <span className={`${item.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                  {item.label}
+                </span>
+                {assignedChild && (
+                  <span className="text-xs bg-sage/20 text-sage px-2 py-0.5 rounded-full whitespace-nowrap">
+                    {assignedChild.name}
+                  </span>
+                )}
+                {item.assigned_type === 'parent' && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    Parents
+                  </span>
+                )}
+              </div>
+              {item.quantity && (
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  x{item.quantity}
+                </span>
+              )}
+              {/* Assignment Dropdown */}
+              {children.length > 0 && (
+                <select
+                  value={item.assigned_to || item.assigned_type || 'all'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'all') {
+                      onAssignItem(item.id, category.id, null, 'all');
+                    } else if (value === 'parent') {
+                      onAssignItem(item.id, category.id, null, 'parent');
+                    } else {
+                      onAssignItem(item.id, category.id, value, 'child');
+                    }
+                  }}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-sage focus:border-sage opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="all">All</option>
+                  {children.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      {child.name}
+                    </option>
+                  ))}
+                  <option value="parent">Parents</option>
+                </select>
+              )}
+              <button
+                onClick={() => onDeleteItem(category.id, item.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity"
+              >
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
 
         {hideCompleted && hiddenCount > 0 && (
           <p className="text-xs text-gray-500 italic py-2">
