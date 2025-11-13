@@ -24,12 +24,27 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  const navLinks = [
-    { href: '/dashboard', label: 'Home', icon: HomeIcon },
-    { href: '/timeline', label: 'Timeline', icon: CalendarDaysIcon },
-    { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
-    { href: '/care-info', label: 'Care Guides', icon: ClipboardDocumentListIcon },
-    { href: '/advice', label: 'Chat with Liv', icon: LightBulbIcon },
+  const navSections = [
+    {
+      title: 'CAPTURE',
+      links: [
+        { href: '/dashboard', label: 'Home', icon: HomeIcon },
+        { href: '/timeline', label: 'Timeline', icon: CalendarDaysIcon },
+      ],
+    },
+    {
+      title: 'ORGANIZE',
+      links: [
+        { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
+        { href: '/care-info', label: 'Care Information', icon: ClipboardDocumentListIcon },
+      ],
+    },
+    {
+      title: 'SHARE & SUPPORT',
+      links: [
+        { href: '/advice', label: 'Chat with Liv', icon: LightBulbIcon },
+      ],
+    },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -103,28 +118,58 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
 
             {/* Navigation Links */}
             <nav className="p-2">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      isActive(link.href)
-                        ? 'bg-sage/10 text-sage'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+              {navSections.map((section, sectionIndex) => (
+                <div key={section.title} className={sectionIndex > 0 ? 'mt-6' : ''}>
+                  {/* Section Header */}
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-400 tracking-wider">
+                    {section.title}
+                  </div>
+
+                  {/* Section Links */}
+                  {section.links.map((link) => {
+                    const Icon = link.icon;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                          isActive(link.href)
+                            ? 'bg-sage/10 text-sage'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
 
-            {/* Sign Out */}
-            <div className="p-2 border-t border-sand mt-auto">
+            {/* Account Section */}
+            <div className="p-2 border-t border-sand mt-6">
+              {/* Account Header */}
+              <div className="px-4 py-2 text-xs font-semibold text-gray-400 tracking-wider">
+                ACCOUNT
+              </div>
+
+              {/* Profile & Family Settings */}
+              <Link
+                href="/settings"
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/settings')
+                    ? 'bg-sage/10 text-sage'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <UserCircleIcon className="w-5 h-5" />
+                Profile & Family Settings
+              </Link>
+
+              {/* Sign Out */}
               <form action="/api/auth/signout" method="post">
                 <button
                   type="submit"
