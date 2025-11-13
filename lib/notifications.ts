@@ -11,6 +11,7 @@ interface NotificationConditions {
   familyName: string;
 }
 
+// Client-side notification config (no functions)
 export interface NotificationConfig {
   id: string;
   type: NotificationType;
@@ -20,7 +21,6 @@ export interface NotificationConfig {
   gradient: string;
   dismissible: boolean;
   priority: number; // Higher = shown first
-  shouldShow: (conditions: NotificationConditions) => boolean;
   actions?: Array<{
     label: string;
     href: string;
@@ -36,8 +36,13 @@ export interface NotificationConfig {
   showProgress?: boolean;
 }
 
+// Internal notification config (includes shouldShow for filtering)
+interface InternalNotificationConfig extends NotificationConfig {
+  shouldShow: (conditions: NotificationConditions) => boolean;
+}
+
 export function getActiveNotifications(conditions: NotificationConditions): NotificationConfig[] {
-  const allNotifications: NotificationConfig[] = [
+  const allNotifications: InternalNotificationConfig[] = [
     // Welcome message for users joining existing family
     {
       id: 'welcome_family_member',
@@ -162,7 +167,9 @@ export function getActiveNotifications(conditions: NotificationConditions): Noti
   ];
 
   // Filter notifications that should show and sort by priority
+  // Strip out shouldShow function before returning (can't pass functions to client components)
   return allNotifications
     .filter(notification => notification.shouldShow(conditions))
-    .sort((a, b) => b.priority - a.priority);
+    .sort((a, b) => b.priority - a.priority)
+    .map(({ shouldShow, ...notification }) => notification);
 }

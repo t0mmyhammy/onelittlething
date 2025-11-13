@@ -43,6 +43,8 @@ Edit `lib/notifications.ts` and add a new notification object to the `allNotific
 
 When writing `shouldShow` logic, you have access to:
 
+**Note:** The `shouldShow` function is only used internally for filtering on the server side. It's automatically removed before notifications are passed to the client component.
+
 ```typescript
 {
   userId: string;           // Current user's ID
