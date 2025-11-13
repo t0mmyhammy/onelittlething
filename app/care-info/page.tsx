@@ -25,11 +25,13 @@ export default async function CareInfoPage() {
     .eq('user_id', user.id)
     .single();
 
-  if (!familyMember || !familyMember.family_id) {
-    redirect('/dashboard');
-  }
+  // Temporarily disabled - debugging navigation issue
+  // if (!familyMember || !familyMember.family_id) {
+  //   redirect('/dashboard');
+  // }
 
-  const familyId = familyMember.family_id;
+  const familyId = familyMember?.family_id || '';
+  console.log('Care Info - Family ID:', familyId || '(empty)');
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
   // Get children (exclude archived)

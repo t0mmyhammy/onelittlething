@@ -25,9 +25,13 @@ export default async function AdvicePage() {
     .eq('user_id', user.id)
     .single();
 
-  if (!familyMember || !familyMember.family_id) {
-    redirect('/dashboard');
-  }
+  // Temporarily disabled - debugging navigation issue
+  // if (!familyMember || !familyMember.family_id) {
+  //   redirect('/dashboard');
+  // }
+
+  const familyId = familyMember?.family_id || '';
+  console.log('Advice - Family ID:', familyId || '(empty)');
 
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
@@ -35,7 +39,7 @@ export default async function AdvicePage() {
   const { data: children } = await supabase
     .from('children')
     .select('id, name, birthdate')
-    .eq('family_id', familyMember.family_id)
+    .eq('family_id', familyId)
     .is('archived', false)
     .order('created_at', { ascending: true });
 

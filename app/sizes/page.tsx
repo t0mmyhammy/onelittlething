@@ -25,11 +25,13 @@ export default async function SizesPage() {
     .eq('user_id', user.id)
     .single();
 
-  if (!familyMember || !familyMember.family_id) {
-    redirect('/dashboard');
-  }
+  // Temporarily disabled - debugging navigation issue
+  // if (!familyMember || !familyMember.family_id) {
+  //   redirect('/dashboard');
+  // }
 
-  const familyId = familyMember.family_id;
+  const familyId = familyMember?.family_id || '';
+  console.log('Sizes - Family ID:', familyId || '(empty)');
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
   // Get user preferences for profile
