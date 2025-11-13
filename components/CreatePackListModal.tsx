@@ -49,6 +49,10 @@ export default function CreatePackListModal({
         throw new Error('Trip name is required');
       }
 
+      if (!familyId || familyId.trim() === '') {
+        throw new Error('No family ID found. Please refresh the page and try again.');
+      }
+
       // Create the pack list
       const { data: packList, error: packListError } = await supabase
         .from('pack_lists')
@@ -62,7 +66,14 @@ export default function CreatePackListModal({
         .select()
         .single();
 
-      if (packListError) throw packListError;
+      if (packListError) {
+        console.error('Create pack list error:', packListError);
+        throw packListError;
+      }
+
+      if (!packList?.id) {
+        throw new Error('Pack list created but ID not returned');
+      }
 
       // Create default categories
       const defaultCategories = [
@@ -88,7 +99,9 @@ export default function CreatePackListModal({
 
       // Redirect to the pack list detail page
       router.push(`/pack-lists/${packList.id}`);
+      router.refresh();
     } catch (err: any) {
+      console.error('Create pack list error:', err);
       setError(err.message || 'Failed to create pack list');
       setLoading(false);
     }

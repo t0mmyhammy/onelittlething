@@ -120,6 +120,11 @@ export default function ImportTextToPackListModal({
       return;
     }
 
+    if (!familyId || familyId.trim() === '') {
+      setError('Error: No family ID found. Please refresh the page and try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -139,14 +144,21 @@ export default function ImportTextToPackListModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to import pack list');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to import pack list');
       }
 
       const data = await response.json();
 
+      if (!data.packListId) {
+        throw new Error('Pack list created but ID not returned');
+      }
+
       // Redirect to the new pack list
       router.push(`/pack-lists/${data.packListId}`);
+      router.refresh();
     } catch (err: any) {
+      console.error('Import error:', err);
       setError(err.message || 'Failed to import pack list');
       setLoading(false);
     }

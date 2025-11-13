@@ -133,6 +133,11 @@ export default function GeneratePackListModal({
       return;
     }
 
+    if (!familyId || familyId.trim() === '') {
+      setError('Error: No family ID found. Please refresh the page and try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -150,7 +155,14 @@ export default function GeneratePackListModal({
         .select()
         .single();
 
-      if (packListError) throw packListError;
+      if (packListError) {
+        console.error('Generate pack list error:', packListError);
+        throw packListError;
+      }
+
+      if (!packList?.id) {
+        throw new Error('Pack list created but ID not returned');
+      }
 
       // Create categories with items
       for (let i = 0; i < generatedCategories.length; i++) {
@@ -189,7 +201,9 @@ export default function GeneratePackListModal({
 
       // Redirect to the pack list detail page
       router.push(`/pack-lists/${packList.id}`);
+      router.refresh();
     } catch (err: any) {
+      console.error('Generate pack list error:', err);
       setError(err.message || 'Failed to create pack list');
       setLoading(false);
     }
