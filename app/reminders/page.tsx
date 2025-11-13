@@ -33,7 +33,12 @@ export default async function RemindersPage() {
   // if (!familyId) {
   //   redirect('/dashboard');
   // }
-  console.log('Reminders - Family ID:', familyId || '(empty)');
+  console.log('============ REMINDERS PAGE DEBUG ============');
+  console.log('User ID:', user.id);
+  console.log('User Email:', user.email);
+  console.log('Family Member Data:', familyMember);
+  console.log('Family ID:', familyId || '(empty)');
+  console.log('==============================================');
 
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
@@ -53,7 +58,7 @@ export default async function RemindersPage() {
     .order('created_at', { ascending: true });
 
   // Get all reminders with related data
-  const { data: reminders } = await supabase
+  const { data: reminders, error: remindersError } = await supabase
     .from('reminders')
     .select(`
       *,
@@ -61,6 +66,10 @@ export default async function RemindersPage() {
     `)
     .eq('family_id', familyId)
     .order('due_date', { ascending: true, nullsFirst: false });
+
+  console.log('Reminders Query Result:', reminders);
+  console.log('Reminders Query Error:', remindersError);
+  console.log('Reminders Count:', reminders?.length || 0);
 
   // Get family members for assignment
   const { data: familyMembersRaw } = await supabase

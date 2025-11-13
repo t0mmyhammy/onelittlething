@@ -33,7 +33,12 @@ export default async function PackListsPage() {
   // if (!familyId) {
   //   redirect('/dashboard');
   // }
-  console.log('Pack Lists - Family ID:', familyId || '(empty)');
+  console.log('============ PACK LISTS PAGE DEBUG ============');
+  console.log('User ID:', user.id);
+  console.log('User Email:', user.email);
+  console.log('Family Member Data:', familyMember);
+  console.log('Family ID:', familyId || '(empty)');
+  console.log('==============================================');
 
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
@@ -46,12 +51,16 @@ export default async function PackListsPage() {
   const profilePhotoUrl = userPrefs?.profile_photo_url;
 
   // Get all pack lists (exclude archived by default)
-  const { data: packLists } = await supabase
+  const { data: packLists, error: packListsError } = await supabase
     .from('pack_lists')
     .select('*')
     .eq('family_id', familyId)
     .eq('is_archived', false)
     .order('last_used_at', { ascending: false });
+
+  console.log('Pack Lists Query Result:', packLists);
+  console.log('Pack Lists Query Error:', packListsError);
+  console.log('Pack Lists Count:', packLists?.length || 0);
 
   // Get archived pack lists
   const { data: archivedPackLists } = await supabase
