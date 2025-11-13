@@ -7,7 +7,8 @@ import StreakWidget from '@/components/StreakWidget';
 import BabyCountdownCard from '@/components/BabyCountdownCard';
 import DailyAnchor from '@/components/DailyAnchor';
 import MobileNav from '@/components/MobileNav';
-import OnboardingChecklist from '@/components/OnboardingChecklist';
+import NotificationBanner from '@/components/NotificationBanner';
+import { getActiveNotifications } from '@/lib/notifications';
 
 // Disable caching for this page
 export const dynamic = 'force-dynamic';
@@ -138,10 +139,10 @@ export default async function DashboardPage() {
     familyId = familyMember.family_id;
   }
 
-  // Get user preferences for profile and onboarding
+  // Get user preferences for profile, onboarding, and notifications
   const { data: userPrefs } = await supabase
     .from('user_preferences')
-    .select('display_name, profile_photo_url, daily_mantra, is_family_creator, onboarding_completed, onboarding_dismissed')
+    .select('*')
     .eq('user_id', user.id)
     .single();
 
@@ -216,8 +217,31 @@ export default async function DashboardPage() {
     .single();
   const familyName = familyData?.name || 'Your Family';
 
-  // Show onboarding if not completed and not dismissed
-  const showOnboarding = !onboardingCompleted && !onboardingDismissed;
+  // Calculate account age in days
+  const accountCreatedAt = new Date(user.created_at);
+  const accountAgeDays = Math.floor((Date.now() - accountCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Get dismissed notifications
+  const dismissedNotifications = new Set<string>();
+  if (userPrefs) {
+    Object.keys(userPrefs).forEach(key => {
+      if (key.startsWith('notification_dismissed_') && userPrefs[key] === true) {
+        dismissedNotifications.add(key.replace('notification_dismissed_', ''));
+      }
+    });
+  }
+
+  // Get active notifications to show
+  const activeNotifications = getActiveNotifications({
+    userId: user.id,
+    isFamilyCreator,
+    accountAgeDays,
+    hasChildren,
+    hasMoments,
+    hasPartner,
+    dismissedNotifications,
+    familyName,
+  });
 
   return (
     <div className="min-h-screen bg-cream">
@@ -240,16 +264,12 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Onboarding Checklist */}
-        {showOnboarding && (
+        {/* Notification Banner */}
+        {activeNotifications.length > 0 && (
           <div className="animate-card-1">
-            <OnboardingChecklist
+            <NotificationBanner
               userId={user.id}
-              familyName={familyName}
-              hasChildren={hasChildren}
-              hasMoments={hasMoments}
-              hasPartner={hasPartner}
-              isFamilyCreator={isFamilyCreator}
+              notifications={activeNotifications}
             />
           </div>
         )}
