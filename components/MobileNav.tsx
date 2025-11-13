@@ -14,7 +14,8 @@ import {
   ArrowRightOnRectangleIcon,
   ClipboardDocumentListIcon,
   DocumentTextIcon,
-  RectangleStackIcon
+  RectangleStackIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 interface MobileNavProps {
@@ -41,6 +42,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
         { href: '/care-info', label: 'Care Information', icon: ClipboardDocumentListIcon },
         { href: '/reminders', label: 'Reminders', icon: DocumentTextIcon },
         { href: '/pack-lists', label: 'Pack Lists', icon: RectangleStackIcon },
+        { href: '/ready-for-baby', label: 'Ready for Baby', icon: SparklesIcon },
       ],
     },
     {

@@ -1,0 +1,628 @@
+'use client';
+
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import {
+  PlusIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  EyeSlashIcon,
+  EyeIcon,
+  SparklesIcon,
+  ChatBubbleLeftIcon,
+  HeartIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
+
+interface BabyPrepList {
+  id: string;
+  family_id: string;
+  due_date: string | null;
+  stage: 'first' | 'second' | 'third' | 'fourth' | null;
+  is_second_child: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BabyPrepTask {
+  id: string;
+  list_id: string;
+  category: 'essentials' | 'family_home' | 'money_admin' | 'emotional_community' | 'name_ideas';
+  title: string;
+  description: string | null;
+  is_complete: boolean;
+  completed_by: string | null;
+  completed_at: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BabyNameIdea {
+  id: string;
+  family_id: string;
+  name: string;
+  type: 'F' | 'M' | 'N';
+  notes: string | null;
+  ai_enhanced_notes: any;
+  reactions: any;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BabyNameComment {
+  id: string;
+  name_id: string;
+  user_id: string | null;
+  comment_text: string;
+  created_at: string;
+}
+
+interface ReadyForBabyViewProps {
+  babyPrepList: BabyPrepList | null;
+  tasks: BabyPrepTask[];
+  nameIdeas: BabyNameIdea[];
+  comments: BabyNameComment[];
+  userId: string;
+  familyId: string;
+}
+
+const CATEGORY_CONFIG = {
+  essentials: {
+    title: 'The Essentials',
+    icon: '👶',
+    color: 'amber',
+    defaultTasks: [
+      { title: 'Choose a pediatrician', description: 'Research and schedule meet-and-greet appointments' },
+      { title: 'Confirm hospital registration', description: 'Complete pre-registration paperwork' },
+      { title: 'Pack hospital bags', description: 'Prepare bags for mom, dad, and baby' },
+      { title: 'Finalize car seat installation', description: 'Get it inspected by a certified technician' },
+      { title: 'Stock up on newborn basics', description: 'Diapers, wipes, onesies, and feeding supplies' },
+    ],
+  },
+  family_home: {
+    title: 'Family & Home',
+    icon: '🏠',
+    color: 'sage',
+    defaultTasks: [
+      { title: 'Create a sleep or feeding zone at home', description: 'Set up a dedicated space for baby care' },
+      { title: 'Wash and store bottles, burp cloths, and onesies', description: 'Prepare baby items for use' },
+      { title: 'Deep clean key areas', description: 'Kitchen, nursery, and car' },
+      { title: 'Prepare older kids\' routines', description: 'Discuss changes and maintain stability' },
+      { title: 'Plan sibling transition gifts', description: 'Help older siblings feel included' },
+    ],
+  },
+  money_admin: {
+    title: 'Money & Admin',
+    icon: '💸',
+    color: 'blue',
+    defaultTasks: [
+      { title: 'Update or open 529 plan', description: 'Start saving for college' },
+      { title: 'Review parental leave plans', description: 'Confirm benefits and timing' },
+      { title: 'Adjust childcare coverage for sibling', description: 'Plan for older kids during hospital stay' },
+      { title: 'Review life insurance coverage', description: 'Ensure adequate protection' },
+      { title: 'Update wills and guardianship', description: 'Keep legal documents current' },
+      { title: 'Freeze new baby\'s credit', description: 'Protect against identity theft' },
+    ],
+  },
+  emotional_community: {
+    title: 'Emotional & Community Prep',
+    icon: '💛',
+    color: 'rose',
+    defaultTasks: [
+      { title: 'Create a short "welcome letter" to your baby', description: 'Capture your feelings before arrival' },
+      { title: 'Discuss boundaries for visitors', description: 'Plan when and how visitors can meet baby' },
+      { title: 'Organize a meal train', description: 'Coordinate support from friends and family' },
+      { title: 'Schedule downtime or self-care days', description: 'Plan rest before baby arrives' },
+      { title: 'Add ideas for meaningful photos or rituals', description: 'Capture special moments' },
+    ],
+  },
+};
+
+export default function ReadyForBabyView({
+  babyPrepList: initialBabyPrepList,
+  tasks: initialTasks,
+  nameIdeas: initialNameIdeas,
+  comments: initialComments,
+  userId,
+  familyId,
+}: ReadyForBabyViewProps) {
+  const [babyPrepList, setBabyPrepList] = useState(initialBabyPrepList);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [nameIdeas, setNameIdeas] = useState(initialNameIdeas);
+  const [comments, setComments] = useState(initialComments);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['essentials', 'family_home', 'money_admin', 'emotional_community', 'name_ideas'])
+  );
+  const [hideCompleted, setHideCompleted] = useState(false);
+  const [newTaskInputs, setNewTaskInputs] = useState<Record<string, string>>({});
+  const [newNameInput, setNewNameInput] = useState({ name: '', type: 'N' as 'F' | 'M' | 'N', notes: '' });
+  const [showNameTooltip, setShowNameTooltip] = useState(false);
+  const supabase = createClient();
+
+  const toggleSection = (category: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedSections(newExpanded);
+  };
+
+  const getTasksByCategory = (category: string) => {
+    return tasks.filter(t => t.category === category);
+  };
+
+  const getCompletedCount = (category: string) => {
+    return tasks.filter(t => t.category === category && t.is_complete).length;
+  };
+
+  const getVisibleTasks = (category: string) => {
+    const categoryTasks = getTasksByCategory(category);
+    return hideCompleted ? categoryTasks.filter(t => !t.is_complete) : categoryTasks;
+  };
+
+  const handleToggleTask = async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const { error } = await supabase
+      .from('baby_prep_tasks')
+      .update({
+        is_complete: !task.is_complete,
+        completed_by: !task.is_complete ? userId : null,
+        completed_at: !task.is_complete ? new Date().toISOString() : null,
+      })
+      .eq('id', taskId);
+
+    if (!error) {
+      setTasks(tasks.map(t =>
+        t.id === taskId
+          ? { ...t, is_complete: !t.is_complete, completed_by: !t.is_complete ? userId : null, completed_at: !t.is_complete ? new Date().toISOString() : null }
+          : t
+      ));
+    }
+  };
+
+  const handleAddTask = async (category: string) => {
+    const title = newTaskInputs[category];
+    if (!title?.trim() || !babyPrepList) return;
+
+    const maxOrder = Math.max(...getTasksByCategory(category).map(t => t.order_index), -1);
+
+    const { data, error } = await supabase
+      .from('baby_prep_tasks')
+      .insert({
+        list_id: babyPrepList.id,
+        category,
+        title: title.trim(),
+        order_index: maxOrder + 1,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setTasks([...tasks, data]);
+      setNewTaskInputs({ ...newTaskInputs, [category]: '' });
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const { error } = await supabase
+      .from('baby_prep_tasks')
+      .delete()
+      .eq('id', taskId);
+
+    if (!error) {
+      setTasks(tasks.filter(t => t.id !== taskId));
+    }
+  };
+
+  const handleAddNameIdea = async () => {
+    if (!newNameInput.name.trim()) return;
+
+    const { data, error } = await supabase
+      .from('baby_name_ideas')
+      .insert({
+        family_id: familyId,
+        name: newNameInput.name.trim(),
+        type: newNameInput.type,
+        notes: newNameInput.notes.trim() || null,
+        created_by: userId,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setNameIdeas([data, ...nameIdeas]);
+      setNewNameInput({ name: '', type: 'N', notes: '' });
+    }
+  };
+
+  const handleToggleReaction = async (nameId: string, emoji: string) => {
+    const nameIdea = nameIdeas.find(n => n.id === nameId);
+    if (!nameIdea) return;
+
+    const reactions = nameIdea.reactions || {};
+    const userReactions = reactions[userId] || [];
+    const hasReaction = userReactions.includes(emoji);
+
+    const newUserReactions = hasReaction
+      ? userReactions.filter((e: string) => e !== emoji)
+      : [...userReactions, emoji];
+
+    const newReactions = { ...reactions, [userId]: newUserReactions };
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .update({ reactions: newReactions })
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.map(n =>
+        n.id === nameId ? { ...n, reactions: newReactions } : n
+      ));
+    }
+  };
+
+  const handleEnhanceName = async (nameId: string) => {
+    const nameIdea = nameIdeas.find(n => n.id === nameId);
+    if (!nameIdea) return;
+
+    // Call AI endpoint to enhance name
+    try {
+      const response = await fetch('/api/enhance-baby-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: nameIdea.name,
+          type: nameIdea.type,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        const { error } = await supabase
+          .from('baby_name_ideas')
+          .update({ ai_enhanced_notes: data.enhancements })
+          .eq('id', nameId);
+
+        if (!error) {
+          setNameIdeas(nameIdeas.map(n =>
+            n.id === nameId ? { ...n, ai_enhanced_notes: data.enhancements } : n
+          ));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to enhance name:', error);
+    }
+  };
+
+  const handleDeleteNameIdea = async (nameId: string) => {
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .delete()
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.filter(n => n.id !== nameId));
+    }
+  };
+
+  const initializeDefaultTasks = async (category: keyof typeof CATEGORY_CONFIG) => {
+    if (!babyPrepList) return;
+
+    const config = CATEGORY_CONFIG[category];
+    const existingTasks = getTasksByCategory(category);
+
+    if (existingTasks.length > 0) return;
+
+    const tasksToInsert = config.defaultTasks.map((task, index) => ({
+      list_id: babyPrepList.id,
+      category,
+      title: task.title,
+      description: task.description,
+      order_index: index,
+    }));
+
+    const { data, error } = await supabase
+      .from('baby_prep_tasks')
+      .insert(tasksToInsert)
+      .select();
+
+    if (!error && data) {
+      setTasks([...tasks, ...data]);
+    }
+  };
+
+  return (
+    <>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif text-gray-900 mb-2">Ready for Baby</h1>
+        <p className="text-gray-600">
+          A calm, supportive guide to help you prepare — practically and emotionally — for your baby's arrival.
+        </p>
+      </div>
+
+      {/* Global Controls */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => setHideCompleted(!hideCompleted)}
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          {hideCompleted ? (
+            <>
+              <EyeIcon className="w-4 h-4" />
+              Show completed
+            </>
+          ) : (
+            <>
+              <EyeSlashIcon className="w-4 h-4" />
+              Hide completed
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Sections */}
+      <div className="space-y-4">
+        {/* The Essentials */}
+        {(Object.keys(CATEGORY_CONFIG) as Array<keyof typeof CATEGORY_CONFIG>).map((category) => {
+          const config = CATEGORY_CONFIG[category];
+          const categoryTasks = getTasksByCategory(category);
+          const visibleTasks = getVisibleTasks(category);
+          const completedCount = getCompletedCount(category);
+          const totalCount = categoryTasks.length;
+          const isExpanded = expandedSections.has(category);
+
+          return (
+            <div key={category} className="bg-white rounded-xl border border-gray-200">
+              {/* Section Header */}
+              <button
+                onClick={() => {
+                  toggleSection(category);
+                  if (categoryTasks.length === 0) {
+                    initializeDefaultTasks(category);
+                  }
+                }}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-xl"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{config.icon}</span>
+                  <div className="text-left">
+                    <h3 className="text-lg font-semibold text-gray-900">{config.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {totalCount > 0 && `${completedCount} of ${totalCount} complete`}
+                    </p>
+                  </div>
+                </div>
+                {isExpanded ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                )}
+              </button>
+
+              {/* Section Content */}
+              {isExpanded && (
+                <div className="border-t border-gray-200 p-4">
+                  <div className="space-y-2">
+                    {visibleTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg group"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={task.is_complete}
+                          onChange={() => handleToggleTask(task.id)}
+                          className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <p className={`${task.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                            {task.title}
+                          </p>
+                          {task.description && (
+                            <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="opacity-0 group-hover:opacity-100 text-xs text-red-600 hover:text-red-700 transition-opacity"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+
+                    {hideCompleted && totalCount - visibleTasks.length > 0 && (
+                      <p className="text-xs text-gray-500 italic py-2">
+                        {totalCount - visibleTasks.length} item{totalCount - visibleTasks.length > 1 ? 's' : ''} hidden
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Add New Task */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTaskInputs[category] || ''}
+                        onChange={(e) => setNewTaskInputs({ ...newTaskInputs, [category]: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddTask(category);
+                        }}
+                        placeholder="Add a new task..."
+                        className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                      />
+                      <button
+                        onClick={() => handleAddTask(category)}
+                        className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium flex items-center gap-2"
+                      >
+                        <PlusIcon className="w-4 h-4" />
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Name Ideas & Meaning Section */}
+        <div className="bg-white rounded-xl border border-gray-200">
+          <button
+            onClick={() => toggleSection('name_ideas')}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-xl"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">✨</span>
+              <div className="text-left">
+                <h3 className="text-lg font-semibold text-gray-900">Name Ideas & Meaning</h3>
+                <p className="text-sm text-gray-500">{nameIdeas.length} idea{nameIdeas.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            {expandedSections.has('name_ideas') ? (
+              <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+
+          {expandedSections.has('name_ideas') && (
+            <div className="border-t border-gray-200 p-4">
+              {/* Tooltip */}
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
+                <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-900">
+                  Parents often choose names based on family history, cultural origins, sound, or meaning. Try mixing inspiration from each!
+                </p>
+              </div>
+
+              {/* Name Ideas Table */}
+              <div className="space-y-3 mb-4">
+                {nameIdeas.map((nameIdea) => {
+                  const userReactions = nameIdea.reactions?.[userId] || [];
+                  const enhanced = nameIdea.ai_enhanced_notes;
+
+                  return (
+                    <div key={nameIdea.id} className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900">{nameIdea.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                            nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNameIdea(nameIdea.id)}
+                          className="text-xs text-red-600 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+
+                      {nameIdea.notes && (
+                        <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
+                      )}
+
+                      {enhanced && (
+                        <div className="text-sm space-y-1 mb-3 p-2 bg-sage/5 rounded">
+                          {enhanced.meaning && <p className="text-gray-700"><strong>Meaning:</strong> {enhanced.meaning}</p>}
+                          {enhanced.origin && <p className="text-gray-700"><strong>Origin:</strong> {enhanced.origin}</p>}
+                          {enhanced.popularity && <p className="text-gray-700"><strong>Popularity:</strong> {enhanced.popularity}</p>}
+                          {enhanced.siblingCompatibility && <p className="text-gray-700"><strong>With siblings:</strong> {enhanced.siblingCompatibility}</p>}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleReaction(nameIdea.id, '❤️')}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                          {userReactions.includes('❤️') ? (
+                            <HeartSolidIcon className="w-4 h-4 text-red-500" />
+                          ) : (
+                            <HeartIcon className="w-4 h-4 text-gray-400" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleToggleReaction(nameIdea.id, '💬')}
+                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                          <ChatBubbleLeftIcon className="w-4 h-4 text-gray-400" />
+                        </button>
+                        {!enhanced && (
+                          <button
+                            onClick={() => handleEnhanceName(nameIdea.id)}
+                            className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors ml-auto"
+                          >
+                            <SparklesIcon className="w-4 h-4 text-sage" />
+                            <span className="text-sage">Enhance</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add New Name */}
+              <div className="pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newNameInput.name}
+                    onChange={(e) => setNewNameInput({ ...newNameInput, name: e.target.value })}
+                    placeholder="Name"
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                  />
+                  <select
+                    value={newNameInput.type}
+                    onChange={(e) => setNewNameInput({ ...newNameInput, type: e.target.value as 'F' | 'M' | 'N' })}
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                  >
+                    <option value="N">Neutral</option>
+                    <option value="F">F</option>
+                    <option value="M">M</option>
+                  </select>
+                  <button
+                    onClick={handleAddNameIdea}
+                    className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    Add
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={newNameInput.notes}
+                  onChange={(e) => setNewNameInput({ ...newNameInput, notes: e.target.value })}
+                  placeholder="Notes (optional)"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Banner Reminder */}
+      <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-sm text-amber-900">
+          <strong>Coming soon:</strong> We'll automatically organize these tasks by trimester based on your due date. For now, all features are visible to explore.
+        </p>
+      </div>
+    </>
+  );
+}
