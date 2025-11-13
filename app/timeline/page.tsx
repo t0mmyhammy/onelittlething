@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import TimelineView from '@/components/TimelineView';
 import MobileNav from '@/components/MobileNav';
+import QuickEntryForm from '@/components/QuickEntryForm';
 
 // Disable caching for this page
 export const dynamic = 'force-dynamic';
@@ -69,6 +70,15 @@ export default async function TimelinePage() {
           <p className="text-gray-600">
             All your captured moments in one place
           </p>
+        </div>
+
+        {/* Quick Entry Form */}
+        <div className="mb-8">
+          <QuickEntryForm
+            children={children || []}
+            familyId={familyId}
+            userId={user.id}
+          />
         </div>
 
         <TimelineView
