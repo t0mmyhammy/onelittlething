@@ -14,6 +14,8 @@ import {
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
+import RecommendedTasksModal from './RecommendedTasksModal';
+import { getRecommendedTasksForFamily, RecommendedTask } from '@/lib/baby-prep-templates';
 
 interface BabyPrepList {
   id: string;
@@ -140,7 +142,12 @@ export default function ReadyForBabyView({
   const [newTaskInputs, setNewTaskInputs] = useState<Record<string, string>>({});
   const [newNameInput, setNewNameInput] = useState({ name: '', type: 'N' as 'F' | 'M' | 'N', notes: '' });
   const [showNameTooltip, setShowNameTooltip] = useState(false);
+  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
+  const [recommendationsCategory, setRecommendationsCategory] = useState<string | null>(null);
   const supabase = createClient();
+
+  // Determine if family has older children (to show context-specific tasks)
+  const hasOlderChildren = babyPrepList?.is_second_child || false;
 
   const toggleSection = (category: string) => {
     const newExpanded = new Set(expandedSections);
@@ -339,6 +346,35 @@ export default function ReadyForBabyView({
     }
   };
 
+  const handleShowRecommendations = (category: string) => {
+    setRecommendationsCategory(category);
+    setShowRecommendationsModal(true);
+  };
+
+  const handleAddRecommendedTasks = async (recommendedTasks: RecommendedTask[]) => {
+    if (!babyPrepList || !recommendationsCategory) return;
+
+    const existingTasks = getTasksByCategory(recommendationsCategory);
+    const maxOrder = Math.max(...existingTasks.map(t => t.order_index), -1);
+
+    const tasksToInsert = recommendedTasks.map((task, index) => ({
+      list_id: babyPrepList.id,
+      category: recommendationsCategory,
+      title: task.title,
+      description: task.description || null,
+      order_index: maxOrder + 1 + index,
+    }));
+
+    const { data, error } = await supabase
+      .from('baby_prep_tasks')
+      .insert(tasksToInsert)
+      .select();
+
+    if (!error && data) {
+      setTasks([...tasks, ...data]);
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -383,30 +419,42 @@ export default function ReadyForBabyView({
           return (
             <div key={category} className="bg-white rounded-xl border border-gray-200">
               {/* Section Header */}
-              <button
-                onClick={() => {
-                  toggleSection(category);
-                  if (categoryTasks.length === 0) {
-                    initializeDefaultTasks(category);
-                  }
-                }}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-xl"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{config.icon}</span>
-                  <div className="text-left">
-                    <h3 className="text-lg font-semibold text-gray-900">{config.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      {totalCount > 0 && `${completedCount} of ${totalCount} complete`}
-                    </p>
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    toggleSection(category);
+                    if (categoryTasks.length === 0) {
+                      initializeDefaultTasks(category);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-tl-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{config.icon}</span>
+                    <div className="text-left">
+                      <h3 className="text-lg font-semibold text-gray-900">{config.title}</h3>
+                      <p className="text-sm text-gray-500">
+                        {totalCount > 0 && `${completedCount} of ${totalCount} complete`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {isExpanded ? (
-                  <ChevronUpIcon className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
+                  {isExpanded ? (
+                    <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShowRecommendations(category);
+                  }}
+                  className="p-4 hover:bg-blue-50 transition-colors rounded-tr-xl group"
+                  title="See recommended tasks"
+                >
+                  <InformationCircleIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
+                </button>
+              </div>
 
               {/* Section Content */}
               {isExpanded && (
@@ -623,6 +671,20 @@ export default function ReadyForBabyView({
           <strong>Coming soon:</strong> We'll automatically organize these tasks by trimester based on your due date. For now, all features are visible to explore.
         </p>
       </div>
+
+      {/* Recommendations Modal */}
+      {showRecommendationsModal && recommendationsCategory && (
+        <RecommendedTasksModal
+          category={recommendationsCategory}
+          categoryTitle={CATEGORY_CONFIG[recommendationsCategory as keyof typeof CATEGORY_CONFIG]?.title || ''}
+          recommendedTasks={getRecommendedTasksForFamily(recommendationsCategory, hasOlderChildren)}
+          onClose={() => {
+            setShowRecommendationsModal(false);
+            setRecommendationsCategory(null);
+          }}
+          onAddTasks={handleAddRecommendedTasks}
+        />
+      )}
     </>
   );
 }

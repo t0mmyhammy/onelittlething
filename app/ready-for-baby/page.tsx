@@ -38,6 +38,15 @@ export default async function ReadyForBabyPage() {
   const displayName = userPrefs?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const profilePhotoUrl = userPrefs?.profile_photo_url;
 
+  // Check if family has existing born children (not expected babies)
+  const { data: existingChildren } = await supabase
+    .from('children')
+    .select('id, birthdate')
+    .eq('family_id', familyId)
+    .lte('birthdate', new Date().toISOString());
+
+  const hasOlderChildren = (existingChildren?.length || 0) > 0;
+
   // Get or create baby prep list for this family
   let { data: babyPrepList } = await supabase
     .from('baby_prep_lists')
@@ -52,11 +61,20 @@ export default async function ReadyForBabyPage() {
       .insert({
         family_id: familyId,
         stage: 'second', // Default to second trimester
+        is_second_child: hasOlderChildren,
       })
       .select()
       .single();
 
     babyPrepList = newList;
+  } else if (babyPrepList && babyPrepList.is_second_child !== hasOlderChildren) {
+    // Update if the status has changed
+    await supabase
+      .from('baby_prep_lists')
+      .update({ is_second_child: hasOlderChildren })
+      .eq('id', babyPrepList.id);
+
+    babyPrepList.is_second_child = hasOlderChildren;
   }
 
   // Get all tasks for this list
