@@ -356,7 +356,13 @@ export default function ReadyForBabyView({
   };
 
   const handleAddRecommendedTasks = async (recommendedTasks: RecommendedTask[]) => {
-    if (!babyPrepList || !recommendationsCategory) return;
+    if (!babyPrepList || !recommendationsCategory) {
+      console.error('Missing babyPrepList or recommendationsCategory');
+      return;
+    }
+
+    console.log('Adding recommended tasks:', recommendedTasks);
+    console.log('Category:', recommendationsCategory);
 
     const existingTasks = getTasksByCategory(recommendationsCategory);
     const maxOrder = Math.max(...existingTasks.map(t => t.order_index), -1);
@@ -369,12 +375,21 @@ export default function ReadyForBabyView({
       order_index: maxOrder + 1 + index,
     }));
 
+    console.log('Tasks to insert:', tasksToInsert);
+
     const { data, error } = await supabase
       .from('baby_prep_tasks')
       .insert(tasksToInsert)
       .select();
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error inserting tasks:', error);
+      alert('Failed to add tasks. Please try again.');
+      return;
+    }
+
+    if (data) {
+      console.log('Successfully inserted tasks:', data);
       setTasks([...tasks, ...data]);
     }
   };

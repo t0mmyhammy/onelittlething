@@ -9,7 +9,7 @@ interface RecommendedTasksModalProps {
   categoryTitle: string;
   recommendedTasks: RecommendedTask[];
   onClose: () => void;
-  onAddTasks: (tasks: RecommendedTask[]) => void;
+  onAddTasks: (tasks: RecommendedTask[]) => Promise<void>;
 }
 
 export default function RecommendedTasksModal({
@@ -21,6 +21,7 @@ export default function RecommendedTasksModal({
 }: RecommendedTasksModalProps) {
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
 
   const toggleTask = (index: number) => {
     const newSelected = new Set(selectedTasks);
@@ -40,14 +41,18 @@ export default function RecommendedTasksModal({
     }
   };
 
-  const handleAddSelected = () => {
+  const handleAddSelected = async () => {
+    setIsAdding(true);
     const tasksToAdd = filteredTasks.filter((_, i) => selectedTasks.has(i));
-    onAddTasks(tasksToAdd);
+    await onAddTasks(tasksToAdd);
+    setIsAdding(false);
     onClose();
   };
 
-  const handleAddSingle = (task: RecommendedTask) => {
-    onAddTasks([task]);
+  const handleAddSingle = async (task: RecommendedTask) => {
+    setIsAdding(true);
+    await onAddTasks([task]);
+    setIsAdding(false);
   };
 
   const filteredTasks = recommendedTasks.filter(task =>
@@ -143,9 +148,10 @@ export default function RecommendedTasksModal({
                         </h3>
                         <button
                           onClick={() => handleAddSingle(task)}
-                          className="text-xs bg-sage text-white px-3 py-1 rounded-full hover:opacity-90 transition-opacity whitespace-nowrap"
+                          disabled={isAdding}
+                          className="text-xs bg-sage text-white px-3 py-1 rounded-full hover:opacity-90 transition-opacity whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Add to my list
+                          {isAdding ? 'Adding...' : 'Add to my list'}
                         </button>
                       </div>
                       {task.description && (
@@ -192,15 +198,15 @@ export default function RecommendedTasksModal({
             </button>
             <button
               onClick={handleAddSelected}
-              disabled={selectedTasks.size === 0}
+              disabled={selectedTasks.size === 0 || isAdding}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all flex items-center justify-center gap-2 ${
-                selectedTasks.size === 0
+                selectedTasks.size === 0 || isAdding
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-sage hover:opacity-90'
               }`}
             >
               <CheckIcon className="w-4 h-4" />
-              Add {selectedTasks.size > 0 ? `${selectedTasks.size} ` : ''}Selected Task{selectedTasks.size !== 1 ? 's' : ''}
+              {isAdding ? 'Adding...' : `Add ${selectedTasks.size > 0 ? `${selectedTasks.size} ` : ''}Selected Task${selectedTasks.size !== 1 ? 's' : ''}`}
             </button>
           </div>
         </div>
