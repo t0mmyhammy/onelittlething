@@ -51,12 +51,14 @@ export default function NotificationBanner({ userId, notifications }: Notificati
   if (!currentNotification) return null;
 
   const handleDismiss = async (notificationId: string) => {
-    // Save dismissal to database
+    // Save dismissal to database using upsert to ensure it works even if no record exists
     const dismissalKey = `notification_dismissed_${notificationId}`;
     await supabase
       .from('user_preferences')
-      .update({ [dismissalKey]: true })
-      .eq('user_id', userId);
+      .upsert(
+        { user_id: userId, [dismissalKey]: true },
+        { onConflict: 'user_id' }
+      );
 
     setDismissedIds(prev => new Set([...prev, notificationId]));
   };
