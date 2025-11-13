@@ -8,9 +8,11 @@ import {
   CheckIcon,
   XMarkIcon,
   EyeSlashIcon,
-  EyeIcon
+  EyeIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import ImportItemsToPackListModal from './ImportItemsToPackListModal';
 
 interface PackListItem {
   id: string;
@@ -73,10 +75,32 @@ export default function PackListDetailView({
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [newCategoryTitle, setNewCategoryTitle] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const supabase = createClient();
 
   // Filter participants (children going on trip)
   const participantChildren = children.filter(child => packList.participants?.includes(child.id));
+
+  // Calculate assignment stats
+  const getAssignmentStats = () => {
+    const allItems = categories.flatMap(cat => cat.pack_list_items);
+
+    const stats = {
+      children: participantChildren.map(child => ({
+        id: child.id,
+        name: child.name,
+        count: allItems.filter(item => item.assigned_to === child.id).length,
+      })),
+      parents: allItems.filter(item => item.assigned_type === 'parent').length,
+      shared: allItems.filter(item => item.assigned_type === 'all' || item.assigned_type === null).length,
+    };
+
+    return stats;
+  };
+
+  const assignmentStats = getAssignmentStats();
 
   const handleUpdateTitle = async () => {
     if (titleValue.trim() === packList.name) {
@@ -265,6 +289,49 @@ export default function PackListDetailView({
     }
   };
 
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    setSelectedItemIds(new Set());
+  };
+
+  const toggleItemSelection = (itemId: string) => {
+    const newSelected = new Set(selectedItemIds);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItemIds(newSelected);
+  };
+
+  const handleBulkAssign = async (assignTo: string | null, assignType: 'child' | 'parent' | 'all' | null) => {
+    const itemIds = Array.from(selectedItemIds);
+
+    const { error } = await supabase
+      .from('pack_list_items')
+      .update({
+        assigned_to: assignTo,
+        assigned_type: assignType,
+      })
+      .in('id', itemIds);
+
+    if (!error) {
+      // Update local state
+      setCategories(categories.map(category => ({
+        ...category,
+        pack_list_items: category.pack_list_items.map(item =>
+          selectedItemIds.has(item.id)
+            ? { ...item, assigned_to: assignTo, assigned_type: assignType }
+            : item
+        ),
+      })));
+
+      // Exit select mode
+      setSelectMode(false);
+      setSelectedItemIds(new Set());
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -314,6 +381,32 @@ export default function PackListDetailView({
         )}
       </div>
 
+      {/* Assignment Stats */}
+      {(participantChildren.length > 0 || familyMembers.length > 0) && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            {assignmentStats.children.map((child) => (
+              <div key={child.id} className="flex items-center gap-2">
+                <span className="font-medium text-gray-700">{child.name}:</span>
+                <span className="text-gray-600">{child.count} item{child.count !== 1 ? 's' : ''}</span>
+              </div>
+            ))}
+            {familyMembers.length > 0 && assignmentStats.parents > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-700">Parents:</span>
+                <span className="text-gray-600">{assignmentStats.parents} item{assignmentStats.parents !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+            {assignmentStats.shared > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-700">Shared:</span>
+                <span className="text-gray-600">{assignmentStats.shared} item{assignmentStats.shared !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Person Tabs */}
       {(participantChildren.length > 0 || familyMembers.length > 0) && (
         <div className="mb-6 border-b border-gray-200">
@@ -359,30 +452,55 @@ export default function PackListDetailView({
 
       {/* Global Controls */}
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setHideCompleted(!hideCompleted)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          {hideCompleted ? (
-            <>
-              <EyeIcon className="w-4 h-4" />
-              Show completed
-            </>
-          ) : (
-            <>
-              <EyeSlashIcon className="w-4 h-4" />
-              Hide completed
-            </>
-          )}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setHideCompleted(!hideCompleted)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            {hideCompleted ? (
+              <>
+                <EyeIcon className="w-4 h-4" />
+                Show completed
+              </>
+            ) : (
+              <>
+                <EyeSlashIcon className="w-4 h-4" />
+                Hide completed
+              </>
+            )}
+          </button>
 
-        <button
-          onClick={() => setShowNewCategory(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-sage rounded-lg hover:opacity-90 transition-opacity"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Add category
-        </button>
+          {participantChildren.length > 0 && (
+            <button
+              onClick={toggleSelectMode}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                selectMode
+                  ? 'bg-sage text-white hover:opacity-90'
+                  : 'text-gray-700 bg-white border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <CheckIcon className="w-4 h-4" />
+              {selectMode ? 'Cancel selection' : 'Select items'}
+            </button>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <ArrowUpTrayIcon className="w-4 h-4" />
+            Import items
+          </button>
+          <button
+            onClick={() => setShowNewCategory(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-sage rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Add category
+          </button>
+        </div>
       </div>
 
       {/* New Category Input */}
@@ -443,7 +561,10 @@ export default function PackListDetailView({
               key={category.id}
               category={category}
               hideCompleted={hideCompleted}
+              selectMode={selectMode}
+              selectedItemIds={selectedItemIds}
               onToggleItem={handleToggleItem}
+              onToggleItemSelection={toggleItemSelection}
               onAddItem={handleAddItem}
               onDeleteItem={handleDeleteItem}
               onDeleteCategory={handleDeleteCategory}
@@ -456,6 +577,55 @@ export default function PackListDetailView({
           ))
         )}
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectMode && selectedItemIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-xl shadow-2xl border-2 border-sage p-4 z-50 max-w-md w-full mx-4">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">
+              {selectedItemIds.size} item{selectedItemIds.size !== 1 ? 's' : ''} selected
+            </span>
+            <select
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'all') {
+                  handleBulkAssign(null, 'all');
+                } else if (value === 'parent') {
+                  handleBulkAssign(null, 'parent');
+                } else if (value) {
+                  handleBulkAssign(value, 'child');
+                }
+              }}
+              defaultValue=""
+              className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-sage focus:border-sage"
+            >
+              <option value="" disabled>Assign to...</option>
+              <option value="all">All (Shared)</option>
+              {participantChildren.map((child) => (
+                <option key={child.id} value={child.id}>
+                  {child.name}
+                </option>
+              ))}
+              {familyMembers.length > 0 && (
+                <option value="parent">Parents</option>
+              )}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Import Items Modal */}
+      {showImportModal && (
+        <ImportItemsToPackListModal
+          packListId={packList.id}
+          children={participantChildren}
+          onClose={() => setShowImportModal(false)}
+          onImportComplete={() => {
+            setShowImportModal(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </>
   );
 }
@@ -464,7 +634,10 @@ export default function PackListDetailView({
 function CategoryCard({
   category,
   hideCompleted,
+  selectMode,
+  selectedItemIds,
   onToggleItem,
+  onToggleItemSelection,
   onAddItem,
   onDeleteItem,
   onDeleteCategory,
@@ -476,7 +649,10 @@ function CategoryCard({
 }: {
   category: PackListCategory;
   hideCompleted: boolean;
+  selectMode: boolean;
+  selectedItemIds: Set<string>;
   onToggleItem: (categoryId: string, itemId: string, isComplete: boolean) => void;
+  onToggleItemSelection: (itemId: string) => void;
   onAddItem: (categoryId: string, label: string, quantity: string) => void;
   onDeleteItem: (categoryId: string, itemId: string) => void;
   onDeleteCategory: (categoryId: string) => void;
@@ -581,20 +757,23 @@ function CategoryCard({
       <div className="space-y-2">
         {visibleItems.map((item) => {
           const assignedChild = item.assigned_to ? children.find(c => c.id === item.assigned_to) : null;
+          const isSelected = selectedItemIds.has(item.id);
 
           return (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg group"
+              className={`flex items-center gap-3 p-2 rounded-lg group transition-colors ${
+                isSelected ? 'bg-sage/10 hover:bg-sage/20' : 'hover:bg-gray-50'
+              }`}
             >
               <input
                 type="checkbox"
-                checked={item.is_complete}
-                onChange={() => onToggleItem(category.id, item.id, item.is_complete)}
+                checked={selectMode ? isSelected : item.is_complete}
+                onChange={() => selectMode ? onToggleItemSelection(item.id) : onToggleItem(category.id, item.id, item.is_complete)}
                 className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer"
               />
               <div className="flex-1 flex items-center gap-2">
-                <span className={`${item.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                <span className={`${!selectMode && item.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                   {item.label}
                 </span>
                 {assignedChild && (
@@ -613,8 +792,8 @@ function CategoryCard({
                   x{item.quantity}
                 </span>
               )}
-              {/* Assignment Dropdown */}
-              {children.length > 0 && (
+              {/* Assignment Dropdown - hidden in select mode */}
+              {!selectMode && children.length > 0 && (
                 <select
                   value={item.assigned_to || item.assigned_type || 'all'}
                   onChange={(e) => {
@@ -639,12 +818,14 @@ function CategoryCard({
                   <option value="parent">Parents</option>
                 </select>
               )}
-              <button
-                onClick={() => onDeleteItem(category.id, item.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity"
-              >
-                <XMarkIcon className="w-4 h-4" />
-              </button>
+              {!selectMode && (
+                <button
+                  onClick={() => onDeleteItem(category.id, item.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
           );
         })}
