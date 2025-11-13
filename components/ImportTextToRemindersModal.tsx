@@ -75,6 +75,11 @@ export default function ImportTextToRemindersModal({
       return;
     }
 
+    if (!familyId || familyId.trim() === '') {
+      setError('Error: No family ID found. Please refresh the page and try again.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -90,11 +95,16 @@ export default function ImportTextToRemindersModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to import reminders');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to import reminders');
       }
+
+      const data = await response.json();
+      console.log('Successfully imported reminders:', data);
 
       onImportComplete();
     } catch (err: any) {
+      console.error('Import reminders error:', err);
       setError(err.message || 'Failed to import reminders');
     } finally {
       setLoading(false);

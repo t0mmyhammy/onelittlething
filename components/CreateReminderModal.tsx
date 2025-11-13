@@ -74,6 +74,10 @@ export default function CreateReminderModal({
         throw new Error('Title is required');
       }
 
+      if (!familyId || familyId.trim() === '') {
+        throw new Error('No family ID found. Please refresh the page and try again.');
+      }
+
       // Create the reminder
       const { data: reminder, error: reminderError } = await supabase
         .from('reminders')
@@ -91,7 +95,14 @@ export default function CreateReminderModal({
         .select()
         .single();
 
-      if (reminderError) throw reminderError;
+      if (reminderError) {
+        console.error('Create reminder error:', reminderError);
+        throw reminderError;
+      }
+
+      if (!reminder?.id) {
+        throw new Error('Reminder created but ID not returned');
+      }
 
       // If it's a todo list, create subtasks
       if (isTodoList && reminder) {
