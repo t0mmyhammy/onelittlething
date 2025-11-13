@@ -9,7 +9,7 @@ export interface RecommendedTask {
 
 export const RECOMMENDED_TASKS: Record<string, RecommendedTask[]> = {
   essentials: [
-    // Pediatrician
+    // Core Medical & Planning
     {
       title: 'Choose a pediatrician',
       description: 'Research and schedule meet-and-greet appointments',
@@ -26,255 +26,31 @@ export const RECOMMENDED_TASKS: Record<string, RecommendedTask[]> = {
       priority: 'high',
       context: 'always',
     },
-
-    // Hospital Bags - Mom
     {
-      title: 'Pack comfortable slippers for hospital',
-      description: 'Soft slippers for hard hospital floors',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack cozy socks',
-      description: 'Multiple pairs for comfort',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack loose, comfortable clothes',
-      description: 'Easy to change into and comfortable for recovery',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack zip-up or button-down top',
-      description: 'For easy monitoring and nursing',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Choose going-home outfit (loose fitting)',
-      description: 'Something comfortable that isn\'t tight',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack light robe or hoodie',
-      description: 'For comfort and easy access',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack extra underwear',
-      description: 'Hospital provides some, but having your own helps',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-
-    // Toiletries
-    {
-      title: 'Pack toothbrushes & toothpaste',
-      description: 'For both parents',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack face wash & moisturizer',
-      description: 'Your regular skincare routine',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack chapstick',
-      description: 'Hospital air is very dry',
-      timeline: 'Week 34-36',
+      title: 'Tour hospital or birthing center',
+      description: 'Know where to go and what to expect',
+      timeline: 'Week 28-34',
       category: 'essentials',
       priority: 'high',
       context: 'always',
     },
     {
-      title: 'Pack hair ties & brush',
-      description: 'To keep hair manageable',
-      timeline: 'Week 34-36',
+      title: 'Create birth plan',
+      description: 'Discuss preferences with healthcare provider',
+      timeline: 'Week 28-32',
       category: 'essentials',
       context: 'always',
-    },
-    {
-      title: 'Pack deodorant',
-      description: 'For both parents',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack hand lotion',
-      description: 'Hospital air is very drying',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack travel-size body wash/shampoo',
-      description: 'First shower after birth feels incredible',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-
-    // Sleep & Personal
-    {
-      title: 'Pack phone chargers (extra long cord)',
-      description: 'Essential for staying connected',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      priority: 'high',
-      context: 'always',
-    },
-    {
-      title: 'Pack eye mask & earplugs',
-      description: 'For better rest in a busy hospital',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Bring pillow from home',
-      description: 'Especially important for partner',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack water bottle with straw',
-      description: 'Stay hydrated easily',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      priority: 'high',
-      context: 'always',
-    },
-    {
-      title: 'Pack snacks that hold up well',
-      description: 'Protein bars, gummies, nuts',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      priority: 'high',
-      context: 'always',
-    },
-    {
-      title: 'Prepare folder for paperwork',
-      description: 'Birth certificate, insurance forms, etc.',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-
-    // Comfort & Vibes
-    {
-      title: 'Pack small blanket',
-      description: 'Hospital rooms can get cold',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack portable speaker or headphones',
-      description: 'For music, meditation, or entertainment',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack gum or mints',
-      description: 'Freshen up easily',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack frictionless outfit for partner',
-      description: 'Comfortable clothes for sleeping',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-
-    // Longer Stay Items
-    {
-      title: 'Pack extra set of comfy clothes',
-      description: 'For C-section, induction, or complications',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack more substantial snacks',
-      description: 'For longer hospital stays',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack extra-long phone charger',
-      description: 'Helpful for extended stays',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack slippers you don\'t mind getting dirty',
-      description: 'For longer stays',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack portable fan',
-      description: 'Temperature control for comfort',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-    {
-      title: 'Pack compression socks',
-      description: 'Helps circulation after longer stays',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'always',
-    },
-
-    // Second+ Baby Additions
-    {
-      title: 'Pack extra clothes for logistics',
-      description: 'Won\'t be going home as quickly with older child',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'second_plus',
-    },
-    {
-      title: 'Prepare partner\'s extended bag',
-      description: 'More snacks, entertainment, overnight clothes for shuttling',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'second_plus',
-    },
-    {
-      title: 'Pack backup chargers',
-      description: 'One always disappears with the toddler',
-      timeline: 'Week 34-36',
-      category: 'essentials',
-      context: 'second_plus',
     },
 
     // Car Seat
+    {
+      title: 'Purchase infant car seat',
+      description: 'Can\'t leave hospital without one',
+      timeline: 'Week 32-35',
+      category: 'essentials',
+      priority: 'high',
+      context: 'always',
+    },
     {
       title: 'Finalize car seat installation',
       description: 'Get it inspected by a certified technician',
@@ -292,7 +68,7 @@ export const RECOMMENDED_TASKS: Record<string, RecommendedTask[]> = {
       context: 'second_plus',
     },
 
-    // Newborn Basics
+    // Newborn Basics - Home Supplies
     {
       title: 'Stock up on newborn diapers',
       description: 'Have at least 2-3 packs on hand',
@@ -322,6 +98,36 @@ export const RECOMMENDED_TASKS: Record<string, RecommendedTask[]> = {
       timeline: 'Week 34-37',
       category: 'essentials',
       context: 'always',
+    },
+    {
+      title: 'Install smoke & carbon monoxide detectors',
+      description: 'Test all safety equipment',
+      timeline: 'Week 30-35',
+      category: 'essentials',
+      context: 'always',
+    },
+    {
+      title: 'Set up bassinet or crib',
+      description: 'Ensure safe sleep space is ready',
+      timeline: 'Week 32-36',
+      category: 'essentials',
+      priority: 'high',
+      context: 'always',
+    },
+    {
+      title: 'Practice swaddling',
+      description: 'Learn technique before baby arrives',
+      timeline: 'Third Trimester',
+      category: 'essentials',
+      context: 'first_baby',
+    },
+    {
+      title: 'Take infant CPR class',
+      description: 'Essential safety knowledge',
+      timeline: 'Week 30-35',
+      category: 'essentials',
+      priority: 'high',
+      context: 'first_baby',
     },
   ],
 

@@ -12,10 +12,12 @@ import {
   ChatBubbleLeftIcon,
   HeartIcon,
   InformationCircleIcon,
+  RocketLaunchIcon,
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import RecommendedTasksModal from './RecommendedTasksModal';
 import { getRecommendedTasksForFamily, RecommendedTask } from '@/lib/baby-prep-templates';
+import Link from 'next/link';
 
 interface BabyPrepList {
   id: string;
@@ -144,6 +146,8 @@ export default function ReadyForBabyView({
   const [showNameTooltip, setShowNameTooltip] = useState(false);
   const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
   const [recommendationsCategory, setRecommendationsCategory] = useState<string | null>(null);
+  const [generatingHospitalBags, setGeneratingHospitalBags] = useState(false);
+  const [generatedPackListIds, setGeneratedPackListIds] = useState<string[]>([]);
   const supabase = createClient();
 
   // Determine if family has older children (to show context-specific tasks)
@@ -375,6 +379,34 @@ export default function ReadyForBabyView({
     }
   };
 
+  const handleGenerateHospitalBags = async () => {
+    if (!babyPrepList) return;
+
+    setGeneratingHospitalBags(true);
+
+    try {
+      const response = await fetch('/api/generate-hospital-bags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId,
+          hasOlderChildren,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedPackListIds(data.packListIds || []);
+      } else {
+        console.error('Failed to generate hospital bags');
+      }
+    } catch (error) {
+      console.error('Error generating hospital bags:', error);
+    } finally {
+      setGeneratingHospitalBags(false);
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -460,33 +492,64 @@ export default function ReadyForBabyView({
               {isExpanded && (
                 <div className="border-t border-gray-200 p-4">
                   <div className="space-y-2">
-                    {visibleTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg group"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={task.is_complete}
-                          onChange={() => handleToggleTask(task.id)}
-                          className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <p className={`${task.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                            {task.title}
-                          </p>
-                          {task.description && (
-                            <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                    {visibleTasks.map((task) => {
+                      const isHospitalBagsTask = task.title.toLowerCase().includes('pack hospital bags');
+
+                      return (
+                        <div key={task.id}>
+                          <div className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg group">
+                            <input
+                              type="checkbox"
+                              checked={task.is_complete}
+                              onChange={() => handleToggleTask(task.id)}
+                              className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer mt-0.5"
+                            />
+                            <div className="flex-1">
+                              <p className={`${task.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p className="text-xs text-gray-500 mt-1">{task.description}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="opacity-0 group-hover:opacity-100 text-xs text-red-600 hover:text-red-700 transition-opacity"
+                            >
+                              Delete
+                            </button>
+                          </div>
+
+                          {/* Special auto-generate button for hospital bags */}
+                          {isHospitalBagsTask && !task.is_complete && (
+                            <div className="ml-8 mt-2 mb-2">
+                              {generatedPackListIds.length > 0 ? (
+                                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                  <p className="text-sm text-green-800 mb-2">
+                                    ✓ Created {generatedPackListIds.length} hospital bag pack lists!
+                                  </p>
+                                  <Link
+                                    href="/pack-lists"
+                                    className="text-sm text-sage hover:underline font-medium"
+                                  >
+                                    View Pack Lists →
+                                  </Link>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={handleGenerateHospitalBags}
+                                  disabled={generatingHospitalBags}
+                                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sage to-sage/80 text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <RocketLaunchIcon className="w-4 h-4" />
+                                  {generatingHospitalBags ? 'Generating...' : `Auto-generate ${hasOlderChildren ? '5' : '3'} Pack Lists`}
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          className="opacity-0 group-hover:opacity-100 text-xs text-red-600 hover:text-red-700 transition-opacity"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     {hideCompleted && totalCount - visibleTasks.length > 0 && (
                       <p className="text-xs text-gray-500 italic py-2">
