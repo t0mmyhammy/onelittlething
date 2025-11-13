@@ -75,11 +75,12 @@ function SignupForm() {
 
         console.log('Family created:', family.id);
 
-        // Create default user preferences
+        // Create default user preferences (mark as family creator)
         const { error: prefsError } = await supabase
           .from('user_preferences')
           .insert({
             user_id: data.user.id,
+            is_family_creator: true,
           });
 
         if (prefsError) {

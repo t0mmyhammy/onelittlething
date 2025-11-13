@@ -7,6 +7,7 @@ import StreakWidget from '@/components/StreakWidget';
 import BabyCountdownCard from '@/components/BabyCountdownCard';
 import DailyAnchor from '@/components/DailyAnchor';
 import MobileNav from '@/components/MobileNav';
+import OnboardingChecklist from '@/components/OnboardingChecklist';
 
 // Disable caching for this page
 export const dynamic = 'force-dynamic';
@@ -137,16 +138,19 @@ export default async function DashboardPage() {
     familyId = familyMember.family_id;
   }
 
-  // Get user preferences for profile
+  // Get user preferences for profile and onboarding
   const { data: userPrefs } = await supabase
     .from('user_preferences')
-    .select('display_name, profile_photo_url, daily_mantra')
+    .select('display_name, profile_photo_url, daily_mantra, is_family_creator, onboarding_completed, onboarding_dismissed')
     .eq('user_id', user.id)
     .single();
 
   const displayName = userPrefs?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const profilePhotoUrl = userPrefs?.profile_photo_url;
   const dailyMantra = userPrefs?.daily_mantra;
+  const isFamilyCreator = userPrefs?.is_family_creator ?? false;
+  const onboardingCompleted = userPrefs?.onboarding_completed ?? false;
+  const onboardingDismissed = userPrefs?.onboarding_dismissed ?? false;
 
   // Get children (show all except explicitly archived)
     const { data: children } = await supabase
@@ -193,6 +197,28 @@ export default async function DashboardPage() {
     .order('entry_date', { ascending: false })
     .limit(3);
 
+  // Check onboarding progress
+  const hasChildren = children && children.length > 0;
+  const hasMoments = entries && entries.length > 0;
+
+  // Check if user has invited a partner (more than 1 family member)
+  const { count: familyMemberCount } = await supabase
+    .from('family_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('family_id', familyId);
+  const hasPartner = (familyMemberCount ?? 0) > 1;
+
+  // Get family name
+  const { data: familyData } = await supabase
+    .from('families')
+    .select('name')
+    .eq('id', familyId)
+    .single();
+  const familyName = familyData?.name || 'Your Family';
+
+  // Show onboarding if not completed and not dismissed
+  const showOnboarding = !onboardingCompleted && !onboardingDismissed;
+
   return (
     <div className="min-h-screen bg-cream">
       <MobileNav
@@ -213,6 +239,20 @@ export default async function DashboardPage() {
               : 'Add your first child to start capturing moments'}
           </p>
         </div>
+
+        {/* Onboarding Checklist */}
+        {showOnboarding && (
+          <div className="animate-card-1">
+            <OnboardingChecklist
+              userId={user.id}
+              familyName={familyName}
+              hasChildren={hasChildren}
+              hasMoments={hasMoments}
+              hasPartner={hasPartner}
+              isFamilyCreator={isFamilyCreator}
+            />
+          </div>
+        )}
 
         {/* Baby Countdown Card */}
         {dueDate && expectedChild && (

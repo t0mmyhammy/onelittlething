@@ -60,9 +60,10 @@ export async function GET(request: Request) {
             return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Member error: ${memberError.message}`)}`);
           }
 
-          // Create user preferences
+          // Create user preferences (mark as family creator)
           await supabase.from('user_preferences').insert({
             user_id: data.user.id,
+            is_family_creator: true,
           });
 
           console.log('Family created successfully:', family.id);
