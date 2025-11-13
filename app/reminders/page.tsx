@@ -55,7 +55,7 @@ export default async function RemindersPage() {
     .order('due_date', { ascending: true, nullsFirst: false });
 
   // Get family members for assignment
-  const { data: familyMembers } = await supabase
+  const { data: familyMembersRaw } = await supabase
     .from('family_members')
     .select(`
       user_id,
@@ -66,6 +66,13 @@ export default async function RemindersPage() {
       )
     `)
     .eq('family_id', familyId);
+
+  // Transform the data to ensure user is a single object, not an array
+  const familyMembers = familyMembersRaw?.map((member: any) => ({
+    user_id: member.user_id,
+    role: member.role,
+    user: Array.isArray(member.user) ? member.user[0] : member.user,
+  }));
 
   return (
     <div className="min-h-screen bg-cream">

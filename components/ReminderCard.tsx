@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircleIcon, CalendarIcon, UserIcon, TagIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, CalendarIcon, UserIcon, TagIcon, ShareIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid';
 
 interface Child {
@@ -96,6 +96,66 @@ export default function ReminderCard({
     }
   };
 
+  const handleShare = async () => {
+    // Format reminder as text
+    let text = `${reminder.title}\n`;
+
+    if (reminder.notes) {
+      text += `\n${reminder.notes}\n`;
+    }
+
+    if (reminder.due_date) {
+      const dueDate = new Date(reminder.due_date);
+      text += `\nDue: ${dueDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })}\n`;
+    }
+
+    if (linkedChild) {
+      text += `\nFor: ${linkedChild.name}\n`;
+    }
+
+    if (reminder.category) {
+      text += `\nCategory: ${reminder.category}\n`;
+    }
+
+    if (reminder.is_todo_list && reminder.reminder_subtasks.length > 0) {
+      text += `\nSubtasks:\n`;
+      reminder.reminder_subtasks
+        .sort((a, b) => a.order_index - b.order_index)
+        .forEach((subtask, index) => {
+          text += `${index + 1}. ${subtask.is_completed ? '✓' : '☐'} ${subtask.title}\n`;
+        });
+    }
+
+    // Try native share API first (works great on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: reminder.title,
+          text: text,
+        });
+      } catch (error) {
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('Reminder copied to clipboard!');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Failed to copy reminder');
+      }
+    }
+  };
+
   // Find linked child
   const linkedChild = reminder.linked_child_id
     ? children.find((c) => c.id === reminder.linked_child_id)
@@ -171,18 +231,29 @@ export default function ReminderCard({
               >
                 {reminder.title}
               </h3>
-              {!reminder.is_completed && reminder.is_todo_list && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Share Button */}
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                  onClick={handleShare}
+                  className="p-1.5 text-gray-400 hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
+                  title="Share reminder"
                 >
-                  {isExpanded ? (
-                    <ChevronUpIcon className="w-5 h-5" />
-                  ) : (
-                    <ChevronDownIcon className="w-5 h-5" />
-                  )}
+                  <ShareIcon className="w-4 h-4" />
                 </button>
-              )}
+                {/* Expand Button for Todo Lists */}
+                {!reminder.is_completed && reminder.is_todo_list && (
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
+                  >
+                    {isExpanded ? (
+                      <ChevronUpIcon className="w-5 h-5" />
+                    ) : (
+                      <ChevronDownIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Meta Info */}
