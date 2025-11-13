@@ -81,7 +81,8 @@ export function getActiveNotifications(conditions: NotificationConditions): Noti
           id: 'child',
           label: 'Add your first child',
           completed: conditions.hasChildren,
-          required: true,
+          // Only required for brand new users (first 3 days)
+          required: conditions.accountAgeDays < 3,
           link: '/settings#family',
         },
         {
