@@ -295,11 +295,8 @@ export default function EntriesSection({
         )}
 
         {filteredAndSortedEntries.length > 0 ? (
-          <div className="relative">
-            {/* Timeline vertical line */}
-            <div className="absolute left-[5.75rem] top-0 bottom-0 w-0.5 bg-gray-200" />
-
-            {/* Timeline entries grouped by date */}
+          <div>
+            {/* Clean timeline entries grouped by date */}
             <div className="space-y-8">
               {Object.entries(visibleGroupedEntries)
                 .sort((a, b) => {
@@ -315,14 +312,11 @@ export default function EntriesSection({
                   return (
                     <div key={dateStr}>
                       {/* Date Header */}
-                      <div className="flex items-start gap-6 mb-6">
-                        <div className="flex-shrink-0 w-20 text-right pt-1">
-                          <div className="text-sm font-medium text-gray-400 tracking-wide">
-                            {month} {day}
-                          </div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="text-sm font-medium text-gray-400 tracking-wide">
+                          {month} {day}
                         </div>
-                        <div className="flex-shrink-0 w-11" />
-                        <div className="flex-1" />
+                        <div className="flex-1 h-px bg-gray-200" />
                       </div>
 
                       {/* Entries for this date */}
@@ -337,9 +331,6 @@ export default function EntriesSection({
 
                           return (
                             <div key={entry.id} className="flex items-start gap-4">
-                              {/* Left spacer for date */}
-                              <div className="flex-shrink-0 w-20" />
-
                               {/* Timeline Node */}
                               <TimelineNode
                                 children={entryChildren}
