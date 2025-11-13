@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import ImageCropper from './ImageCropper';
 import PhotoUpdateModal from './PhotoUpdateModal';
+import DeleteAccountSection from './DeleteAccountSection';
 import { UserCircleIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 interface UserPrefs {
@@ -319,6 +320,14 @@ export default function PersonalSettings({ user, initialUserPrefs }: PersonalSet
         existingPhotoUrl={photoPreview}
         childName="your profile"
       />
+
+      {/* Delete Account Section */}
+      <div className="mt-8 pt-8 border-t border-gray-200">
+        <DeleteAccountSection
+          userId={user.id}
+          userName={displayName || user.email?.split('@')[0] || 'User'}
+        />
+      </div>
     </div>
   );
 }
