@@ -97,41 +97,47 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
       {/* Info Modal */}
       {showInfo && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4"
           onClick={() => setShowInfo(false)}
         >
           <div
-            className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl animate-fadeSlideIn"
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between mb-4">
+            {/* Header */}
+            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-serif text-gray-900">Pregnancy Term Timeline</h3>
               <button
                 onClick={() => setShowInfo(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Close"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="space-y-4 text-sm text-gray-700 max-h-[60vh] overflow-y-auto">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2">Before 37 weeks (Preterm):</strong>
-                <p>If your baby arrives before 37 weeks, they're considered preterm — and while that can sound scary, most preemies do beautifully with a little extra care and time in the NICU.</p>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="bg-amber/10 border border-amber/30 p-4 rounded-lg">
+                <strong className="text-gray-900 block mb-2 font-medium">Before 37 weeks (Preterm):</strong>
+                <p className="text-sm text-gray-700 leading-relaxed">If your baby arrives before 37 weeks, they're considered preterm — and while that can sound scary, most preemies do beautifully with a little extra care and time in the NICU.</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2">37-38 weeks (Early Term):</strong>
-                <p>Once they reach 37 weeks, they're early term — healthy, safe, and almost fully ready.</p>
+
+              <div className="bg-sage/10 border border-sage/30 p-4 rounded-lg">
+                <strong className="text-gray-900 block mb-2 font-medium">37-38 weeks (Early Term):</strong>
+                <p className="text-sm text-gray-700 leading-relaxed">Once they reach 37 weeks, they're early term — healthy, safe, and almost fully ready.</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2">39-40 weeks (Full Term):</strong>
-                <p>By 39 to 40 weeks, they're full term and perfectly developed for life outside the womb.</p>
+
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
+                <strong className="text-gray-900 block mb-2 font-medium">39-40 weeks (Full Term):</strong>
+                <p className="text-sm text-gray-700 leading-relaxed">By 39 to 40 weeks, they're full term and perfectly developed for life outside the womb.</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2">After 41 weeks (Late Term):</strong>
-                <p>After 41 weeks, doctors may suggest a gentle nudge to help things along, since the placenta's support naturally starts to slow down.</p>
+
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <strong className="text-gray-900 block mb-2 font-medium">After 41 weeks (Late Term):</strong>
+                <p className="text-sm text-gray-700 leading-relaxed">After 41 weeks, doctors may suggest a gentle nudge to help things along, since the placenta's support naturally starts to slow down.</p>
               </div>
             </div>
           </div>
