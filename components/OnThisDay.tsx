@@ -99,7 +99,7 @@ export default function OnThisDay({ entries }: OnThisDayProps) {
                 <div className="flex gap-2 flex-wrap items-center">
                   {/* Creator Initial Badge */}
                   {mounted && creatorInfo[entry.created_by] && (
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-sage/20 text-sage flex items-center justify-center text-xs font-semibold ring-1 ring-sage/30">
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-medium">
                       {getCreatorInitial(creatorInfo[entry.created_by])}
                     </div>
                   )}

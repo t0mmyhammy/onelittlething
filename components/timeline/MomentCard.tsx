@@ -30,13 +30,6 @@ export default function MomentCard({
 }: MomentCardProps) {
   return (
     <div className="group relative bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-      {/* Creator Initial - Top Left */}
-      {creatorInitial && (
-        <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-sage text-white flex items-center justify-center text-sm font-bold shadow-md">
-          {creatorInitial}
-        </div>
-      )}
-
       {/* Edit Button - Top Right */}
       <button
         onClick={onEditClick}
@@ -75,6 +68,13 @@ export default function MomentCard({
             alt="Moment photo"
             className="rounded-xl w-full h-auto max-h-96 object-cover"
           />
+        </div>
+      )}
+
+      {/* Creator Initial - Bottom Right (Subtle) */}
+      {creatorInitial && (
+        <div className="absolute bottom-3 right-3 text-xs text-gray-400 font-medium">
+          {creatorInitial}
         </div>
       )}
     </div>
