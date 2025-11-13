@@ -28,6 +28,12 @@ export default async function ReadyForBabyPage() {
   const familyId = familyMember?.family_id || '';
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
+  // If user has no family, redirect to dashboard to set up
+  if (!familyId) {
+    console.error('User has no family_id, redirecting to dashboard');
+    redirect('/dashboard');
+  }
+
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
     .from('user_preferences')
