@@ -198,8 +198,8 @@ export default async function DashboardPage() {
     .limit(3);
 
   // Check onboarding progress
-  const hasChildren = children && children.length > 0;
-  const hasMoments = entries && entries.length > 0;
+  const hasChildren = !!(children && children.length > 0);
+  const hasMoments = !!(entries && entries.length > 0);
 
   // Check if user has invited a partner (more than 1 family member)
   const { count: familyMemberCount } = await supabase
