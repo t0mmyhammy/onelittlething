@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git remote set-head origin -a)"
+      "Bash(git remote set-head origin -a)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

@@ -245,67 +245,58 @@ export default function TimelineView({
           )}
         </div>
 
-        {/* Timeline - Memory Lane Layout */}
-        <div className="p-6 relative">
+        {/* Timeline - Clean Layout */}
+        <div className="p-6">
           {filteredAndSortedEntries.length > 0 ? (
-            <div className="relative">
-              {/* Vertical Timeline Line */}
-              <div className="absolute left-[5.75rem] top-0 bottom-0 w-0.5 bg-gray-200" />
+            <div className="space-y-8">
+              {Object.keys(groupedEntries).map((dateKey) => {
+                const date = parseLocalDate(dateKey);
+                const entriesForDate = groupedEntries[dateKey];
 
-              {/* Date Groups */}
-              <div className="space-y-8">
-                {Object.keys(groupedEntries).map((dateKey) => {
-                  const date = parseLocalDate(dateKey);
-                  const entriesForDate = groupedEntries[dateKey];
+                return (
+                  <div key={dateKey}>
+                    {/* Date Header */}
+                    <DateHeader date={date} />
 
-                  return (
-                    <div key={dateKey}>
-                      {/* Date Header */}
-                      <DateHeader date={date} />
+                    {/* Entries for this date */}
+                    <div className="space-y-6">
+                      {entriesForDate.map((entry) => {
+                        // Get children for this entry
+                        const entryChildren = entry.entry_children?.map((ec: any) => ({
+                          id: ec.children.id,
+                          name: ec.children.name,
+                          photo_url: ec.children.photo_url || null,
+                          label_color: ec.children.label_color || null,
+                        })) || [];
 
-                      {/* Entries for this date */}
-                      <div className="space-y-6">
-                        {entriesForDate.map((entry) => {
-                          // Get children for this entry
-                          const entryChildren = entry.entry_children?.map((ec: any) => ({
-                            id: ec.children.id,
-                            name: ec.children.name,
-                            photo_url: ec.children.photo_url || null,
-                            label_color: ec.children.label_color || null,
-                          })) || [];
+                        return (
+                          <div key={entry.id} className="flex items-start gap-4">
+                            {/* Timeline Node */}
+                            <TimelineNode
+                              children={entryChildren}
+                              creatorInitial={
+                                mounted && creatorInfo[entry.created_by]
+                                  ? getCreatorInitial(creatorInfo[entry.created_by])
+                                  : undefined
+                              }
+                            />
 
-                          return (
-                            <div key={entry.id} className="flex items-start gap-4">
-                              {/* Left spacer for date */}
-                              <div className="flex-shrink-0 w-20" />
-
-                              {/* Timeline Node */}
-                              <TimelineNode
-                                children={entryChildren}
-                                creatorInitial={
-                                  mounted && creatorInfo[entry.created_by]
-                                    ? getCreatorInitial(creatorInfo[entry.created_by])
-                                    : undefined
-                                }
+                            {/* Moment Card */}
+                            <div className="flex-1 min-w-0">
+                              <MomentCard
+                                content={entry.content}
+                                photoUrl={entry.photo_url}
+                                entryChildren={entry.entry_children}
+                                onEditClick={() => handleEditClick(entry)}
                               />
-
-                              {/* Moment Card */}
-                              <div className="flex-1 min-w-0">
-                                <MomentCard
-                                  content={entry.content}
-                                  photoUrl={entry.photo_url}
-                                  entryChildren={entry.entry_children}
-                                  onEditClick={() => handleEditClick(entry)}
-                                />
-                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">

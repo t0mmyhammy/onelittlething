@@ -30,40 +30,55 @@ export default function FamilySettings({ familyId, familyName, initialChildren, 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(familyName);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
+    setMounted(true);
     loadFamilyMembers();
   }, [familyId]);
 
   const loadFamilyMembers = async () => {
-    const { data: members } = await supabase
+    const { data: members, error: membersError } = await supabase
       .from('family_members')
       .select('id, user_id, role')
       .eq('family_id', familyId);
 
-    if (members) {
-      // Get current user info
-      const { data: { user } } = await supabase.auth.getUser();
+    if (membersError) {
+      console.error('Error loading family members:', membersError);
+      setLoading(false);
+      return;
+    }
 
+    if (members && members.length > 0) {
+      // Get user info for all members using RPC function
+      const userIds = members.map(m => m.user_id);
+      const { data: userInfo, error: rpcError } = await supabase.rpc('get_user_info', {
+        user_ids: userIds
+      });
+
+      if (rpcError) {
+        console.error('Error fetching user info:', rpcError);
+      }
+
+      console.log('User info from RPC:', userInfo);
+
+      // Map user info to members
       const membersWithInfo = members.map((member) => {
-        if (user && member.user_id === user.id) {
-          return {
-            ...member,
-            user: {
-              email: user.email || '',
-              user_metadata: user.user_metadata || {}
-            }
-          };
-        }
+        const info = userInfo?.find((u: any) => u.id === member.user_id);
+        console.log('Member:', member.user_id, 'Info:', info);
         return {
           ...member,
           user: {
-            email: 'Family Member',
-            user_metadata: { full_name: 'Family Member' }
+            email: info?.email || 'Unknown',
+            user_metadata: {
+              full_name: info?.full_name || info?.email?.split('@')[0] || 'Family Member'
+            }
           }
         };
       });
+
+      console.log('Members with info:', membersWithInfo);
       setFamilyMembers(membersWithInfo);
     }
     setLoading(false);

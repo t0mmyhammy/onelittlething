@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     }
 
     if (data.user) {
-      // If there's an invite token, handle invite flow
+      // If there's an invite token, redirect to invite page (don't create family)
       if (inviteToken) {
         return NextResponse.redirect(`${origin}/invite/${inviteToken}`);
       }
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
         .eq('user_id', data.user.id)
         .single();
 
-      // If new user (no family), create one
+      // If new user (no family) and no invite, create their own family
       if (!existingMember) {
         const userName = data.user.user_metadata.full_name || data.user.email?.split('@')[0] || 'User';
 
