@@ -21,13 +21,15 @@ export default async function AdvicePage() {
   // Get user's family
   const { data: familyMember } = await supabase
     .from('family_members')
-    .select('family_id')
+    .select('family_id, families(due_date)')
     .eq('user_id', user.id)
     .single();
 
   if (!familyMember || !familyMember.family_id) {
     redirect('/dashboard');
   }
+
+  const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
   // Get children for context (exclude archived)
   const { data: children } = await supabase
@@ -60,6 +62,7 @@ export default async function AdvicePage() {
       <MobileNav
         userPhotoUrl={profilePhotoUrl || undefined}
         userName={displayName}
+        familyDueDate={familyDueDate}
       />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

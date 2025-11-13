@@ -21,11 +21,12 @@ export default async function RemindersPage() {
   // Get user's family
   const { data: familyMember } = await supabase
     .from('family_members')
-    .select('family_id')
+    .select('family_id, families(due_date)')
     .eq('user_id', user.id)
     .single();
 
   const familyId = familyMember?.family_id || '';
+  const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
@@ -79,6 +80,7 @@ export default async function RemindersPage() {
       <MobileNav
         userPhotoUrl={profilePhotoUrl || undefined}
         userName={displayName}
+        familyDueDate={familyDueDate}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

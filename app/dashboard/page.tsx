@@ -243,11 +243,15 @@ export default async function DashboardPage() {
     familyName,
   });
 
+  // Get family due date for MobileNav
+  const familyDueDate = (familyMember as any)?.families?.due_date || dueDate;
+
   return (
     <div className="min-h-screen bg-cream">
       <MobileNav
         userPhotoUrl={profilePhotoUrl || undefined}
         userName={displayName}
+        familyDueDate={familyDueDate}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

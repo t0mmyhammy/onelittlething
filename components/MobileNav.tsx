@@ -21,11 +21,42 @@ import {
 interface MobileNavProps {
   userPhotoUrl?: string | null;
   userName?: string;
+  familyDueDate?: string | null;
 }
 
-export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
+export default function MobileNav({ userPhotoUrl, userName, familyDueDate }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  // Determine if "Ready for Baby" should be shown
+  const showReadyForBaby = () => {
+    if (!familyDueDate) return false;
+
+    const dueDate = new Date(familyDueDate);
+    const today = new Date();
+
+    // Show if due date is within 9 months from now (preparation period)
+    const nineMonthsFromNow = new Date();
+    nineMonthsFromNow.setMonth(today.getMonth() + 9);
+
+    // Show if baby was born within last 3 months (fourth trimester)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+    return dueDate >= threeMonthsAgo && dueDate <= nineMonthsFromNow;
+  };
+
+  const organizeLinks = [
+    { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
+    { href: '/care-info', label: 'Care Information', icon: ClipboardDocumentListIcon },
+    { href: '/reminders', label: 'Reminders', icon: DocumentTextIcon },
+    { href: '/pack-lists', label: 'Pack Lists', icon: RectangleStackIcon },
+  ];
+
+  // Only add "Ready for Baby" if there's an upcoming baby
+  if (showReadyForBaby()) {
+    organizeLinks.push({ href: '/ready-for-baby', label: 'Ready for Baby', icon: null as any });
+  }
 
   const navSections = [
     {
@@ -37,13 +68,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
     },
     {
       title: 'ORGANIZE',
-      links: [
-        { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
-        { href: '/care-info', label: 'Care Information', icon: ClipboardDocumentListIcon },
-        { href: '/reminders', label: 'Reminders', icon: DocumentTextIcon },
-        { href: '/pack-lists', label: 'Pack Lists', icon: RectangleStackIcon },
-        { href: '/ready-for-baby', label: 'Ready for Baby', icon: SparklesIcon },
-      ],
+      links: organizeLinks,
     },
     {
       title: 'SHARE & SUPPORT',
@@ -134,6 +159,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
                   {/* Section Links */}
                   {section.links.map((link) => {
                     const Icon = link.icon;
+                    const isBabyLink = link.href === '/ready-for-baby';
                     return (
                       <Link
                         key={link.href}
@@ -145,7 +171,11 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        <Icon className="w-5 h-5" />
+                        {isBabyLink ? (
+                          <span className="text-lg">👶</span>
+                        ) : (
+                          <Icon className="w-5 h-5" />
+                        )}
                         {link.label}
                       </Link>
                     );
