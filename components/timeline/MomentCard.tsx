@@ -18,6 +18,7 @@ interface MomentCardProps {
   photoUrl?: string | null;
   entryChildren?: EntryChild[];
   onEditClick: () => void;
+  creatorInitial?: string;
 }
 
 export default function MomentCard({
@@ -25,9 +26,17 @@ export default function MomentCard({
   photoUrl,
   entryChildren,
   onEditClick,
+  creatorInitial,
 }: MomentCardProps) {
   return (
     <div className="group relative bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+      {/* Creator Initial - Top Left */}
+      {creatorInitial && (
+        <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-sage text-white flex items-center justify-center text-sm font-bold shadow-md">
+          {creatorInitial}
+        </div>
+      )}
+
       {/* Edit Button - Top Right */}
       <button
         onClick={onEditClick}

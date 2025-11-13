@@ -348,6 +348,7 @@ export default function EntriesSection({
                                   photoUrl={entry.photo_url}
                                   entryChildren={entry.entry_children}
                                   onEditClick={() => handleEditClick(entry)}
+                                  creatorInitial={getCreatorInitial(creatorInfo[entry.created_by])}
                                 />
                               </div>
                             </div>
