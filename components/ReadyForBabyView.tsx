@@ -351,13 +351,25 @@ export default function ReadyForBabyView({
   };
 
   const handleShowRecommendations = (category: string) => {
+    if (!babyPrepList) {
+      console.error('Cannot show recommendations: babyPrepList is null');
+      alert('Unable to load recommendations. Please refresh the page.');
+      return;
+    }
     setRecommendationsCategory(category);
     setShowRecommendationsModal(true);
   };
 
   const handleAddRecommendedTasks = async (recommendedTasks: RecommendedTask[]) => {
+    console.log('handleAddRecommendedTasks called');
+    console.log('babyPrepList:', babyPrepList);
+    console.log('recommendationsCategory:', recommendationsCategory);
+
     if (!babyPrepList || !recommendationsCategory) {
       console.error('Missing babyPrepList or recommendationsCategory');
+      console.error('babyPrepList is null:', !babyPrepList);
+      console.error('recommendationsCategory is null:', !recommendationsCategory);
+      alert(`Cannot add tasks: ${!babyPrepList ? 'Baby prep list not found' : 'Category not set'}`);
       return;
     }
 
