@@ -28,10 +28,12 @@ export default async function RemindersPage() {
   const familyId = familyMember?.family_id || '';
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
+  // Temporarily disabled - debugging navigation issue
   // If user has no family, redirect to dashboard to set up
-  if (!familyId) {
-    redirect('/dashboard');
-  }
+  // if (!familyId) {
+  //   redirect('/dashboard');
+  // }
+  console.log('Reminders - Family ID:', familyId || '(empty)');
 
   // Get user preferences for profile
   const { data: userPrefs } = await supabase

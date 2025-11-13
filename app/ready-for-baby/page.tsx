@@ -28,11 +28,13 @@ export default async function ReadyForBabyPage() {
   const familyId = familyMember?.family_id || '';
   const familyDueDate = (familyMember as any)?.families?.due_date || null;
 
+  // Temporarily disabled - debugging navigation issue
   // If user has no family, redirect to dashboard to set up
-  if (!familyId) {
-    console.error('User has no family_id, redirecting to dashboard');
-    redirect('/dashboard');
-  }
+  // if (!familyId) {
+  //   console.error('User has no family_id, redirecting to dashboard');
+  //   redirect('/dashboard');
+  // }
+  console.log('Ready for Baby - Family ID:', familyId || '(empty)');
 
   // Get user preferences for profile
   const { data: userPrefs } = await supabase
