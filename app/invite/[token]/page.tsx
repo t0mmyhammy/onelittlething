@@ -97,13 +97,16 @@ export default async function InvitePage({ params }: PageProps) {
         .eq('id', invite.id);
 
       // Create user preferences if they don't exist
-      await supabase
+      const { error: prefsError } = await supabase
         .from('user_preferences')
         .insert({ user_id: user.id })
         .select()
-        .single()
-        .then(() => {}) // Ignore errors if already exists
-        .catch(() => {});
+        .single();
+
+      // Ignore error if preferences already exist
+      if (prefsError && !prefsError.message.includes('duplicate')) {
+        console.error('Error creating preferences:', prefsError);
+      }
     }
 
     // Redirect to dashboard even if already a member
