@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { XMarkIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, MinusIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 
 interface Child {
   id: string;
@@ -39,13 +39,14 @@ export default function CreateReminderModal({
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [category, setCategory] = useState<string>('');
   const [assignedTo, setAssignedTo] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
   const [linkedChildId, setLinkedChildId] = useState<string>('');
   const [isTodoList, setIsTodoList] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   const supabase = createClient();
 
@@ -124,10 +125,10 @@ export default function CreateReminderModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-          <h2 className="text-2xl font-serif text-gray-900">New Reminder</h2>
+          <h2 className="text-xl font-serif text-gray-900">New Reminder</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -137,204 +138,212 @@ export default function CreateReminderModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
-          {/* Title */}
+          {/* Title - Hero Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Title *
-            </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Order new snow boots"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+              placeholder="What do you need to remember?"
+              className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent placeholder:text-gray-400"
               required
+              autoFocus
             />
           </div>
 
-          {/* Notes */}
+          {/* Notes - Small */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes
-            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional details..."
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent resize-none"
+              placeholder="Add notes (optional)"
+              rows={2}
+              className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent resize-none placeholder:text-gray-400"
             />
           </div>
 
-          {/* Due Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Due Date
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategory(category === cat ? '' : cat)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    category === cat
-                      ? 'bg-sage text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Assign To */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Assign To
-            </label>
-            <select
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-            >
-              <option value="">Unassigned</option>
-              {familyMembers.map((member) => (
-                <option key={member.user_id} value={member.user_id}>
-                  {member.user_id === userId
-                    ? 'Me'
-                    : member.user.email.split('@')[0]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Link to Child */}
-          {children.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Link to Child
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {children.map((child) => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() =>
-                      setLinkedChildId(linkedChildId === child.id ? '' : child.id)
-                    }
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      linkedChildId === child.id
-                        ? 'bg-sage text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {child.photo_url && (
-                      <img
-                        src={child.photo_url}
-                        alt={child.name}
-                        className="w-5 h-5 rounded-full object-cover"
-                      />
-                    )}
-                    {child.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Convert to To-Do List */}
-          <div className="border-t border-gray-200 pt-6">
-            <label className="flex items-center gap-3 cursor-pointer">
+          {/* Quick Options - Inline */}
+          <div className="flex gap-2">
+            {/* Due Date - Small Inline */}
+            <div className="flex-1">
               <input
-                type="checkbox"
-                checked={isTodoList}
-                onChange={(e) => setIsTodoList(e.target.checked)}
-                className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
               />
-              <span className="text-sm font-medium text-gray-700">
-                Convert to To-Do List with subtasks
-              </span>
-            </label>
+            </div>
+
+            {/* Assign To - Small Inline */}
+            <div className="flex-1">
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+              >
+                <option value="">Unassigned</option>
+                {familyMembers.map((member) => (
+                  <option key={member.user_id} value={member.user_id}>
+                    {member.user_id === userId
+                      ? 'Me'
+                      : member.user.email.split('@')[0]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {/* Subtasks */}
-          {isTodoList && (
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Subtasks
-              </label>
-              {subtasks.map((subtask, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={subtask}
-                    onChange={(e) => updateSubtask(index, e.target.value)}
-                    placeholder={`Subtask ${index + 1}`}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-                  />
-                  {subtasks.length > 1 && (
+          {/* More Options Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowMoreOptions(!showMoreOptions)}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors w-full justify-center py-2 border-t border-gray-100"
+          >
+            <span>More options</span>
+            {showMoreOptions ? (
+              <ChevronUpIcon className="w-4 h-4" />
+            ) : (
+              <ChevronDownIcon className="w-4 h-4" />
+            )}
+          </button>
+
+          {/* Collapsible Advanced Options */}
+          {showMoreOptions && (
+            <div className="space-y-4 pt-2 border-t border-gray-100">
+              {/* Category - Smaller Chips */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">
+                  Category
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((cat) => (
                     <button
+                      key={cat}
                       type="button"
-                      onClick={() => removeSubtask(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={() => setCategory(category === cat ? '' : cat)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        category === cat
+                          ? 'bg-sage text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                     >
-                      <MinusIcon className="w-5 h-5" />
+                      {cat}
                     </button>
-                  )}
+                  ))}
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addSubtask}
-                className="flex items-center gap-2 text-sm text-sage hover:text-sage/80 transition-colors"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Add subtask
-              </button>
+              </div>
+
+              {/* Link to Child */}
+              {children.length > 0 && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                    Link to Child
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {children.map((child) => (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() =>
+                          setLinkedChildId(linkedChildId === child.id ? '' : child.id)
+                        }
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                          linkedChildId === child.id
+                            ? 'bg-sage text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {child.photo_url && (
+                          <img
+                            src={child.photo_url}
+                            alt={child.name}
+                            className="w-4 h-4 rounded-full object-cover"
+                          />
+                        )}
+                        {child.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Convert to To-Do List */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isTodoList}
+                    onChange={(e) => setIsTodoList(e.target.checked)}
+                    className="w-4 h-4 text-sage border-gray-300 rounded focus:ring-sage"
+                  />
+                  <span className="text-xs font-medium text-gray-600">
+                    Convert to To-Do List with subtasks
+                  </span>
+                </label>
+              </div>
+
+              {/* Subtasks */}
+              {isTodoList && (
+                <div className="space-y-2 pl-6">
+                  {subtasks.map((subtask, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={subtask}
+                        onChange={(e) => updateSubtask(index, e.target.value)}
+                        placeholder={`Subtask ${index + 1}`}
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                      />
+                      {subtasks.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSubtask(index)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <MinusIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addSubtask}
+                    className="flex items-center gap-1.5 text-xs text-sage hover:text-sage/80 transition-colors"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    Add subtask
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* Submit Button */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !title.trim()}
-              className={`flex-1 px-4 py-3 rounded-lg font-medium text-white transition-all ${
+              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all ${
                 loading || !title.trim()
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-sage hover:opacity-90'
               }`}
             >
-              {loading ? 'Creating...' : 'Create Reminder'}
+              {loading ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
