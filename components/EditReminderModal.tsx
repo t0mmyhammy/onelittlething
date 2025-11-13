@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { XMarkIcon, PlusIcon, MinusIcon, ChevronDownIcon, ChevronUpIcon, TrashIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface Child {
   id: string;
@@ -72,6 +73,7 @@ export default function EditReminderModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const supabase = createClient();
 
@@ -89,9 +91,12 @@ export default function EditReminderModal({
     setSubtasks(newSubtasks);
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this reminder?')) return;
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    setShowDeleteConfirm(false);
     setLoading(true);
     try {
       const { error: deleteError } = await supabase
@@ -377,7 +382,7 @@ export default function EditReminderModal({
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="px-4 py-2.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-2"
             >
               <TrashIcon className="w-4 h-4" />
@@ -405,6 +410,17 @@ export default function EditReminderModal({
           </div>
         </form>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <DeleteConfirmationModal
+          title="Delete Reminder?"
+          message="Are you sure you want to delete this reminder? This action cannot be undone."
+          confirmLabel="Delete Reminder"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

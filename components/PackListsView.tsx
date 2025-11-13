@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { PlusIcon, EllipsisVerticalIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import CreatePackListModal from './CreatePackListModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { createClient } from '@/lib/supabase/client';
 
 interface PackList {
@@ -31,6 +32,8 @@ export default function PackListsView({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePackListId, setDeletePackListId] = useState<string | null>(null);
   const supabase = createClient();
 
   const formatLastUsed = (dateStr: string) => {
@@ -148,18 +151,25 @@ export default function PackListsView({
     }
   };
 
-  const handleDelete = async (packListId: string) => {
-    if (confirm('Are you sure you want to delete this pack list? This cannot be undone.')) {
-      const { error } = await supabase
-        .from('pack_lists')
-        .delete()
-        .eq('id', packListId);
-
-      if (!error) {
-        window.location.reload();
-      }
-    }
+  const handleDeleteClick = (packListId: string) => {
+    setDeletePackListId(packListId);
+    setShowDeleteConfirm(true);
     setActiveMenu(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletePackListId) return;
+
+    const { error } = await supabase
+      .from('pack_lists')
+      .delete()
+      .eq('id', deletePackListId);
+
+    if (!error) {
+      window.location.reload();
+    }
+    setShowDeleteConfirm(false);
+    setDeletePackListId(null);
   };
 
   return (
@@ -253,7 +263,7 @@ export default function PackListsView({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleDelete(packList.id);
+                          handleDeleteClick(packList.id);
                         }}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       >
@@ -333,7 +343,7 @@ export default function PackListsView({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              handleDelete(packList.id);
+                              handleDeleteClick(packList.id);
                             }}
                             className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                           >
@@ -356,6 +366,20 @@ export default function PackListsView({
           familyId={familyId}
           userId={userId}
           onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <DeleteConfirmationModal
+          title="Delete Pack List?"
+          message="Are you sure you want to delete this pack list? This will also delete all categories and items. This action cannot be undone."
+          confirmLabel="Delete Pack List"
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => {
+            setShowDeleteConfirm(false);
+            setDeletePackListId(null);
+          }}
         />
       )}
     </>

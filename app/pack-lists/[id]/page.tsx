@@ -7,7 +7,8 @@ import PackListDetailView from '@/components/PackListDetailView';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function PackListDetailPage({ params }: { params: { id: string } }) {
+export default async function PackListDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
 
   const {
@@ -41,7 +42,7 @@ export default async function PackListDetailPage({ params }: { params: { id: str
   const { data: packList } = await supabase
     .from('pack_lists')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('family_id', familyId)
     .single();
 
@@ -56,7 +57,7 @@ export default async function PackListDetailPage({ params }: { params: { id: str
       *,
       pack_list_items(*)
     `)
-    .eq('pack_list_id', params.id)
+    .eq('pack_list_id', id)
     .order('order_index', { ascending: true });
 
   // Sort items within each category by order_index
@@ -71,7 +72,7 @@ export default async function PackListDetailPage({ params }: { params: { id: str
   await supabase
     .from('pack_lists')
     .update({ last_used_at: new Date().toISOString() })
-    .eq('id', params.id);
+    .eq('id', id);
 
   return (
     <div className="min-h-screen bg-cream">
