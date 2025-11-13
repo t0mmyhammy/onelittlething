@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git remote set-head origin -a)",
       "Bash(find:*)",
-      "Bash(git remote set-url:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

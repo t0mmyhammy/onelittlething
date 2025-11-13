@@ -12,7 +12,8 @@ import {
   XMarkIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
-  ClipboardDocumentListIcon
+  ClipboardDocumentListIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 
 interface MobileNavProps {
@@ -37,6 +38,7 @@ export default function MobileNav({ userPhotoUrl, userName }: MobileNavProps) {
       links: [
         { href: '/sizes', label: 'Sizes & Needs', icon: TagIcon },
         { href: '/care-info', label: 'Care Information', icon: ClipboardDocumentListIcon },
+        { href: '/reminders', label: 'Reminders', icon: BellIcon },
       ],
     },
     {
