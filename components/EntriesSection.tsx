@@ -7,6 +7,7 @@ import EditEntryModal from './EditEntryModal';
 import { BarsArrowUpIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import TimelineNode from './timeline/TimelineNode';
 import MomentCard from './timeline/MomentCard';
+import WeeklyHighlights from './WeeklyHighlights';
 
 // Helper to parse date string without timezone conversion
 const parseLocalDate = (dateStr: string): Date => {
@@ -193,6 +194,7 @@ export default function EntriesSection({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <WeeklyHighlights familyId={familyId} />
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
