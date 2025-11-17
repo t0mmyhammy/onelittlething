@@ -491,39 +491,6 @@ export default function ReadyForBabyView({
     }
   };
 
-  const checkNameCompatibility = (firstName: string, last: string) => {
-    if (!firstName || !last) return null;
-
-    const fullName = `${firstName} ${last}`;
-    const initials = `${firstName[0]}${last[0]}`.toUpperCase();
-
-    // Check for problematic initials
-    const problematicInitials = ['ASS', 'FAG', 'KKK', 'WTF', 'DIE', 'BAD', 'SAD'];
-    const hasProblematicInitials = problematicInitials.includes(initials);
-
-    // Generate common nickname if possible
-    const commonNicknames: Record<string, string[]> = {
-      'Alexander': ['Alex', 'Xander'],
-      'Elizabeth': ['Liz', 'Beth', 'Ellie'],
-      'Katherine': ['Kate', 'Katie', 'Kat'],
-      'William': ['Will', 'Bill', 'Liam'],
-      'Benjamin': ['Ben', 'Benji'],
-      'Theodore': ['Theo', 'Teddy'],
-      'Charlotte': ['Charlie', 'Lottie'],
-      'Isabella': ['Bella', 'Izzy'],
-    };
-
-    const nicknames = commonNicknames[firstName] || [];
-
-    return {
-      fullName,
-      initials,
-      hasProblematicInitials,
-      nicknames,
-      syllableCount: firstName.split(/[aeiou]/gi).length - 1,
-    };
-  };
-
   return (
     <>
       {/* Header */}
@@ -671,94 +638,7 @@ export default function ReadyForBabyView({
                         <span className="text-base">⭐</span>
                         {showOnlyFavorites ? 'Show all names' : 'Show favorites only'}
                       </button>
-                      <button
-                        onClick={() => setShowNameChecker(!showNameChecker)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-base">✓</span>
-                        Name checker
-                      </button>
-                      <button
-                        onClick={() => setShowAISuggestions(!showAISuggestions)}
-                        className="flex items-center gap-2 px-3 py-2 text-sm bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
-                      >
-                        <SparklesIcon className="w-4 h-4" />
-                        AI suggestions
-                      </button>
                     </div>
-
-                    {/* Name Compatibility Checker */}
-                    {showNameChecker && (
-                      <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <span className="text-lg">✓</span>
-                          Name Compatibility Checker
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                          <input
-                            type="text"
-                            value={checkedName}
-                            onChange={(e) => setCheckedName(e.target.value)}
-                            placeholder="First name"
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <input
-                            type="text"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            placeholder="Last name"
-                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-                        {checkedName && lastName && (() => {
-                          const result = checkNameCompatibility(checkedName, lastName);
-                          return result ? (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex items-center justify-between p-2 bg-white rounded">
-                                <span className="text-gray-600">Full name:</span>
-                                <span className="font-medium text-gray-900">{result.fullName}</span>
-                              </div>
-                              <div className="flex items-center justify-between p-2 bg-white rounded">
-                                <span className="text-gray-600">Initials:</span>
-                                <span className={`font-medium ${result.hasProblematicInitials ? 'text-red-600' : 'text-gray-900'}`}>
-                                  {result.initials} {result.hasProblematicInitials && '⚠️'}
-                                </span>
-                              </div>
-                              {result.hasProblematicInitials && (
-                                <div className="p-2 bg-red-50 border border-red-200 rounded text-red-800">
-                                  ⚠️ Initials may form an unfortunate acronym
-                                </div>
-                              )}
-                              {result.nicknames.length > 0 && (
-                                <div className="flex items-start gap-2 p-2 bg-white rounded">
-                                  <span className="text-gray-600">Nicknames:</span>
-                                  <span className="font-medium text-gray-900">{result.nicknames.join(', ')}</span>
-                                </div>
-                              )}
-                            </div>
-                          ) : null;
-                        })()}
-                      </div>
-                    )}
-
-                    {/* AI Suggestions */}
-                    {showAISuggestions && (
-                      <div className="mb-4 p-4 bg-gradient-to-br from-sage/10 to-blue-50 border border-sage/30 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <SparklesIcon className="w-5 h-5 text-sage" />
-                          AI Name Suggestions
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Get personalized name suggestions based on your preferences, family history, and name trends.
-                        </p>
-                        <button
-                          onClick={() => alert('AI suggestions coming soon! This will analyze your saved names and suggest similar options with popularity insights.')}
-                          className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium"
-                        >
-                          Generate suggestions
-                        </button>
-                      </div>
-                    )}
 
                     {/* Name Ideas Table */}
                     <div className="space-y-3 mb-4">
