@@ -146,31 +146,6 @@ export default function ReadyForBabyView({
   );
   const [hideCompleted, setHideCompleted] = useState(false);
   const [newTaskInputs, setNewTaskInputs] = useState<Record<string, string>>({});
-  const [newNameInput, setNewNameInput] = useState({ name: '', type: 'N' as 'F' | 'M' | 'N', notes: '' });
-  const [showNameTooltip, setShowNameTooltip] = useState(false);
-  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
-  const [recommendationsCategory, setRecommendationsCategory] = useState<string | null>(null);
-  const [generatingHospitalBags, setGeneratingHospitalBags] = useState(false);
-  const [generatedPackListIds, setGeneratedPackListIds] = useState<string[]>([]);
-  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  const [editingNameValue, setEditingNameValue] = useState('');
-  const [editingNameNotes, setEditingNameNotes] = useState('');
-  const [familyLastName, setFamilyLastName] = useState('');
-  const supabase = createClient();
-
-  // Determine if family has older children (to show context-specific tasks)
-  const hasOlderChildren = babyPrepList?.is_second_child || false;
-
-  const toggleSection = (category: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(category)) {
-      newExpanded.delete(category);
-    } else {
-      newExpanded.add(category);
-    }
-    setExpandedSections(newExpanded);
-  };
 
   const getTasksByCategory = (category: string) => {
     return tasks.filter(t => t.category === category);
@@ -241,104 +216,9 @@ export default function ReadyForBabyView({
     }
   };
 
-  const handleAddNameIdea = async () => {
-    if (!newNameInput.name.trim()) return;
 
-    const { data, error } = await supabase
-      .from('baby_name_ideas')
-      .insert({
-        family_id: familyId,
-        name: newNameInput.name.trim(),
-        type: newNameInput.type,
-        notes: newNameInput.notes.trim() || null,
-        created_by: userId,
-      })
-      .select()
-      .single();
 
-    if (!error && data) {
-      setNameIdeas([data, ...nameIdeas]);
-      setNewNameInput({ name: '', type: 'N', notes: '' });
-    }
-  };
 
-  const handleToggleReaction = async (nameId: string, emoji: string) => {
-    const nameIdea = nameIdeas.find(n => n.id === nameId);
-    if (!nameIdea) return;
-
-    const reactions = nameIdea.reactions || {};
-    const userReactions = reactions[userId] || [];
-    const hasReaction = userReactions.includes(emoji);
-
-    const newUserReactions = hasReaction
-      ? userReactions.filter((e: string) => e !== emoji)
-      : [...userReactions, emoji];
-
-    const newReactions = { ...reactions, [userId]: newUserReactions };
-
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .update({ reactions: newReactions })
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.map(n =>
-        n.id === nameId ? { ...n, reactions: newReactions } : n
-      ));
-    }
-  };
-
-  const handleEnhanceName = async (nameId: string) => {
-    const nameIdea = nameIdeas.find(n => n.id === nameId);
-    if (!nameIdea) return;
-
-    // Get sibling names (children already born)
-    const siblingNames = children
-      .filter(c => new Date(c.birthdate) <= new Date())
-      .map(c => c.name);
-
-    // Call AI endpoint to enhance name
-    try {
-      const response = await fetch('/api/enhance-baby-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: nameIdea.name,
-          type: nameIdea.type,
-          siblingNames,
-          lastName: familyLastName || undefined,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        const { error } = await supabase
-          .from('baby_name_ideas')
-          .update({ ai_enhanced_notes: data.enhancements })
-          .eq('id', nameId);
-
-        if (!error) {
-          setNameIdeas(nameIdeas.map(n =>
-            n.id === nameId ? { ...n, ai_enhanced_notes: data.enhancements } : n
-          ));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to enhance name:', error);
-    }
-  };
-
-  const handleDeleteNameIdea = async (nameId: string) => {
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .delete()
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.filter(n => n.id !== nameId));
-    }
-  };
 
   const initializeDefaultTasks = async (category: keyof typeof CATEGORY_CONFIG) => {
     if (!babyPrepList) return;
@@ -481,46 +361,7 @@ export default function ReadyForBabyView({
     }
   };
 
-  const handleToggleFavorite = async (nameId: string) => {
-    const nameIdea = nameIdeas.find(n => n.id === nameId);
-    if (!nameIdea) return;
 
-    const newValue = !nameIdea.is_favorite;
-
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .update({ is_favorite: newValue })
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.map(n =>
-        n.id === nameId ? { ...n, is_favorite: newValue } : n
-      ));
-    }
-  };
-
-  const handleUpdateName = async (nameId: string) => {
-    if (!editingNameValue.trim()) return;
-
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .update({
-        name: editingNameValue.trim(),
-        notes: editingNameNotes.trim() || null,
-      })
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.map(n =>
-        n.id === nameId
-          ? { ...n, name: editingNameValue.trim(), notes: editingNameNotes.trim() || null }
-          : n
-      ));
-      setEditingNameId(null);
-      setEditingNameValue('');
-      setEditingNameNotes('');
-    }
-  };
 
   return (
     <>
