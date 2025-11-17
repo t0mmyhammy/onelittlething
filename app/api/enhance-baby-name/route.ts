@@ -9,7 +9,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { name, type, siblingNames, lastName } = await req.json();
+    const { name, type, siblingNames, lastName, generateNote, existingNotes } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -81,8 +81,29 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 
     const enhancements = JSON.parse(content);
 
+    // Generate AI note if requested
+    let aiNote = null;
+    if (generateNote) {
+      const notePrompt = `Based on the name "${name}" and its characteristics (${enhancements.meaning}, ${enhancements.origin}), write a brief, warm 1-2 sentence note about why this name might be a great choice. Make it personal and encouraging. Don't repeat information already in the meaning/origin.`;
+
+      const noteCompletion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You write warm, personal notes about baby names for parents. Keep it brief and heartfelt.'
+          },
+          { role: 'user', content: notePrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+      });
+
+      aiNote = noteCompletion.choices[0]?.message?.content?.trim() || null;
+    }
+
     return new Response(
-      JSON.stringify({ enhancements }),
+      JSON.stringify({ enhancements, aiNote }),
       {
         headers: { 'Content-Type': 'application/json' },
       }

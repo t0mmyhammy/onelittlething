@@ -46,6 +46,14 @@ export default function NameCard({ name, onClick, onToggleFavorite, onLongPress 
       onTouchEnd={handleTouchEnd}
       className="relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 active:scale-95"
     >
+      {/* AI Badge - Top Left */}
+      {name.is_ai_generated && (
+        <div className="absolute top-3 left-3 bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+          <span className="text-xs">✨</span>
+          AI
+        </div>
+      )}
+
       {/* Favorite Star - Top Right */}
       <button
         onClick={(e) => {

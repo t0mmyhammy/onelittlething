@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { XMarkIcon, SparklesIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { BabyName, NameType } from './NameBoardView';
 
@@ -19,7 +19,7 @@ interface NameDetailSheetProps {
   onUpdate: (nameId: string, updates: Partial<BabyName>) => void;
   onDelete: (nameId: string) => void;
   onToggleReaction: (nameId: string, emoji: string) => void;
-  onEnhance: (nameId: string) => void;
+  onEnhance: (nameId: string, addAINote?: boolean) => void;
 }
 
 export default function NameDetailSheet({
@@ -36,6 +36,11 @@ export default function NameDetailSheet({
   const [notes, setNotes] = useState(name.notes || '');
   const [showAIInfo, setShowAIInfo] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+
+  // Sync notes when name prop changes (e.g., after AI adds insight)
+  useEffect(() => {
+    setNotes(name.notes || '');
+  }, [name.notes]);
 
   const userReactions = name.reactions?.[userId] || [];
   const enhanced = name.ai_enhanced_notes;
@@ -135,9 +140,23 @@ export default function NameDetailSheet({
           <div className="px-6 py-4 space-y-6">
             {/* Notes */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
-                Notes
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Notes
+                </label>
+                <button
+                  onClick={async () => {
+                    setEnhancing(true);
+                    await onEnhance(name.id, true);
+                    setEnhancing(false);
+                  }}
+                  disabled={enhancing}
+                  className="text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1 disabled:opacity-50"
+                >
+                  <span>✨</span>
+                  Add AI Insight
+                </button>
+              </div>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -154,7 +173,7 @@ export default function NameDetailSheet({
                 Reactions
               </label>
               <div className="flex gap-3">
-                {['❤️', '👍', '😍', '😂'].map(emoji => {
+                {['❤️', '👍', '😍'].map(emoji => {
                   const isActive = userReactions.includes(emoji);
                   return (
                     <button

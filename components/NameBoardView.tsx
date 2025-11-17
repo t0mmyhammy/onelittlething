@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import NameCard from './NameCard';
 import NameDetailSheet from './NameDetailSheet';
 import AddNameSheet from './AddNameSheet';
 import SwipeMode from './SwipeMode';
+import TierView from './TierView';
+import NameComparisonTable from './NameComparisonTable';
 
 export type NameType = 'first' | 'middle';
 
@@ -20,6 +22,8 @@ export interface BabyName {
   ai_enhanced_notes: any;
   reactions: any;
   order_index: number;
+  tier: number | null; // 1=Love, 2=Like, 3=Maybe
+  is_ai_generated: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -39,7 +43,7 @@ interface NameBoardViewProps {
   familyLastName?: string;
 }
 
-type ViewMode = 'board' | 'swipe';
+type ViewMode = 'board' | 'swipe' | 'tiers' | 'table';
 type Filter = 'all' | 'favorites' | 'first' | 'middle';
 
 export default function NameBoardView({
@@ -55,6 +59,7 @@ export default function NameBoardView({
   const [selectedNameId, setSelectedNameId] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [lastName, setLastName] = useState(familyLastName);
+  const [generatingNames, setGeneratingNames] = useState(false);
   const supabase = createClient();
 
   // Filter names based on current filter
@@ -141,7 +146,7 @@ export default function NameBoardView({
     await handleUpdateName(nameId, { reactions: newReactions });
   };
 
-  const handleEnhanceName = async (nameId: string) => {
+  const handleEnhanceName = async (nameId: string, addAINote: boolean = false) => {
     const name = names.find(n => n.id === nameId);
     if (!name) return;
 
@@ -159,19 +164,105 @@ export default function NameBoardView({
           type: name.type,
           siblingNames,
           lastName: lastName || undefined,
+          generateNote: addAINote,
+          existingNotes: name.notes || '',
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        await handleUpdateName(nameId, { ai_enhanced_notes: data.enhancements });
+        const updates: Partial<BabyName> = { ai_enhanced_notes: data.enhancements };
+
+        // If AI generated a note, append it to existing notes
+        if (data.aiNote) {
+          const existingNotes = name.notes?.trim() || '';
+          const separator = existingNotes ? '\n\n---\n\n' : '';
+          updates.notes = existingNotes + separator + '✨ AI Insight: ' + data.aiNote;
+        }
+
+        await handleUpdateName(nameId, updates);
       }
     } catch (error) {
       console.error('Failed to enhance name:', error);
     }
   };
 
+  const handleGenerateSimilarNames = async () => {
+    setGeneratingNames(true);
+
+    try {
+      const response = await fetch('/api/generate-similar-names', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId,
+          count: 20,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Failed to generate names');
+        return;
+      }
+
+      const { suggestions } = await response.json();
+
+      // Get max order index
+      const maxOrder = Math.max(...names.map(n => n.order_index), -1);
+
+      // Insert all suggestions
+      const namesToInsert = suggestions.map((suggestion: any, index: number) => ({
+        family_id: familyId,
+        name: suggestion.name,
+        type: suggestion.type,
+        notes: suggestion.reasoning,
+        is_ai_generated: true,
+        order_index: maxOrder + 1 + index,
+        created_by: userId,
+      }));
+
+      const { data, error } = await supabase
+        .from('baby_name_ideas')
+        .insert(namesToInsert)
+        .select();
+
+      if (!error && data) {
+        setNames([...names, ...data]);
+        alert(`Added ${data.length} AI-suggested names!`);
+      } else {
+        console.error('Error inserting names:', error);
+        alert('Failed to add names to database');
+      }
+    } catch (error) {
+      console.error('Error generating similar names:', error);
+      alert('Failed to generate name suggestions');
+    } finally {
+      setGeneratingNames(false);
+    }
+  };
+
+  const handleUpdateTier = async (nameId: string, tier: number | null) => {
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .update({ tier })
+      .eq('id', nameId);
+
+    if (!error) {
+      setNames(names.map(n => n.id === nameId ? { ...n, tier } : n));
+    }
+  };
+
   const isSwipeMode = viewMode === 'swipe';
+  const isTiersMode = viewMode === 'tiers';
+  const isTableMode = viewMode === 'table';
+  const isBoardMode = viewMode === 'board';
+
+  const getViewModeClass = (mode: ViewMode) => {
+    return viewMode === mode
+      ? 'bg-sage text-white'
+      : 'bg-white text-gray-700 border border-gray-300';
+  };
 
   if (isSwipeMode) {
     return (
@@ -183,44 +274,80 @@ export default function NameBoardView({
     );
   }
 
+  if (isTiersMode) {
+    return (
+      <TierView
+        names={names}
+        onBack={() => setViewMode('board')}
+        onUpdateTier={handleUpdateTier}
+      />
+    );
+  }
+
+  if (isTableMode) {
+    return (
+      <NameComparisonTable
+        names={names}
+        children={children}
+        lastName={lastName}
+        onBack={() => setViewMode('board')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
       <div className="sticky top-0 bg-cream/95 backdrop-blur-sm z-10 border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 py-4">
           {/* View Mode Toggle */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setViewMode('board')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  viewMode === 'board'
-                    ? 'bg-sage text-white'
-                    : 'bg-white text-gray-700 border border-gray-300'
-                }`}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${getViewModeClass('board')}`}
               >
                 ◉ Board
               </button>
               <button
+                onClick={() => setViewMode('tiers')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${getViewModeClass('tiers')}`}
+              >
+                ≡ Tiers
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${getViewModeClass('table')}`}
+              >
+                ☰ Table
+              </button>
+              <button
                 onClick={() => setViewMode('swipe')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  !isSwipeMode
-                    ? 'bg-white text-gray-700 border border-gray-300'
-                    : 'bg-sage text-white'
-                }`}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${getViewModeClass('swipe')}`}
               >
                 ○ Swipe
               </button>
             </div>
 
-            {/* Add Name Button */}
-            <button
-              onClick={() => setShowAddSheet(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-full hover:opacity-90 transition-opacity font-medium"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Add Name
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleGenerateSimilarNames}
+                disabled={generatingNames}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-full hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
+                title="AI will suggest 20 names similar to your favorites"
+              >
+                <SparklesIcon className="w-4 h-4" />
+                {generatingNames ? 'Generating...' : 'Add 20 More'}
+              </button>
+              <button
+                onClick={() => setShowAddSheet(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-full hover:opacity-90 transition-opacity font-medium"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Add Name
+              </button>
+            </div>
           </div>
 
           {/* Segmented Control Filters */}
