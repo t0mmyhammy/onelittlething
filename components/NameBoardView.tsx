@@ -171,7 +171,9 @@ export default function NameBoardView({
     }
   };
 
-  if (viewMode === 'swipe') {
+  const isSwipeMode = viewMode === 'swipe';
+
+  if (isSwipeMode) {
     return (
       <SwipeMode
         names={filteredNames}
@@ -202,9 +204,9 @@ export default function NameBoardView({
               <button
                 onClick={() => setViewMode('swipe')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  viewMode === 'swipe'
-                    ? 'bg-sage text-white'
-                    : 'bg-white text-gray-700 border border-gray-300'
+                  !isSwipeMode
+                    ? 'bg-white text-gray-700 border border-gray-300'
+                    : 'bg-sage text-white'
                 }`}
               >
                 ○ Swipe
