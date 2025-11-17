@@ -762,15 +762,17 @@ function CategoryCard({
           return (
             <div
               key={item.id}
-              className={`flex items-center gap-3 p-2 rounded-lg group transition-colors ${
+              onClick={() => selectMode ? onToggleItemSelection(item.id) : onToggleItem(category.id, item.id, item.is_complete)}
+              className={`flex items-center gap-3 p-2 rounded-lg group transition-colors cursor-pointer ${
                 isSelected ? 'bg-sage/10 hover:bg-sage/20' : 'hover:bg-gray-50'
               }`}
             >
               <input
                 type="checkbox"
                 checked={selectMode ? isSelected : item.is_complete}
-                onChange={() => selectMode ? onToggleItemSelection(item.id) : onToggleItem(category.id, item.id, item.is_complete)}
-                className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer"
+                onChange={() => {}} // Handled by parent div onClick
+                onClick={(e) => e.stopPropagation()} // Allow clicking checkbox directly
+                className="w-5 h-5 text-sage border-gray-300 rounded focus:ring-sage cursor-pointer pointer-events-none"
               />
               <div className="flex-1 flex items-center gap-2">
                 <span className={`${!selectMode && item.is_complete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
@@ -820,7 +822,10 @@ function CategoryCard({
               )}
               {!selectMode && (
                 <button
-                  onClick={() => onDeleteItem(category.id, item.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteItem(category.id, item.id);
+                  }}
                   className="opacity-0 group-hover:opacity-100 p-1 text-red-600 hover:bg-red-50 rounded transition-opacity"
                 >
                   <XMarkIcon className="w-4 h-4" />

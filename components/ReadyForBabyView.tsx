@@ -25,6 +25,8 @@ interface BabyPrepList {
   due_date: string | null;
   stage: 'first' | 'second' | 'third' | 'fourth' | null;
   is_second_child: boolean;
+  baby_named: boolean;
+  hide_names: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +53,7 @@ interface BabyNameIdea {
   notes: string | null;
   ai_enhanced_notes: any;
   reactions: any;
+  is_favorite: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -148,6 +151,11 @@ export default function ReadyForBabyView({
   const [recommendationsCategory, setRecommendationsCategory] = useState<string | null>(null);
   const [generatingHospitalBags, setGeneratingHospitalBags] = useState(false);
   const [generatedPackListIds, setGeneratedPackListIds] = useState<string[]>([]);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [showNameChecker, setShowNameChecker] = useState(false);
+  const [checkedName, setCheckedName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
   const supabase = createClient();
 
   // Determine if family has older children (to show context-specific tasks)
@@ -435,6 +443,87 @@ export default function ReadyForBabyView({
     }
   };
 
+  const handleToggleBabyNamed = async () => {
+    if (!babyPrepList) return;
+
+    const newValue = !babyPrepList.baby_named;
+
+    const { error } = await supabase
+      .from('baby_prep_lists')
+      .update({ baby_named: newValue })
+      .eq('id', babyPrepList.id);
+
+    if (!error) {
+      setBabyPrepList({ ...babyPrepList, baby_named: newValue });
+    }
+  };
+
+  const handleToggleHideNames = async () => {
+    if (!babyPrepList) return;
+
+    const newValue = !babyPrepList.hide_names;
+
+    const { error } = await supabase
+      .from('baby_prep_lists')
+      .update({ hide_names: newValue })
+      .eq('id', babyPrepList.id);
+
+    if (!error) {
+      setBabyPrepList({ ...babyPrepList, hide_names: newValue });
+    }
+  };
+
+  const handleToggleFavorite = async (nameId: string) => {
+    const nameIdea = nameIdeas.find(n => n.id === nameId);
+    if (!nameIdea) return;
+
+    const newValue = !nameIdea.is_favorite;
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .update({ is_favorite: newValue })
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.map(n =>
+        n.id === nameId ? { ...n, is_favorite: newValue } : n
+      ));
+    }
+  };
+
+  const checkNameCompatibility = (firstName: string, last: string) => {
+    if (!firstName || !last) return null;
+
+    const fullName = `${firstName} ${last}`;
+    const initials = `${firstName[0]}${last[0]}`.toUpperCase();
+
+    // Check for problematic initials
+    const problematicInitials = ['ASS', 'FAG', 'KKK', 'WTF', 'DIE', 'BAD', 'SAD'];
+    const hasProblematicInitials = problematicInitials.includes(initials);
+
+    // Generate common nickname if possible
+    const commonNicknames: Record<string, string[]> = {
+      'Alexander': ['Alex', 'Xander'],
+      'Elizabeth': ['Liz', 'Beth', 'Ellie'],
+      'Katherine': ['Kate', 'Katie', 'Kat'],
+      'William': ['Will', 'Bill', 'Liam'],
+      'Benjamin': ['Ben', 'Benji'],
+      'Theodore': ['Theo', 'Teddy'],
+      'Charlotte': ['Charlie', 'Lottie'],
+      'Isabella': ['Bella', 'Izzy'],
+    };
+
+    const nicknames = commonNicknames[firstName] || [];
+
+    return {
+      fullName,
+      initials,
+      hasProblematicInitials,
+      nicknames,
+      syllableCount: firstName.split(/[aeiou]/gi).length - 1,
+    };
+  };
+
   return (
     <>
       {/* Header */}
@@ -464,6 +553,337 @@ export default function ReadyForBabyView({
       {/* Only show content if babyPrepList exists */}
       {babyPrepList && (
         <>
+          {/* Name Ideas & Meaning Section - Moved to Top */}
+          <div className="bg-white rounded-xl border border-gray-200 mb-6">
+            <div className="flex items-center justify-between p-4">
+              <button
+                onClick={() => toggleSection('name_ideas')}
+                className="flex-1 flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <span className="text-2xl">✨</span>
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold text-gray-900">Name Ideas & Meaning</h3>
+                  <p className="text-sm text-gray-500">
+                    {babyPrepList.baby_named
+                      ? "You've chosen a name!"
+                      : `${nameIdeas.length} idea${nameIdeas.length !== 1 ? 's' : ''}`
+                    }
+                  </p>
+                </div>
+              </button>
+              <div className="flex items-center gap-2">
+                {expandedSections.has('name_ideas') ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+
+            {expandedSections.has('name_ideas') && (
+              <div className="border-t border-gray-200 p-4">
+                {/* Privacy & Status Controls */}
+                <div className="mb-4 space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1">
+                        Baby has been named
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        Check this if you've officially chosen a name
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleBabyNamed}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        babyPrepList.baby_named ? 'bg-sage' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          babyPrepList.baby_named ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1">
+                        Keep names private
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        Hide name ideas from others who can see this page
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleHideNames}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        babyPrepList.hide_names ? 'bg-sage' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          babyPrepList.hide_names ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Privacy Message */}
+                {babyPrepList.hide_names ? (
+                  <div className="p-6 bg-sage/5 border border-sage/20 rounded-lg text-center">
+                    <EyeSlashIcon className="w-12 h-12 text-sage mx-auto mb-3 opacity-50" />
+                    <p className="text-sage font-medium mb-1">Names are private</p>
+                    <p className="text-sm text-gray-600">
+                      Your name ideas are hidden from others. Toggle "Keep names private" above to share them.
+                    </p>
+                  </div>
+                ) : babyPrepList.baby_named ? (
+                  <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                    <span className="text-4xl mb-3 block">🎉</span>
+                    <p className="text-amber-900 font-medium mb-1">Congratulations on choosing a name!</p>
+                    <p className="text-sm text-amber-800">
+                      Your baby's name has been chosen. You can still browse ideas below if you'd like.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tooltip */}
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
+                      <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-blue-900">
+                        Parents often choose names based on family history, cultural origins, sound, or meaning. Try mixing inspiration from each!
+                      </p>
+                    </div>
+
+                    {/* Name Tools */}
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                          showOnlyFavorites
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-base">⭐</span>
+                        {showOnlyFavorites ? 'Show all names' : 'Show favorites only'}
+                      </button>
+                      <button
+                        onClick={() => setShowNameChecker(!showNameChecker)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="text-base">✓</span>
+                        Name checker
+                      </button>
+                      <button
+                        onClick={() => setShowAISuggestions(!showAISuggestions)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm bg-sage text-white rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        <SparklesIcon className="w-4 h-4" />
+                        AI suggestions
+                      </button>
+                    </div>
+
+                    {/* Name Compatibility Checker */}
+                    {showNameChecker && (
+                      <div className="mb-4 p-4 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <span className="text-lg">✓</span>
+                          Name Compatibility Checker
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                          <input
+                            type="text"
+                            value={checkedName}
+                            onChange={(e) => setCheckedName(e.target.value)}
+                            placeholder="First name"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            placeholder="Last name"
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                        </div>
+                        {checkedName && lastName && (() => {
+                          const result = checkNameCompatibility(checkedName, lastName);
+                          return result ? (
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center justify-between p-2 bg-white rounded">
+                                <span className="text-gray-600">Full name:</span>
+                                <span className="font-medium text-gray-900">{result.fullName}</span>
+                              </div>
+                              <div className="flex items-center justify-between p-2 bg-white rounded">
+                                <span className="text-gray-600">Initials:</span>
+                                <span className={`font-medium ${result.hasProblematicInitials ? 'text-red-600' : 'text-gray-900'}`}>
+                                  {result.initials} {result.hasProblematicInitials && '⚠️'}
+                                </span>
+                              </div>
+                              {result.hasProblematicInitials && (
+                                <div className="p-2 bg-red-50 border border-red-200 rounded text-red-800">
+                                  ⚠️ Initials may form an unfortunate acronym
+                                </div>
+                              )}
+                              {result.nicknames.length > 0 && (
+                                <div className="flex items-start gap-2 p-2 bg-white rounded">
+                                  <span className="text-gray-600">Nicknames:</span>
+                                  <span className="font-medium text-gray-900">{result.nicknames.join(', ')}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    {/* AI Suggestions */}
+                    {showAISuggestions && (
+                      <div className="mb-4 p-4 bg-gradient-to-br from-sage/10 to-blue-50 border border-sage/30 rounded-lg">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <SparklesIcon className="w-5 h-5 text-sage" />
+                          AI Name Suggestions
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Get personalized name suggestions based on your preferences, family history, and name trends.
+                        </p>
+                        <button
+                          onClick={() => alert('AI suggestions coming soon! This will analyze your saved names and suggest similar options with popularity insights.')}
+                          className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium"
+                        >
+                          Generate suggestions
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Name Ideas Table */}
+                    <div className="space-y-3 mb-4">
+                      {nameIdeas
+                        .filter(nameIdea => !showOnlyFavorites || nameIdea.is_favorite)
+                        .map((nameIdea) => {
+                        const userReactions = nameIdea.reactions?.[userId] || [];
+                        const enhanced = nameIdea.ai_enhanced_notes;
+
+                        return (
+                          <div key={nameIdea.id} className={`border rounded-lg p-3 ${
+                            nameIdea.is_favorite ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200'
+                          }`}>
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleToggleFavorite(nameIdea.id)}
+                                  className="text-xl hover:scale-110 transition-transform"
+                                  title={nameIdea.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                                >
+                                  {nameIdea.is_favorite ? '⭐' : '☆'}
+                                </button>
+                                <span className="font-semibold text-gray-900">{nameIdea.name}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                                  nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteNameIdea(nameIdea.id)}
+                                className="text-xs text-red-600 hover:text-red-700"
+                              >
+                                Delete
+                              </button>
+                            </div>
+
+                            {nameIdea.notes && (
+                              <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
+                            )}
+
+                            {enhanced && (
+                              <div className="text-sm space-y-1 mb-3 p-2 bg-sage/5 rounded">
+                                {enhanced.meaning && <p className="text-gray-700"><strong>Meaning:</strong> {enhanced.meaning}</p>}
+                                {enhanced.origin && <p className="text-gray-700"><strong>Origin:</strong> {enhanced.origin}</p>}
+                                {enhanced.popularity && <p className="text-gray-700"><strong>Popularity:</strong> {enhanced.popularity}</p>}
+                                {enhanced.siblingCompatibility && <p className="text-gray-700"><strong>With siblings:</strong> {enhanced.siblingCompatibility}</p>}
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleToggleReaction(nameIdea.id, '❤️')}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                              >
+                                {userReactions.includes('❤️') ? (
+                                  <HeartSolidIcon className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <HeartIcon className="w-4 h-4 text-gray-400" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleToggleReaction(nameIdea.id, '💬')}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                              >
+                                <ChatBubbleLeftIcon className="w-4 h-4 text-gray-400" />
+                              </button>
+                              {!enhanced && (
+                                <button
+                                  onClick={() => handleEnhanceName(nameIdea.id)}
+                                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors ml-auto"
+                                >
+                                  <SparklesIcon className="w-4 h-4 text-sage" />
+                                  <span className="text-sage">Enhance</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add New Name */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={newNameInput.name}
+                          onChange={(e) => setNewNameInput({ ...newNameInput, name: e.target.value })}
+                          placeholder="Name"
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                        />
+                        <select
+                          value={newNameInput.type}
+                          onChange={(e) => setNewNameInput({ ...newNameInput, type: e.target.value as 'F' | 'M' | 'N' })}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                        >
+                          <option value="N">Neutral</option>
+                          <option value="F">F</option>
+                          <option value="M">M</option>
+                        </select>
+                        <button
+                          onClick={handleAddNameIdea}
+                          className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                          Add
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={newNameInput.notes}
+                        onChange={(e) => setNewNameInput({ ...newNameInput, notes: e.target.value })}
+                        placeholder="Notes (optional)"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Global Controls */}
           <div className="flex items-center justify-between mb-6">
             <button
@@ -632,147 +1052,6 @@ export default function ReadyForBabyView({
             </div>
           );
         })}
-
-        {/* Name Ideas & Meaning Section */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <button
-            onClick={() => toggleSection('name_ideas')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors rounded-t-xl"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">✨</span>
-              <div className="text-left">
-                <h3 className="text-lg font-semibold text-gray-900">Name Ideas & Meaning</h3>
-                <p className="text-sm text-gray-500">{nameIdeas.length} idea{nameIdeas.length !== 1 ? 's' : ''}</p>
-              </div>
-            </div>
-            {expandedSections.has('name_ideas') ? (
-              <ChevronUpIcon className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-
-          {expandedSections.has('name_ideas') && (
-            <div className="border-t border-gray-200 p-4">
-              {/* Tooltip */}
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
-                <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-900">
-                  Parents often choose names based on family history, cultural origins, sound, or meaning. Try mixing inspiration from each!
-                </p>
-              </div>
-
-              {/* Name Ideas Table */}
-              <div className="space-y-3 mb-4">
-                {nameIdeas.map((nameIdea) => {
-                  const userReactions = nameIdea.reactions?.[userId] || [];
-                  const enhanced = nameIdea.ai_enhanced_notes;
-
-                  return (
-                    <div key={nameIdea.id} className="border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900">{nameIdea.name}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
-                            nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteNameIdea(nameIdea.id)}
-                          className="text-xs text-red-600 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
-                      </div>
-
-                      {nameIdea.notes && (
-                        <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
-                      )}
-
-                      {enhanced && (
-                        <div className="text-sm space-y-1 mb-3 p-2 bg-sage/5 rounded">
-                          {enhanced.meaning && <p className="text-gray-700"><strong>Meaning:</strong> {enhanced.meaning}</p>}
-                          {enhanced.origin && <p className="text-gray-700"><strong>Origin:</strong> {enhanced.origin}</p>}
-                          {enhanced.popularity && <p className="text-gray-700"><strong>Popularity:</strong> {enhanced.popularity}</p>}
-                          {enhanced.siblingCompatibility && <p className="text-gray-700"><strong>With siblings:</strong> {enhanced.siblingCompatibility}</p>}
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleToggleReaction(nameIdea.id, '❤️')}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                          {userReactions.includes('❤️') ? (
-                            <HeartSolidIcon className="w-4 h-4 text-red-500" />
-                          ) : (
-                            <HeartIcon className="w-4 h-4 text-gray-400" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleToggleReaction(nameIdea.id, '💬')}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
-                        >
-                          <ChatBubbleLeftIcon className="w-4 h-4 text-gray-400" />
-                        </button>
-                        {!enhanced && (
-                          <button
-                            onClick={() => handleEnhanceName(nameIdea.id)}
-                            className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors ml-auto"
-                          >
-                            <SparklesIcon className="w-4 h-4 text-sage" />
-                            <span className="text-sage">Enhance</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Add New Name */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={newNameInput.name}
-                    onChange={(e) => setNewNameInput({ ...newNameInput, name: e.target.value })}
-                    placeholder="Name"
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-                  />
-                  <select
-                    value={newNameInput.type}
-                    onChange={(e) => setNewNameInput({ ...newNameInput, type: e.target.value as 'F' | 'M' | 'N' })}
-                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-                  >
-                    <option value="N">Neutral</option>
-                    <option value="F">F</option>
-                    <option value="M">M</option>
-                  </select>
-                  <button
-                    onClick={handleAddNameIdea}
-                    className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    <PlusIcon className="w-4 h-4" />
-                    Add
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={newNameInput.notes}
-                  onChange={(e) => setNewNameInput({ ...newNameInput, notes: e.target.value })}
-                  placeholder="Notes (optional)"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
           {/* Banner Reminder */}
