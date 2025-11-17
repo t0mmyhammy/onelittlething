@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { BabyName } from './NameBoardView';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 interface NameCardProps {
   name: BabyName;
@@ -23,6 +25,16 @@ export default function NameCard({
   onToggleSelection
 }: NameCardProps) {
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: name.id,
+    disabled: selectionMode, // Disable dragging in selection mode
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleTouchStart = () => {
     const timer = setTimeout(() => {
@@ -60,12 +72,16 @@ export default function NameCard({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className={`relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border-2 active:scale-95 ${
         isSelected ? 'border-sage bg-sage/5' : 'border-gray-100'
       }`}
+      {...attributes}
+      {...listeners}
     >
       {/* Selection Checkbox - Top Left */}
       {selectionMode ? (

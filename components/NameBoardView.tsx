@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { PlusIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import NameCard from './NameCard';
 import NameDetailSheet from './NameDetailSheet';
 import AddNameSheet from './AddNameSheet';
@@ -10,6 +18,7 @@ import SwipeMode from './SwipeMode';
 import TierView from './TierView';
 import NameComparisonTable from './NameComparisonTable';
 import NameProgressModal from './NameProgressModal';
+import FamilyFitSpotlight from './FamilyFitSpotlight';
 
 export type NameType = 'first' | 'middle';
 
@@ -69,7 +78,43 @@ export default function NameBoardView({
     current?: number;
     total?: number;
   }>({ isOpen: false, type: 'enhancing' });
+  const [parentNames, setParentNames] = useState<string[]>([]);
+  const [spotlightNameId, setSpotlightNameId] = useState<string | null>(null);
   const supabase = createClient();
+  const hasBackfilled = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  // Load parent names from user preferences
+  useEffect(() => {
+    const loadParentNames = async () => {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('parent_names')
+        .eq('user_id', userId)
+        .single();
+
+      if (data?.parent_names) {
+        setParentNames(data.parent_names);
+      }
+    };
+    loadParentNames();
+  }, [userId]);
+
+  // One-time backfill of AI insights to notes for existing enhanced names
+  useEffect(() => {
+    if (!hasBackfilled.current && names.length > 0) {
+      hasBackfilled.current = true;
+      handleBackfillNotes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [names.length]);
 
   // Filter names based on current filter
   const filteredNames = names.filter(name => {
@@ -341,6 +386,47 @@ export default function NameBoardView({
     setProgressModal({ isOpen: false, type: 'enhancing' });
   };
 
+  const handleBackfillNotes = async () => {
+    // Find names that have AI enhancements but no AI insights in notes
+    const needsBackfill = names.filter(n =>
+      n.ai_enhanced_notes &&
+      Object.keys(n.ai_enhanced_notes).length > 0 &&
+      (!n.notes || !n.notes.includes('✨ AI Insight:'))
+    );
+
+    if (needsBackfill.length === 0) {
+      return;
+    }
+
+    // Show progress modal
+    setProgressModal({
+      isOpen: true,
+      type: 'enhancing',
+      current: 0,
+      total: needsBackfill.length
+    });
+
+    // Generate notes for each name
+    for (let i = 0; i < needsBackfill.length; i++) {
+      const name = needsBackfill[i];
+
+      // Update progress
+      setProgressModal({
+        isOpen: true,
+        type: 'enhancing',
+        current: i + 1,
+        total: needsBackfill.length
+      });
+
+      // Generate AI note for this name
+      await handleEnhanceName(name.id, true);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Close progress modal
+    setProgressModal({ isOpen: false, type: 'enhancing' });
+  };
+
   const handleToggleSelection = (nameId: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(nameId)) {
@@ -349,6 +435,28 @@ export default function NameBoardView({
       newSelected.add(nameId);
     }
     setSelectedIds(newSelected);
+  };
+
+  const handleUpdateParentNames = async (names: string[]) => {
+    setParentNames(names);
+
+    // Save to database
+    await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: userId,
+        parent_names: names,
+      }, {
+        onConflict: 'user_id',
+      });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && over.id === 'family-fit-spotlight') {
+      setSpotlightNameId(active.id as string);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -450,9 +558,10 @@ export default function NameBoardView({
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      {/* Header */}
-      <div className="sticky top-0 bg-cream/95 backdrop-blur-sm z-10 border-b border-gray-200">
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <div className="min-h-screen bg-cream">
+        {/* Header */}
+        <div className="sticky top-0 bg-cream/95 backdrop-blur-sm z-10 border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 py-4">
           {/* View Mode Toggle */}
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -564,8 +673,19 @@ export default function NameBoardView({
         </div>
       </div>
 
+      {/* Family Fit Spotlight */}
+      <div className="max-w-5xl mx-auto px-4 pt-6">
+        <FamilyFitSpotlight
+          children={children}
+          lastName={lastName}
+          parentNames={parentNames}
+          spotlightName={spotlightNameId ? names.find(n => n.id === spotlightNameId)?.name || null : null}
+          onUpdateParentNames={handleUpdateParentNames}
+        />
+      </div>
+
       {/* Name Grid */}
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 pb-6">
         {filteredNames.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-500 text-lg mb-4">No names yet</p>
@@ -624,6 +744,7 @@ export default function NameBoardView({
         current={progressModal.current}
         total={progressModal.total}
       />
-    </div>
+      </div>
+    </DndContext>
   );
 }
