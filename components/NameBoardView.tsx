@@ -253,6 +253,23 @@ export default function NameBoardView({
     }
   };
 
+  const handleEnhanceAll = async () => {
+    // Find names that don't have AI enhancements yet
+    const unenhancedNames = names.filter(n => !n.ai_enhanced_notes || Object.keys(n.ai_enhanced_notes).length === 0);
+
+    if (unenhancedNames.length === 0) {
+      alert('All names are already enhanced!');
+      return;
+    }
+
+    // Enhance each name sequentially (to avoid rate limits)
+    for (const name of unenhancedNames) {
+      await handleEnhanceName(name.id, false);
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  };
+
   const isSwipeMode = viewMode === 'swipe';
   const isTiersMode = viewMode === 'tiers';
   const isTableMode = viewMode === 'table';
@@ -291,6 +308,7 @@ export default function NameBoardView({
         children={children}
         lastName={lastName}
         onBack={() => setViewMode('board')}
+        onEnhanceAll={handleEnhanceAll}
       />
     );
   }

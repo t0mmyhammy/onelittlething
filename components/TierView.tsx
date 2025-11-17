@@ -6,10 +6,12 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
+  DragOverEvent,
   closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ChevronLeftIcon } from '@heroicons/react/24/outline';
@@ -29,6 +31,29 @@ const TIERS = [
   { id: null, label: 'Unranked', color: 'slate', emoji: '📋' },
 ] as const;
 
+function DroppableTierContainer({
+  tierId,
+  children,
+  className
+}: {
+  tierId: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: tierId,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className} ${isOver ? 'bg-sage/10 border-sage' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function TierView({ names, onBack, onUpdateTier }: TierViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -44,19 +69,37 @@ export default function TierView({ names, onBack, onUpdateTier }: TierViewProps)
     setActiveId(event.active.id as string);
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    // This helps with the drag feedback
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
+    if (over) {
       const nameId = active.id as string;
-      const targetTier = over.id as string;
+      let targetTier: number | null = null;
 
-      // Parse tier (e.g., "tier-1" -> 1, "tier-null" -> null)
-      const tierValue = targetTier.replace('tier-', '') === 'null'
-        ? null
-        : parseInt(targetTier.replace('tier-', ''));
+      // Check if we dropped over a tier container or a name card
+      const overId = over.id as string;
 
-      onUpdateTier(nameId, tierValue);
+      if (overId.startsWith('tier-')) {
+        // Dropped on tier container
+        const tierStr = overId.replace('tier-', '');
+        targetTier = tierStr === 'null' ? null : parseInt(tierStr);
+      } else {
+        // Dropped on another name card - find which tier it's in
+        const targetName = names.find(n => n.id === overId);
+        if (targetName) {
+          targetTier = targetName.tier;
+        }
+      }
+
+      // Only update if we actually have a valid tier and it's different
+      const draggedName = names.find(n => n.id === nameId);
+      if (draggedName && draggedName.tier !== targetTier) {
+        onUpdateTier(nameId, targetTier);
+      }
     }
 
     setActiveId(null);
@@ -73,6 +116,7 @@ export default function TierView({ names, onBack, onUpdateTier }: TierViewProps)
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="min-h-screen bg-cream">
@@ -120,14 +164,9 @@ export default function TierView({ names, onBack, onUpdateTier }: TierViewProps)
                     </div>
 
                     {/* Names List - Droppable */}
-                    <div
-                      id={tierId}
-                      className="p-3 space-y-2 min-h-[300px]"
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        // Handle drop
-                      }}
+                    <DroppableTierContainer
+                      tierId={tierId}
+                      className="p-3 space-y-2 min-h-[300px] transition-colors"
                     >
                       {tierNames.length === 0 ? (
                         <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
@@ -138,7 +177,7 @@ export default function TierView({ names, onBack, onUpdateTier }: TierViewProps)
                           <TierNameCard key={name.id} name={name} />
                         ))
                       )}
-                    </div>
+                    </DroppableTierContainer>
                   </div>
                 </SortableContext>
               );

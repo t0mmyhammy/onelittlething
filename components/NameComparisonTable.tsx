@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+import { ChevronLeftIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { BabyName } from './NameBoardView';
 
 interface Child {
@@ -14,6 +15,7 @@ interface NameComparisonTableProps {
   children: Child[];
   lastName: string;
   onBack: () => void;
+  onEnhanceAll: () => Promise<void>;
 }
 
 export default function NameComparisonTable({
@@ -21,9 +23,19 @@ export default function NameComparisonTable({
   children,
   lastName,
   onBack,
+  onEnhanceAll,
 }: NameComparisonTableProps) {
+  const [enhancing, setEnhancing] = useState(false);
+
   // Get names with AI enhancements only (since we need the data for comparison)
   const enhancedNames = names.filter(n => n.ai_enhanced_notes && Object.keys(n.ai_enhanced_notes).length > 0);
+  const unenhancedCount = names.length - enhancedNames.length;
+
+  const handleEnhanceAll = async () => {
+    setEnhancing(true);
+    await onEnhanceAll();
+    setEnhancing(false);
+  };
 
   // Get sibling names for column headers
   const siblingNames = children
@@ -49,14 +61,24 @@ export default function NameComparisonTable({
           <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
             <p className="text-xl text-gray-600 mb-4">No enhanced names yet</p>
             <p className="text-sm text-gray-500 mb-6">
-              Use the "Learn more about this name" button on individual names to generate comparison data.
+              Click "Enhance All Names" to generate comparison data for all {names.length} names, or enhance individual names from the Board view.
             </p>
-            <button
-              onClick={onBack}
-              className="px-6 py-2 bg-sage text-white rounded-full hover:opacity-90 font-medium"
-            >
-              Go Back
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={handleEnhanceAll}
+                disabled={enhancing}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-full hover:opacity-90 font-medium disabled:opacity-50"
+              >
+                <SparklesIcon className="w-5 h-5" />
+                {enhancing ? 'Enhancing...' : `Enhance All ${names.length} Names`}
+              </button>
+              <button
+                onClick={onBack}
+                className="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 font-medium"
+              >
+                Go Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -67,7 +89,7 @@ export default function NameComparisonTable({
     <div className="min-h-screen bg-cream">
       {/* Header */}
       <div className="sticky top-0 bg-cream/95 backdrop-blur-sm z-10 border-b border-gray-200 px-4 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between max-w-7xl mx-auto gap-4">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
@@ -76,7 +98,17 @@ export default function NameComparisonTable({
             Back
           </button>
           <h2 className="text-lg font-semibold text-gray-900">Name Comparison Table</h2>
-          <div className="w-20" /> {/* Spacer */}
+          {unenhancedCount > 0 && (
+            <button
+              onClick={handleEnhanceAll}
+              disabled={enhancing}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-full hover:opacity-90 font-medium text-sm disabled:opacity-50"
+            >
+              <SparklesIcon className="w-4 h-4" />
+              {enhancing ? 'Enhancing...' : `Enhance ${unenhancedCount} More`}
+            </button>
+          )}
+          {unenhancedCount === 0 && <div className="w-20" />}
         </div>
       </div>
 
