@@ -110,35 +110,41 @@ function SortableRow({
       className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
     >
       {/* Name - Sticky with drag handle */}
-      <td className={`px-4 py-3 font-semibold text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+      <td className={`px-4 py-3 font-semibold text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[150px] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
         <div className="flex items-center gap-2">
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 mr-1"
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 mr-1 flex-shrink-0"
           >
             ⋮⋮
           </div>
-          {name.name}
-          {name.is_favorite && <span className="text-sm">⭐</span>}
-          {name.is_ai_generated && (
-            <span className="text-xs text-purple-600">✨</span>
-          )}
+          <div className="truncate">
+            {name.name}
+            {name.is_favorite && <span className="text-sm ml-1">⭐</span>}
+            {name.is_ai_generated && (
+              <span className="text-xs text-purple-600 ml-1">✨</span>
+            )}
+          </div>
         </div>
       </td>
 
       {/* Meaning */}
-      <td className="px-4 py-3 text-gray-700">
-        {enhanced.meaning || '—'}
+      <td className="px-4 py-3 text-gray-700 w-[300px]">
+        <div className="break-words leading-relaxed">
+          {enhanced.meaning || '—'}
+        </div>
       </td>
 
       {/* Popularity */}
-      <td className="px-4 py-3 text-gray-700">
-        {enhanced.popularity || '—'}
+      <td className="px-4 py-3 text-gray-700 w-[250px]">
+        <div className="break-words leading-relaxed">
+          {enhanced.popularity || '—'}
+        </div>
       </td>
 
       {/* Nicknames */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 w-[250px]">
         {nicknames.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {nicknames.map((nick: string, i: number) => (
@@ -156,12 +162,14 @@ function SortableRow({
       </td>
 
       {/* Origin */}
-      <td className="px-4 py-3 text-gray-700">
-        {enhanced.origin || '—'}
+      <td className="px-4 py-3 text-gray-700 w-[250px]">
+        <div className="break-words leading-relaxed">
+          {enhanced.origin || '—'}
+        </div>
       </td>
 
       {/* Vibe */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 w-[200px]">
         <span className="inline-block px-3 py-1 bg-sage/20 text-sage rounded-full text-xs font-medium">
           {vibe}
         </span>
@@ -169,20 +177,24 @@ function SortableRow({
 
       {/* Flow with Last Name */}
       {lastName && (
-        <td className="px-4 py-3 text-gray-700">
-          {enhanced.fullNameFlow || `${name.name} ${lastName}`}
+        <td className="px-4 py-3 text-gray-700 w-[300px]">
+          <div className="break-words leading-relaxed">
+            {enhanced.fullNameFlow || `${name.name} ${lastName}`}
+          </div>
         </td>
       )}
 
       {/* Flow with Siblings */}
       {siblingNames.map(sibName => (
-        <td key={sibName} className="px-4 py-3 text-gray-700">
-          {enhanced.siblingCompatibility || '—'}
+        <td key={sibName} className="px-4 py-3 text-gray-700 w-[300px]">
+          <div className="break-words leading-relaxed">
+            {enhanced.siblingCompatibility || '—'}
+          </div>
         </td>
       ))}
 
       {/* Actions */}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 w-[120px]">
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => onOpenComments(name.id)}
@@ -353,26 +365,26 @@ export default function NameComparisonTable({
       {/* Table */}
       <div className="w-full py-6 overflow-x-auto">
         <div className="bg-white shadow-sm border-y border-gray-200">
-          <table className="w-full text-sm min-w-max">
+          <table className="w-full text-sm">
             <thead className="bg-sage text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold sticky left-0 bg-sage z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Name</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[200px]">Meaning</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[120px]">Popularity</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[150px]">Nicknames</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[100px]">Origin</th>
-                <th className="px-4 py-3 text-left font-semibold min-w-[120px]">Vibe</th>
+                <th className="px-4 py-3 text-left font-semibold sticky left-0 bg-sage z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[150px]">Name</th>
+                <th className="px-4 py-3 text-left font-semibold w-[300px]">Meaning</th>
+                <th className="px-4 py-3 text-left font-semibold w-[250px]">Popularity</th>
+                <th className="px-4 py-3 text-left font-semibold w-[250px]">Nicknames</th>
+                <th className="px-4 py-3 text-left font-semibold w-[250px]">Origin</th>
+                <th className="px-4 py-3 text-left font-semibold w-[200px]">Vibe</th>
                 {lastName && (
-                  <th className="px-4 py-3 text-left font-semibold min-w-[180px]">
+                  <th className="px-4 py-3 text-left font-semibold w-[300px]">
                     Flow with {lastName}
                   </th>
                 )}
                 {siblingNames.map(sibName => (
-                  <th key={sibName} className="px-4 py-3 text-left font-semibold min-w-[180px]">
+                  <th key={sibName} className="px-4 py-3 text-left font-semibold w-[300px]">
                     Flow with {sibName}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-center font-semibold min-w-[100px]">Actions</th>
+                <th className="px-4 py-3 text-center font-semibold w-[120px]">Actions</th>
               </tr>
             </thead>
             <DndContext
