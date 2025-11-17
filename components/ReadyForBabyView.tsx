@@ -299,6 +299,11 @@ export default function ReadyForBabyView({
     const nameIdea = nameIdeas.find(n => n.id === nameId);
     if (!nameIdea) return;
 
+    // Get sibling names (children already born)
+    const siblingNames = children
+      .filter(c => new Date(c.birthdate) <= new Date())
+      .map(c => c.name);
+
     // Call AI endpoint to enhance name
     try {
       const response = await fetch('/api/enhance-baby-name', {
@@ -307,6 +312,8 @@ export default function ReadyForBabyView({
         body: JSON.stringify({
           name: nameIdea.name,
           type: nameIdea.type,
+          siblingNames,
+          lastName: familyLastName || undefined,
         }),
       });
 
@@ -495,114 +502,6 @@ export default function ReadyForBabyView({
     if (!error) {
       setNameIdeas(nameIdeas.map(n =>
         n.id === nameId ? { ...n, is_favorite: newValue } : n
-      ));
-    }
-  };
-
-  const handleEnhanceName = async (nameId: string) => {
-    const nameIdea = nameIdeas.find(n => n.id === nameId);
-    if (!nameIdea) return;
-
-    // Get sibling names (children already born)
-    const siblingNames = children
-      .filter(c => new Date(c.birthdate) <= new Date())
-      .map(c => c.name);
-
-    try {
-      const response = await fetch('/api/enhance-baby-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: nameIdea.name,
-          type: nameIdea.type,
-          siblingNames,
-          lastName: familyLastName || undefined,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to enhance name');
-
-      const data = await response.json();
-
-      // Update the name idea with AI enhancements
-      const { error } = await supabase
-        .from('baby_name_ideas')
-        .update({ ai_enhanced_notes: data.enhancements })
-        .eq('id', nameId);
-
-      if (!error) {
-        setNameIdeas(nameIdeas.map(n =>
-          n.id === nameId ? { ...n, ai_enhanced_notes: data.enhancements } : n
-        ));
-      }
-    } catch (error) {
-      console.error('Error enhancing name:', error);
-    }
-  };
-
-  const handleAddNameIdea = async () => {
-    if (!newNameInput.name.trim()) return;
-
-    const { data, error } = await supabase
-      .from('baby_name_ideas')
-      .insert({
-        family_id: familyId,
-        name: newNameInput.name.trim(),
-        type: newNameInput.type,
-        notes: newNameInput.notes.trim() || null,
-        created_by: userId,
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      setNameIdeas([data, ...nameIdeas]);
-      setNewNameInput({ name: '', type: 'N', notes: '' });
-    }
-  };
-
-  const handleDeleteNameIdea = async (nameId: string) => {
-    if (!confirm('Delete this name idea?')) return;
-
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .delete()
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.filter(n => n.id !== nameId));
-    }
-  };
-
-  const handleToggleReaction = async (nameId: string, reaction: string) => {
-    const nameIdea = nameIdeas.find(n => n.id === nameId);
-    if (!nameIdea) return;
-
-    const currentReactions = nameIdea.reactions || {};
-    const userReactions = currentReactions[userId] || [];
-
-    let newUserReactions;
-    if (userReactions.includes(reaction)) {
-      // Remove reaction
-      newUserReactions = userReactions.filter((r: string) => r !== reaction);
-    } else {
-      // Add reaction
-      newUserReactions = [...userReactions, reaction];
-    }
-
-    const newReactions = {
-      ...currentReactions,
-      [userId]: newUserReactions,
-    };
-
-    const { error } = await supabase
-      .from('baby_name_ideas')
-      .update({ reactions: newReactions })
-      .eq('id', nameId);
-
-    if (!error) {
-      setNameIdeas(nameIdeas.map(n =>
-        n.id === nameId ? { ...n, reactions: newReactions } : n
       ));
     }
   };
@@ -826,7 +725,7 @@ export default function ReadyForBabyView({
                                     nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
                                     'bg-gray-100 text-gray-700'
                                   }`}>
-                                    {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                                    {nameIdea.type === 'F' ? 'Girl' : nameIdea.type === 'M' ? 'Boy' : 'Neutral'}
                                   </span>
                                 </div>
                                 <textarea
@@ -873,7 +772,7 @@ export default function ReadyForBabyView({
                                       nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
                                       'bg-gray-100 text-gray-700'
                                     }`}>
-                                      {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                                      {nameIdea.type === 'F' ? 'Girl' : nameIdea.type === 'M' ? 'Boy' : 'Neutral'}
                                     </span>
                                   </div>
                                   <div className="flex gap-1">
@@ -1003,8 +902,8 @@ export default function ReadyForBabyView({
                           className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
                         >
                           <option value="N">Neutral</option>
-                          <option value="F">F</option>
-                          <option value="M">M</option>
+                          <option value="F">Girl</option>
+                          <option value="M">Boy</option>
                         </select>
                         <button
                           onClick={handleAddNameIdea}
