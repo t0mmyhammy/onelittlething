@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { SparklesIcon, XMarkIcon, LightBulbIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, XMarkIcon, LightBulbIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 interface WeeklyHighlightsProps {
   familyId: string;
 }
 
 interface Highlights {
-  summary: string;
+  childHighlights: { [childName: string]: string };
+  overallSummary: string;
   reflectionQuestions: string[];
   entryCount: number;
   periodDays: number;
@@ -19,6 +20,35 @@ export default function WeeklyHighlights({ familyId }: WeeklyHighlightsProps) {
   const [loading, setLoading] = useState(false);
   const [highlights, setHighlights] = useState<Highlights | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!highlights) return;
+
+    let text = '📅 WEEKLY HIGHLIGHTS\n\n';
+
+    // Add child sections
+    Object.entries(highlights.childHighlights).forEach(([childName, summary]) => {
+      text += `👶 ${childName}\n${summary}\n\n`;
+    });
+
+    // Add overall summary
+    text += `✨ Family Summary\n${highlights.overallSummary}\n\n`;
+
+    // Add reflection questions
+    text += '💭 Reflection & Inspiration\n';
+    highlights.reflectionQuestions.forEach((q, i) => {
+      text += `${i + 1}. ${q}\n`;
+    });
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -119,16 +149,31 @@ export default function WeeklyHighlights({ familyId }: WeeklyHighlightsProps) {
 
               {/* Content */}
               <div className="p-6 space-y-6">
-                {/* Summary Section */}
+                {/* Child Highlights Sections */}
+                {Object.entries(highlights.childHighlights).map(([childName, summary]) => (
+                  <div key={childName} className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">👶</div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 mb-2">{childName}'s Week</h3>
+                        <p className="text-gray-700 leading-relaxed">
+                          {summary}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Overall Summary Section */}
                 <div className="bg-gradient-to-br from-purple-50 to-sage/10 rounded-xl p-6 border border-purple-100">
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-white rounded-lg shadow-sm">
                       <SparklesIcon className="w-5 h-5 text-purple-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-2">Your Week in Review</h3>
+                      <h3 className="font-semibold text-gray-900 mb-2">Family Summary</h3>
                       <p className="text-gray-700 leading-relaxed">
-                        {highlights.summary}
+                        {highlights.overallSummary}
                       </p>
                     </div>
                   </div>
@@ -169,12 +214,30 @@ export default function WeeklyHighlights({ familyId }: WeeklyHighlightsProps) {
 
               {/* Footer */}
               <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full px-4 py-3 bg-sage text-white rounded-lg hover:bg-sage/90 font-medium transition-colors"
-                >
-                  Close
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCopy}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-sage text-sage rounded-lg hover:bg-sage/5 font-medium transition-colors"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckIcon className="w-5 h-5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardDocumentIcon className="w-5 h-5" />
+                        Copy Text
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="flex-1 px-4 py-3 bg-sage text-white rounded-lg hover:bg-sage/90 font-medium transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>

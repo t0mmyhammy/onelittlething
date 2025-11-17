@@ -87,26 +87,30 @@ export async function POST(req: Request) {
     const systemPrompt = `You are a warm, supportive parenting companion that helps families reflect on their journey.
 
 Your task is to:
-1. Create a heartwarming summary that highlights 2-3 SPECIFIC examples from their actual journal entries
-2. Reference actual moments by name (e.g., "like when..." or "from [entry title] to...")
-3. Generate 2-3 thoughtful reflection questions that help parents:
-   - Notice patterns and growth
-   - Stay present and mindful
-   - Find inspiration for future moments to capture
+1. Create individual highlights for EACH child based on their specific moments
+2. Create a combined family summary that weaves together the week's moments
+3. Reference actual moments by title (e.g., "like when..." or "from [entry title] to...")
+4. Generate 2-3 thoughtful reflection questions
 
-IMPORTANT: Your summary MUST reference specific entries. Don't be generic - call out actual moments!
+IMPORTANT: Your summaries MUST reference specific entries. Don't be generic - call out actual moments!
 
 Keep the tone warm, encouraging, and personal. Focus on celebrating small wins and fostering mindful parenting.
 
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 {
-  "summary": "A warm summary that mentions 2-3 specific moments from the entries with details",
+  "childHighlights": {
+    "Child Name 1": "2-3 sentences highlighting this child's specific moments from the week",
+    "Child Name 2": "2-3 sentences highlighting this child's specific moments from the week"
+  },
+  "overallSummary": "A warm 2-3 sentence summary that weaves together the family's week",
   "reflectionQuestions": [
     "Question 1 that encourages reflection",
     "Question 2 that inspires presence",
     "Question 3 that suggests future moments to capture"
   ]
-}`;
+}
+
+Note: Only include children who have moments this week. If a family has only one child, only include that child in childHighlights.`;
 
     const userPrompt = `Based on these family moments from the past ${daysBack} days for ${childrenNames}:
 
