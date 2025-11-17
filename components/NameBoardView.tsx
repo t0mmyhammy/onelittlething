@@ -60,6 +60,8 @@ export default function NameBoardView({
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [lastName, setLastName] = useState(familyLastName);
   const [generatingNames, setGeneratingNames] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const supabase = createClient();
 
   // Filter names based on current filter
@@ -270,6 +272,43 @@ export default function NameBoardView({
     }
   };
 
+  const handleToggleSelection = (nameId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(nameId)) {
+      newSelected.delete(nameId);
+    } else {
+      newSelected.add(nameId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    if (!confirm(`Delete ${selectedIds.size} selected names?`)) return;
+
+    const idsToDelete = Array.from(selectedIds);
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .delete()
+      .in('id', idsToDelete);
+
+    if (!error) {
+      setNames(names.filter(n => !selectedIds.has(n.id)));
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredNames.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredNames.map(n => n.id)));
+    }
+  };
+
   const isSwipeMode = viewMode === 'swipe';
   const isTiersMode = viewMode === 'tiers';
   const isTableMode = viewMode === 'table';
@@ -353,10 +392,10 @@ export default function NameBoardView({
                 onClick={handleGenerateSimilarNames}
                 disabled={generatingNames}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-full hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
-                title="AI will suggest 20 names similar to your favorites"
+                title="AI will suggest 20 names based on your current list"
               >
                 <SparklesIcon className="w-4 h-4" />
-                {generatingNames ? 'Generating...' : 'Add 20 More'}
+                {generatingNames ? 'Generating...' : '✨ Add 20 More'}
               </button>
               <button
                 onClick={() => setShowAddSheet(true)}
@@ -384,6 +423,47 @@ export default function NameBoardView({
               </button>
             ))}
           </div>
+
+          {/* Selection Mode Toolbar */}
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={() => {
+                setSelectionMode(!selectionMode);
+                setSelectedIds(new Set());
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                selectionMode
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {selectionMode ? 'Cancel' : 'Select Multiple'}
+            </button>
+
+            {selectionMode && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSelectAll}
+                  className="px-3 py-1 text-sm text-sage hover:underline font-medium"
+                >
+                  {selectedIds.size === filteredNames.length ? 'Deselect All' : 'Select All'}
+                </button>
+                {selectedIds.size > 0 && (
+                  <>
+                    <span className="text-sm text-gray-600">
+                      {selectedIds.size} selected
+                    </span>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+                    >
+                      Delete {selectedIds.size}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -408,6 +488,9 @@ export default function NameBoardView({
                 onClick={() => setSelectedNameId(name.id)}
                 onToggleFavorite={() => handleToggleFavorite(name.id)}
                 onLongPress={() => setSelectedNameId(name.id)}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(name.id)}
+                onToggleSelection={() => handleToggleSelection(name.id)}
               />
             ))}
           </div>

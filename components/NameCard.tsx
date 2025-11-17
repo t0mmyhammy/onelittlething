@@ -8,9 +8,20 @@ interface NameCardProps {
   onClick: () => void;
   onToggleFavorite: () => void;
   onLongPress: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
-export default function NameCard({ name, onClick, onToggleFavorite, onLongPress }: NameCardProps) {
+export default function NameCard({
+  name,
+  onClick,
+  onToggleFavorite,
+  onLongPress,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelection
+}: NameCardProps) {
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   const handleTouchStart = () => {
@@ -24,6 +35,14 @@ export default function NameCard({ name, onClick, onToggleFavorite, onLongPress 
     if (pressTimer) {
       clearTimeout(pressTimer);
       setPressTimer(null);
+    }
+  };
+
+  const handleClick = () => {
+    if (selectionMode && onToggleSelection) {
+      onToggleSelection();
+    } else {
+      onClick();
     }
   };
 
@@ -41,29 +60,50 @@ export default function NameCard({ name, onClick, onToggleFavorite, onLongPress 
 
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-gray-100 active:scale-95"
+      className={`relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer border-2 active:scale-95 ${
+        isSelected ? 'border-sage bg-sage/5' : 'border-gray-100'
+      }`}
     >
-      {/* AI Badge - Top Left */}
-      {name.is_ai_generated && (
-        <div className="absolute top-3 left-3 bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-          <span className="text-xs">✨</span>
-          AI
+      {/* Selection Checkbox - Top Left */}
+      {selectionMode ? (
+        <div className="absolute top-3 left-3">
+          <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+            isSelected ? 'bg-sage border-sage' : 'bg-white border-gray-300'
+          }`}>
+            {isSelected && (
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
         </div>
+      ) : (
+        <>
+          {/* AI Badge - Top Left */}
+          {name.is_ai_generated && (
+            <div className="absolute top-3 left-3 bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+              <span className="text-xs">✨</span>
+              AI
+            </div>
+          )}
+        </>
       )}
 
       {/* Favorite Star - Top Right */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite();
-        }}
-        className="absolute top-3 right-3 text-xl transition-transform hover:scale-110"
-      >
-        {name.is_favorite ? '⭐' : '☆'}
-      </button>
+      {!selectionMode && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
+          className="absolute top-3 right-3 text-xl transition-transform hover:scale-110"
+        >
+          {name.is_favorite ? '⭐' : '☆'}
+        </button>
+      )}
 
       {/* Name - Center */}
       <div className="text-center pt-2 pb-3">

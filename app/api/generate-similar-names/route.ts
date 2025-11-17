@@ -26,17 +26,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing familyId' }, { status: 400 });
     }
 
-    // Get all favorite names
-    const { data: favoriteNames } = await supabase
+    // Get all favorite names first, if none, get all names
+    let { data: favoriteNames } = await supabase
       .from('baby_name_ideas')
       .select('name, type, notes')
       .eq('family_id', familyId)
       .eq('is_favorite', true);
 
+    // If no favorites, use all names as reference
     if (!favoriteNames || favoriteNames.length === 0) {
-      return NextResponse.json({
-        error: 'No favorite names found. Please favorite some names first to get AI suggestions.'
-      }, { status: 400 });
+      const { data: allNames } = await supabase
+        .from('baby_name_ideas')
+        .select('name, type, notes')
+        .eq('family_id', familyId)
+        .limit(10);
+
+      if (!allNames || allNames.length === 0) {
+        return NextResponse.json({
+          error: 'No names found. Please add some names first before generating suggestions.'
+        }, { status: 400 });
+      }
+
+      favoriteNames = allNames;
     }
 
     // Get children for sibling name context
@@ -76,7 +87,7 @@ Return ONLY a JSON array with this exact structure:
 Make sure to return valid JSON only, no markdown or extra text.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini', // Faster model to avoid timeouts
       messages: [
         {
           role: 'system',
@@ -88,7 +99,7 @@ Make sure to return valid JSON only, no markdown or extra text.`;
         },
       ],
       temperature: 0.8,
-      max_tokens: 2000,
+      max_tokens: 1500,
     });
 
     const responseText = completion.choices[0].message.content?.trim() || '';
