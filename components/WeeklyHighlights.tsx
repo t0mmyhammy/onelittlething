@@ -37,7 +37,11 @@ export default function WeeklyHighlights({ familyId }: WeeklyHighlightsProps) {
         if (data.isEmpty) {
           setError(data.error);
         } else {
-          throw new Error(data.error || 'Failed to generate highlights');
+          // Show detailed error for debugging
+          const errorMsg = data.details
+            ? `${data.error}: ${data.details}${data.hint ? ` (${data.hint})` : ''}`
+            : data.error || 'Failed to generate highlights';
+          throw new Error(errorMsg);
         }
         setLoading(false);
         return;

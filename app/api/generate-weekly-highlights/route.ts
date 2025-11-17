@@ -34,24 +34,23 @@ export async function POST(req: Request) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
+    // First try to get basic entries without relationships
     const { data: entries, error } = await supabase
       .from('entries')
-      .select(`
-        id,
-        title,
-        content,
-        entry_date,
-        entry_children(
-          children(name)
-        )
-      `)
+      .select('*')
       .eq('family_id', familyId)
       .gte('entry_date', startDate.toISOString().split('T')[0])
       .order('entry_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching entries:', error);
-      return new Response(JSON.stringify({ error: 'Failed to fetch entries' }), {
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch entries',
+        details: error.message,
+        hint: error.hint,
+        code: error.code
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -77,14 +76,12 @@ export async function POST(req: Request) {
 
     // Format entries for AI
     const entriesText = entries.map((entry: any) => {
-      // Get child name from the entry_children relationship
-      const childName = entry.entry_children?.[0]?.children?.name || 'Child';
       const date = new Date(entry.entry_date).toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric'
       });
-      return `[${date}] ${childName}: ${entry.title}${entry.content ? ' - ' + entry.content : ''}`;
+      return `[${date}] ${entry.title}${entry.content ? ' - ' + entry.content : ''}`;
     }).join('\n');
 
     const systemPrompt = `You are a warm, supportive parenting companion that helps families reflect on their journey.
