@@ -35,16 +35,18 @@ export async function POST(req: Request) {
     startDate.setDate(startDate.getDate() - daysBack);
 
     const { data: entries, error } = await supabase
-      .from('timeline_entries')
+      .from('entries')
       .select(`
         id,
         title,
         content,
         entry_date,
-        child:children(name)
+        entry_children(
+          children(name)
+        )
       `)
       .eq('family_id', familyId)
-      .gte('entry_date', startDate.toISOString())
+      .gte('entry_date', startDate.toISOString().split('T')[0])
       .order('entry_date', { ascending: true });
 
     if (error) {
@@ -75,7 +77,8 @@ export async function POST(req: Request) {
 
     // Format entries for AI
     const entriesText = entries.map((entry: any) => {
-      const childName = entry.child?.name || 'Child';
+      // Get child name from the entry_children relationship
+      const childName = entry.entry_children?.[0]?.children?.name || 'Child';
       const date = new Date(entry.entry_date).toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
