@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { familyId, count = 20 } = await request.json();
+    const { familyId, count = 10 } = await request.json(); // Reduced to 10 to avoid timeouts
 
     if (!familyId) {
       return NextResponse.json({ error: 'Missing familyId' }, { status: 400 });

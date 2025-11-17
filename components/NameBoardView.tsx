@@ -9,6 +9,7 @@ import AddNameSheet from './AddNameSheet';
 import SwipeMode from './SwipeMode';
 import TierView from './TierView';
 import NameComparisonTable from './NameComparisonTable';
+import NameProgressModal from './NameProgressModal';
 
 export type NameType = 'first' | 'middle';
 
@@ -62,6 +63,12 @@ export default function NameBoardView({
   const [generatingNames, setGeneratingNames] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [progressModal, setProgressModal] = useState<{
+    isOpen: boolean;
+    type: 'enhancing' | 'generating';
+    current?: number;
+    total?: number;
+  }>({ isOpen: false, type: 'enhancing' });
   const supabase = createClient();
 
   // Filter names based on current filter
@@ -192,18 +199,25 @@ export default function NameBoardView({
   const handleGenerateSimilarNames = async () => {
     setGeneratingNames(true);
 
+    // Show progress modal
+    setProgressModal({
+      isOpen: true,
+      type: 'generating',
+    });
+
     try {
       const response = await fetch('/api/generate-similar-names', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           familyId,
-          count: 20,
+          count: 10,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
+        setProgressModal({ isOpen: false, type: 'generating' });
         alert(error.error || 'Failed to generate names');
         return;
       }
@@ -229,6 +243,8 @@ export default function NameBoardView({
         .insert(namesToInsert)
         .select();
 
+      setProgressModal({ isOpen: false, type: 'generating' });
+
       if (!error && data) {
         setNames([...names, ...data]);
         alert(`Added ${data.length} AI-suggested names!`);
@@ -238,6 +254,7 @@ export default function NameBoardView({
       }
     } catch (error) {
       console.error('Error generating similar names:', error);
+      setProgressModal({ isOpen: false, type: 'generating' });
       alert('Failed to generate name suggestions');
     } finally {
       setGeneratingNames(false);
@@ -264,12 +281,33 @@ export default function NameBoardView({
       return;
     }
 
+    // Show progress modal
+    setProgressModal({
+      isOpen: true,
+      type: 'enhancing',
+      current: 0,
+      total: unenhancedNames.length
+    });
+
     // Enhance each name sequentially (to avoid rate limits)
-    for (const name of unenhancedNames) {
+    for (let i = 0; i < unenhancedNames.length; i++) {
+      const name = unenhancedNames[i];
+
+      // Update progress
+      setProgressModal({
+        isOpen: true,
+        type: 'enhancing',
+        current: i + 1,
+        total: unenhancedNames.length
+      });
+
       await handleEnhanceName(name.id, false);
       // Small delay to avoid overwhelming the API
       await new Promise(resolve => setTimeout(resolve, 500));
     }
+
+    // Close progress modal
+    setProgressModal({ isOpen: false, type: 'enhancing' });
   };
 
   const handleToggleSelection = (nameId: string) => {
@@ -392,10 +430,10 @@ export default function NameBoardView({
                 onClick={handleGenerateSimilarNames}
                 disabled={generatingNames}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-full hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
-                title="AI will suggest 20 names based on your current list"
+                title="AI will suggest 10 names based on your current list"
               >
                 <SparklesIcon className="w-4 h-4" />
-                {generatingNames ? 'Generating...' : '✨ Add 20 More'}
+                {generatingNames ? 'Generating...' : '✨ Add 10 More'}
               </button>
               <button
                 onClick={() => setShowAddSheet(true)}
@@ -519,6 +557,14 @@ export default function NameBoardView({
           onAdd={handleAddName}
         />
       )}
+
+      {/* Progress Modal */}
+      <NameProgressModal
+        isOpen={progressModal.isOpen}
+        type={progressModal.type}
+        current={progressModal.current}
+        total={progressModal.total}
+      />
     </div>
   );
 }
