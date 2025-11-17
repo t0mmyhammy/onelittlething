@@ -115,22 +115,17 @@ export default async function ReadyForBabyPage() {
     .eq('list_id', babyPrepList?.id || '')
     .order('order_index', { ascending: true });
 
-  // Get all name ideas for this family
+  // Get name counts for summary card
   const { data: nameIdeas } = await supabase
     .from('baby_name_ideas')
-    .select('*')
-    .eq('family_id', familyId)
-    .order('created_at', { ascending: false });
+    .select('type')
+    .eq('family_id', familyId);
 
-  // Get all comments for name ideas
-  const nameIdeaIds = nameIdeas?.map(n => n.id) || [];
-  const { data: comments } = nameIdeaIds.length > 0
-    ? await supabase
-        .from('baby_name_comments')
-        .select('*')
-        .in('name_id', nameIdeaIds)
-        .order('created_at', { ascending: true })
-    : { data: [] };
+  const firstNameCount = nameIdeas?.filter(n => n.type === 'first').length || 0;
+  const middleNameCount = nameIdeas?.filter(n => n.type === 'middle').length || 0;
+
+  // Get due date for countdown
+  const dueDate = (familyMember as any)?.families?.due_date || null;
 
   return (
     <div className="min-h-screen bg-cream">
@@ -144,9 +139,9 @@ export default async function ReadyForBabyPage() {
         <ReadyForBabyView
           babyPrepList={babyPrepList || null}
           tasks={tasks || []}
-          nameIdeas={nameIdeas || []}
-          comments={comments || []}
-          children={children || []}
+          firstNameCount={firstNameCount}
+          middleNameCount={middleNameCount}
+          dueDate={dueDate}
           userId={user.id}
           familyId={familyId}
         />

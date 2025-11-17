@@ -551,13 +551,373 @@ export default function ReadyForBabyView({
       {/* Only show content if babyPrepList exists */}
       {babyPrepList && (
         <>
-          {/* Names Summary Card - Links to /names */}
-          <div className="mb-6">
-            <NamesSummaryCard
-              firstNameCount={firstNameCount}
-              middleNameCount={middleNameCount}
-              dueDate={dueDate}
-            />
+          {/* Name Ideas & Meaning Section - Moved to Top */}
+          <div className="bg-white rounded-xl border border-gray-200 mb-6">
+            <div className="flex items-center justify-between p-4">
+              <button
+                onClick={() => toggleSection('name_ideas')}
+                className="flex-1 flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
+                <span className="text-2xl">✨</span>
+                <div className="text-left">
+                  <h3 className="text-lg font-semibold text-gray-900">Name Ideas & Meaning</h3>
+                  <p className="text-sm text-gray-500">
+                    {babyPrepList.baby_named
+                      ? "You've chosen a name!"
+                      : `${nameIdeas.length} idea${nameIdeas.length !== 1 ? 's' : ''}`
+                    }
+                  </p>
+                </div>
+              </button>
+              <div className="flex items-center gap-2">
+                {expandedSections.has('name_ideas') ? (
+                  <ChevronUpIcon className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+
+            {expandedSections.has('name_ideas') && (
+              <div className="border-t border-gray-200 p-4">
+                {/* Privacy & Status Controls */}
+                <div className="mb-4 space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1">
+                        Baby has been named
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        Check this if you've officially chosen a name
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleBabyNamed}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        babyPrepList.baby_named ? 'bg-sage' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          babyPrepList.baby_named ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <label className="font-medium text-gray-900 block mb-1">
+                        Keep names private
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        Hide name ideas from others who can see this page
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleHideNames}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        babyPrepList.hide_names ? 'bg-sage' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          babyPrepList.hide_names ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Privacy Message */}
+                {babyPrepList.hide_names ? (
+                  <div className="p-6 bg-sage/5 border border-sage/20 rounded-lg text-center">
+                    <EyeSlashIcon className="w-12 h-12 text-sage mx-auto mb-3 opacity-50" />
+                    <p className="text-sage font-medium mb-1">Names are private</p>
+                    <p className="text-sm text-gray-600">
+                      Your name ideas are hidden from others. Toggle "Keep names private" above to share them.
+                    </p>
+                  </div>
+                ) : babyPrepList.baby_named ? (
+                  <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                    <span className="text-4xl mb-3 block">🎉</span>
+                    <p className="text-amber-900 font-medium mb-1">Congratulations on choosing a name!</p>
+                    <p className="text-sm text-amber-800">
+                      Your baby's name has been chosen. You can still browse ideas below if you'd like.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tooltip */}
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
+                      <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-blue-900">
+                        Parents often choose names based on family history, cultural origins, sound, or meaning. Try mixing inspiration from each!
+                      </p>
+                    </div>
+
+                    {/* Name Tools & Last Name Input */}
+                    <div className="mb-4 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                          className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                            showOnlyFavorites
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-base">⭐</span>
+                          {showOnlyFavorites ? 'Show all names' : 'Show favorites only'}
+                        </button>
+                      </div>
+
+                      {/* Family Last Name */}
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label className="text-xs font-semibold text-blue-900 uppercase tracking-wide block mb-2">
+                          Family Last Name (Optional)
+                        </label>
+                        <p className="text-xs text-blue-800 mb-2">
+                          Add your last name to see how each first name flows with it, check initials, and get better compatibility insights.
+                        </p>
+                        <input
+                          type="text"
+                          value={familyLastName}
+                          onChange={(e) => setFamilyLastName(e.target.value)}
+                          placeholder="Enter last name"
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Name Ideas Table */}
+                    <div className="space-y-3 mb-4">
+                      {nameIdeas
+                        .filter(nameIdea => !showOnlyFavorites || nameIdea.is_favorite)
+                        .map((nameIdea) => {
+                        const userReactions = nameIdea.reactions?.[userId] || [];
+                        const enhanced = nameIdea.ai_enhanced_notes;
+
+                        return (
+                          <div key={nameIdea.id} className={`border rounded-lg p-3 ${
+                            nameIdea.is_favorite ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200'
+                          }`}>
+                            {editingNameId === nameIdea.id ? (
+                              /* Edit Mode */
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingNameValue}
+                                    onChange={(e) => setEditingNameValue(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm border border-sage rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                                    placeholder="Name"
+                                  />
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                                    nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {nameIdea.type === 'F' ? 'Girl' : nameIdea.type === 'M' ? 'Boy' : 'Neutral'}
+                                  </span>
+                                </div>
+                                <textarea
+                                  value={editingNameNotes}
+                                  onChange={(e) => setEditingNameNotes(e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-sage rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                                  placeholder="Notes (optional)"
+                                  rows={2}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleUpdateName(nameIdea.id)}
+                                    className="px-3 py-1.5 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingNameId(null);
+                                      setEditingNameValue('');
+                                      setEditingNameNotes('');
+                                    }}
+                                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* View Mode */
+                              <>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleToggleFavorite(nameIdea.id)}
+                                      className="text-xl hover:scale-110 transition-transform"
+                                      title={nameIdea.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                                    >
+                                      {nameIdea.is_favorite ? '⭐' : '☆'}
+                                    </button>
+                                    <span className="font-semibold text-gray-900">{nameIdea.name}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                      nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                                      nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {nameIdea.type === 'F' ? 'Girl' : nameIdea.type === 'M' ? 'Boy' : 'Neutral'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditingNameId(nameIdea.id);
+                                        setEditingNameValue(nameIdea.name);
+                                        setEditingNameNotes(nameIdea.notes || '');
+                                      }}
+                                      className="text-xs text-gray-600 hover:text-sage px-2 py-1"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteNameIdea(nameIdea.id)}
+                                      className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {nameIdea.notes && (
+                                  <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
+                                )}
+
+                            {enhanced && (
+                              <div className="text-sm space-y-2 mb-3 p-3 bg-sage/5 rounded-lg border border-sage/20">
+                                {enhanced.meaning && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Meaning</p>
+                                    <p className="text-gray-700">{enhanced.meaning}</p>
+                                  </div>
+                                )}
+                                {enhanced.origin && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Origin</p>
+                                    <p className="text-gray-700">{enhanced.origin}</p>
+                                  </div>
+                                )}
+                                {enhanced.popularity && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Popularity</p>
+                                    <p className="text-gray-700">{enhanced.popularity}</p>
+                                  </div>
+                                )}
+                                {enhanced.nicknames && enhanced.nicknames.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-1">Nicknames</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {enhanced.nicknames.map((nick: string, i: number) => (
+                                        <span key={i} className="text-xs px-2 py-1 bg-white border border-sage/30 text-gray-700 rounded-full">
+                                          {nick}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {enhanced.siblingCompatibility && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">With Siblings</p>
+                                    <p className="text-gray-700">{enhanced.siblingCompatibility}</p>
+                                  </div>
+                                )}
+                                {enhanced.fullNameFlow && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Full Name</p>
+                                    <p className="text-gray-700">{enhanced.fullNameFlow}</p>
+                                  </div>
+                                )}
+                                {enhanced.initials && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Initials</p>
+                                    <p className="text-gray-700">{enhanced.initials}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleToggleReaction(nameIdea.id, '❤️')}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                              >
+                                {userReactions.includes('❤️') ? (
+                                  <HeartSolidIcon className="w-4 h-4 text-red-500" />
+                                ) : (
+                                  <HeartIcon className="w-4 h-4 text-gray-400" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleToggleReaction(nameIdea.id, '💬')}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                              >
+                                <ChatBubbleLeftIcon className="w-4 h-4 text-gray-400" />
+                              </button>
+                              {!enhanced && (
+                                <button
+                                  onClick={() => handleEnhanceName(nameIdea.id)}
+                                  className="flex items-center gap-1 text-xs px-2 py-1 rounded-full hover:bg-gray-100 transition-colors ml-auto"
+                                >
+                                  <SparklesIcon className="w-4 h-4 text-sage" />
+                                  <span className="text-sage">Enhance</span>
+                                </button>
+                              )}
+                            </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add New Name */}
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={newNameInput.name}
+                          onChange={(e) => setNewNameInput({ ...newNameInput, name: e.target.value })}
+                          placeholder="Name"
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                        />
+                        <select
+                          value={newNameInput.type}
+                          onChange={(e) => setNewNameInput({ ...newNameInput, type: e.target.value as 'F' | 'M' | 'N' })}
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                        >
+                          <option value="N">Neutral</option>
+                          <option value="F">Girl</option>
+                          <option value="M">Boy</option>
+                        </select>
+                        <button
+                          onClick={handleAddNameIdea}
+                          className="px-4 py-2 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <PlusIcon className="w-4 h-4" />
+                          Add
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={newNameInput.notes}
+                        onChange={(e) => setNewNameInput({ ...newNameInput, notes: e.target.value })}
+                        placeholder="Notes (optional)"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Global Controls */}
