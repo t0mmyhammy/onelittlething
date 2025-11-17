@@ -119,25 +119,63 @@ export default function BabyCountdownCard({ dueDateISO, babyName }: Props) {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="bg-amber/10 border border-amber/30 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2 font-medium">Before 37 weeks (Preterm):</strong>
-                <p className="text-sm text-gray-700 leading-relaxed">If your baby arrives before 37 weeks, they're considered preterm — and while that can sound scary, most preemies do beautifully with a little extra care and time in the NICU.</p>
+            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+              <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                Understanding when your baby is considered "term" helps you know what to expect as you approach your due date.
+              </p>
+
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-5 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🍼</span>
+                  <div>
+                    <strong className="text-gray-900 block mb-2 text-base font-semibold">Before 37 weeks (Preterm)</strong>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      If your baby arrives before 37 weeks, they're considered preterm — and while that can sound scary, most preemies do beautifully with a little extra care and time in the NICU.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-sage/10 border border-sage/30 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2 font-medium">37-38 weeks (Early Term):</strong>
-                <p className="text-sm text-gray-700 leading-relaxed">Once they reach 37 weeks, they're early term — healthy, safe, and almost fully ready.</p>
+              <div className="bg-sage/10 border-l-4 border-sage p-5 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">👶</span>
+                  <div>
+                    <strong className="text-gray-900 block mb-2 text-base font-semibold">37-38 weeks (Early Term)</strong>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Once they reach 37 weeks, they're early term — healthy, safe, and almost fully ready.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2 font-medium">39-40 weeks (Full Term):</strong>
-                <p className="text-sm text-gray-700 leading-relaxed">By 39 to 40 weeks, they're full term and perfectly developed for life outside the womb.</p>
+              <div className="bg-emerald-50 border-l-4 border-emerald-500 p-5 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💚</span>
+                  <div>
+                    <strong className="text-gray-900 block mb-2 text-base font-semibold">39-40 weeks (Full Term)</strong>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      By 39 to 40 weeks, they're full term and perfectly developed for life outside the womb.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                <strong className="text-gray-900 block mb-2 font-medium">After 41 weeks (Late Term):</strong>
-                <p className="text-sm text-gray-700 leading-relaxed">After 41 weeks, doctors may suggest a gentle nudge to help things along, since the placenta's support naturally starts to slow down.</p>
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-5 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">📅</span>
+                  <div>
+                    <strong className="text-gray-900 block mb-2 text-base font-semibold">After 41 weeks (Late Term)</strong>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      After 41 weeks, doctors may suggest a gentle nudge to help things along, since the placenta's support naturally starts to slow down.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 mt-6">
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Every pregnancy is unique. These are general guidelines — your healthcare provider will monitor your specific situation.
+                </p>
               </div>
             </div>
           </div>
