@@ -47,13 +47,14 @@ export default async function ReadyForBabyPage() {
   const profilePhotoUrl = userPrefs?.profile_photo_url;
 
   // Check if family has existing born children (not expected babies)
-  const { data: existingChildren } = await supabase
+  const { data: children } = await supabase
     .from('children')
-    .select('id, birthdate')
+    .select('id, name, birthdate')
     .eq('family_id', familyId)
-    .lte('birthdate', new Date().toISOString());
+    .order('birthdate', { ascending: true });
 
-  const hasOlderChildren = (existingChildren?.length || 0) > 0;
+  const existingChildren = children?.filter(c => new Date(c.birthdate) <= new Date()) || [];
+  const hasOlderChildren = existingChildren.length > 0;
 
   // Get or create baby prep list for this family
   let { data: babyPrepList, error: fetchError } = await supabase
@@ -145,6 +146,7 @@ export default async function ReadyForBabyPage() {
           tasks={tasks || []}
           nameIdeas={nameIdeas || []}
           comments={comments || []}
+          children={children || []}
           userId={user.id}
           familyId={familyId}
         />

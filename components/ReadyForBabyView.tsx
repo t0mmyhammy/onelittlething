@@ -67,11 +67,18 @@ interface BabyNameComment {
   created_at: string;
 }
 
+interface Child {
+  id: string;
+  name: string;
+  birthdate: string;
+}
+
 interface ReadyForBabyViewProps {
   babyPrepList: BabyPrepList | null;
   tasks: BabyPrepTask[];
   nameIdeas: BabyNameIdea[];
   comments: BabyNameComment[];
+  children: Child[];
   userId: string;
   familyId: string;
 }
@@ -133,6 +140,7 @@ export default function ReadyForBabyView({
   tasks: initialTasks,
   nameIdeas: initialNameIdeas,
   comments: initialComments,
+  children,
   userId,
   familyId,
 }: ReadyForBabyViewProps) {
@@ -491,6 +499,137 @@ export default function ReadyForBabyView({
     }
   };
 
+  const handleEnhanceName = async (nameId: string) => {
+    const nameIdea = nameIdeas.find(n => n.id === nameId);
+    if (!nameIdea) return;
+
+    // Get sibling names (children already born)
+    const siblingNames = children
+      .filter(c => new Date(c.birthdate) <= new Date())
+      .map(c => c.name);
+
+    try {
+      const response = await fetch('/api/enhance-baby-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: nameIdea.name,
+          type: nameIdea.type,
+          siblingNames,
+          lastName: familyLastName || undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to enhance name');
+
+      const data = await response.json();
+
+      // Update the name idea with AI enhancements
+      const { error } = await supabase
+        .from('baby_name_ideas')
+        .update({ ai_enhanced_notes: data.enhancements })
+        .eq('id', nameId);
+
+      if (!error) {
+        setNameIdeas(nameIdeas.map(n =>
+          n.id === nameId ? { ...n, ai_enhanced_notes: data.enhancements } : n
+        ));
+      }
+    } catch (error) {
+      console.error('Error enhancing name:', error);
+    }
+  };
+
+  const handleAddNameIdea = async () => {
+    if (!newNameInput.name.trim()) return;
+
+    const { data, error } = await supabase
+      .from('baby_name_ideas')
+      .insert({
+        family_id: familyId,
+        name: newNameInput.name.trim(),
+        type: newNameInput.type,
+        notes: newNameInput.notes.trim() || null,
+        created_by: userId,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setNameIdeas([data, ...nameIdeas]);
+      setNewNameInput({ name: '', type: 'N', notes: '' });
+    }
+  };
+
+  const handleDeleteNameIdea = async (nameId: string) => {
+    if (!confirm('Delete this name idea?')) return;
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .delete()
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.filter(n => n.id !== nameId));
+    }
+  };
+
+  const handleToggleReaction = async (nameId: string, reaction: string) => {
+    const nameIdea = nameIdeas.find(n => n.id === nameId);
+    if (!nameIdea) return;
+
+    const currentReactions = nameIdea.reactions || {};
+    const userReactions = currentReactions[userId] || [];
+
+    let newUserReactions;
+    if (userReactions.includes(reaction)) {
+      // Remove reaction
+      newUserReactions = userReactions.filter((r: string) => r !== reaction);
+    } else {
+      // Add reaction
+      newUserReactions = [...userReactions, reaction];
+    }
+
+    const newReactions = {
+      ...currentReactions,
+      [userId]: newUserReactions,
+    };
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .update({ reactions: newReactions })
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.map(n =>
+        n.id === nameId ? { ...n, reactions: newReactions } : n
+      ));
+    }
+  };
+
+  const handleUpdateName = async (nameId: string) => {
+    if (!editingNameValue.trim()) return;
+
+    const { error } = await supabase
+      .from('baby_name_ideas')
+      .update({
+        name: editingNameValue.trim(),
+        notes: editingNameNotes.trim() || null,
+      })
+      .eq('id', nameId);
+
+    if (!error) {
+      setNameIdeas(nameIdeas.map(n =>
+        n.id === nameId
+          ? { ...n, name: editingNameValue.trim(), notes: editingNameNotes.trim() || null }
+          : n
+      ));
+      setEditingNameId(null);
+      setEditingNameValue('');
+      setEditingNameNotes('');
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -625,19 +764,38 @@ export default function ReadyForBabyView({
                       </p>
                     </div>
 
-                    {/* Name Tools */}
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
-                        className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                          showOnlyFavorites
-                            ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="text-base">⭐</span>
-                        {showOnlyFavorites ? 'Show all names' : 'Show favorites only'}
-                      </button>
+                    {/* Name Tools & Last Name Input */}
+                    <div className="mb-4 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                          className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                            showOnlyFavorites
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="text-base">⭐</span>
+                          {showOnlyFavorites ? 'Show all names' : 'Show favorites only'}
+                        </button>
+                      </div>
+
+                      {/* Family Last Name */}
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <label className="text-xs font-semibold text-blue-900 uppercase tracking-wide block mb-2">
+                          Family Last Name (Optional)
+                        </label>
+                        <p className="text-xs text-blue-800 mb-2">
+                          Add your last name to see how each first name flows with it, check initials, and get better compatibility insights.
+                        </p>
+                        <input
+                          type="text"
+                          value={familyLastName}
+                          onChange={(e) => setFamilyLastName(e.target.value)}
+                          placeholder="Enter last name"
+                          className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
                     </div>
 
                     {/* Name Ideas Table */}
@@ -652,42 +810,146 @@ export default function ReadyForBabyView({
                           <div key={nameIdea.id} className={`border rounded-lg p-3 ${
                             nameIdea.is_favorite ? 'border-amber-300 bg-amber-50/30' : 'border-gray-200'
                           }`}>
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleToggleFavorite(nameIdea.id)}
-                                  className="text-xl hover:scale-110 transition-transform"
-                                  title={nameIdea.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
-                                >
-                                  {nameIdea.is_favorite ? '⭐' : '☆'}
-                                </button>
-                                <span className="font-semibold text-gray-900">{nameIdea.name}</span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
-                                  nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
-                                </span>
+                            {editingNameId === nameIdea.id ? (
+                              /* Edit Mode */
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={editingNameValue}
+                                    onChange={(e) => setEditingNameValue(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm border border-sage rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                                    placeholder="Name"
+                                  />
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                                    nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                                  </span>
+                                </div>
+                                <textarea
+                                  value={editingNameNotes}
+                                  onChange={(e) => setEditingNameNotes(e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-sage rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent"
+                                  placeholder="Notes (optional)"
+                                  rows={2}
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleUpdateName(nameIdea.id)}
+                                    className="px-3 py-1.5 bg-sage text-white rounded-lg hover:opacity-90 text-sm font-medium"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingNameId(null);
+                                      setEditingNameValue('');
+                                      setEditingNameNotes('');
+                                    }}
+                                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
                               </div>
-                              <button
-                                onClick={() => handleDeleteNameIdea(nameIdea.id)}
-                                className="text-xs text-red-600 hover:text-red-700"
-                              >
-                                Delete
-                              </button>
-                            </div>
+                            ) : (
+                              /* View Mode */
+                              <>
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleToggleFavorite(nameIdea.id)}
+                                      className="text-xl hover:scale-110 transition-transform"
+                                      title={nameIdea.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                                    >
+                                      {nameIdea.is_favorite ? '⭐' : '☆'}
+                                    </button>
+                                    <span className="font-semibold text-gray-900">{nameIdea.name}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                      nameIdea.type === 'F' ? 'bg-pink-100 text-pink-700' :
+                                      nameIdea.type === 'M' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {nameIdea.type === 'F' ? 'F' : nameIdea.type === 'M' ? 'M' : 'N'}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditingNameId(nameIdea.id);
+                                        setEditingNameValue(nameIdea.name);
+                                        setEditingNameNotes(nameIdea.notes || '');
+                                      }}
+                                      className="text-xs text-gray-600 hover:text-sage px-2 py-1"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteNameIdea(nameIdea.id)}
+                                      className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
 
-                            {nameIdea.notes && (
-                              <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
-                            )}
+                                {nameIdea.notes && (
+                                  <p className="text-sm text-gray-600 mb-2">{nameIdea.notes}</p>
+                                )}
 
                             {enhanced && (
-                              <div className="text-sm space-y-1 mb-3 p-2 bg-sage/5 rounded">
-                                {enhanced.meaning && <p className="text-gray-700"><strong>Meaning:</strong> {enhanced.meaning}</p>}
-                                {enhanced.origin && <p className="text-gray-700"><strong>Origin:</strong> {enhanced.origin}</p>}
-                                {enhanced.popularity && <p className="text-gray-700"><strong>Popularity:</strong> {enhanced.popularity}</p>}
-                                {enhanced.siblingCompatibility && <p className="text-gray-700"><strong>With siblings:</strong> {enhanced.siblingCompatibility}</p>}
+                              <div className="text-sm space-y-2 mb-3 p-3 bg-sage/5 rounded-lg border border-sage/20">
+                                {enhanced.meaning && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Meaning</p>
+                                    <p className="text-gray-700">{enhanced.meaning}</p>
+                                  </div>
+                                )}
+                                {enhanced.origin && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Origin</p>
+                                    <p className="text-gray-700">{enhanced.origin}</p>
+                                  </div>
+                                )}
+                                {enhanced.popularity && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Popularity</p>
+                                    <p className="text-gray-700">{enhanced.popularity}</p>
+                                  </div>
+                                )}
+                                {enhanced.nicknames && enhanced.nicknames.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-1">Nicknames</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {enhanced.nicknames.map((nick: string, i: number) => (
+                                        <span key={i} className="text-xs px-2 py-1 bg-white border border-sage/30 text-gray-700 rounded-full">
+                                          {nick}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {enhanced.siblingCompatibility && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">With Siblings</p>
+                                    <p className="text-gray-700">{enhanced.siblingCompatibility}</p>
+                                  </div>
+                                )}
+                                {enhanced.fullNameFlow && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Full Name</p>
+                                    <p className="text-gray-700">{enhanced.fullNameFlow}</p>
+                                  </div>
+                                )}
+                                {enhanced.initials && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-sage uppercase tracking-wide mb-0.5">Initials</p>
+                                    <p className="text-gray-700">{enhanced.initials}</p>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -718,6 +980,8 @@ export default function ReadyForBabyView({
                                 </button>
                               )}
                             </div>
+                              </>
+                            )}
                           </div>
                         );
                       })}
