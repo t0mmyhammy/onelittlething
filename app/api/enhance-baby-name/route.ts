@@ -45,9 +45,10 @@ For each name, provide detailed information that helps parents make an informed 
 1. **Meaning**: What the name means and symbolizes
 2. **Origin**: Cultural, linguistic, or historical background
 3. **Popularity**: Current ranking and trend (use thebump.com as the primary source for baby name popularity data, including current year rankings and trends)
-4. **Nicknames**: Common shortened versions or pet names
-5. **Sibling Compatibility**: How it sounds with the provided sibling names (rhythm, style, similar vs. contrasting)
-${lastName ? `6. **Full Name**: Analysis of "${fullName}" - how first and last name flow together\n7. **Initials**: Note if initials "${initials}" form any words or acronyms` : ''}
+4. **Vibe**: The overall style/feeling of the name (e.g., Classic, Modern, Trendy, Vintage, Traditional, Nature, Spiritual, Unique, Popular, Common)
+5. **Nicknames**: Common shortened versions or pet names
+6. **Sibling Compatibility**: How it sounds with the provided sibling names (rhythm, style, similar vs. contrasting)
+${lastName ? `7. **Full Name**: Analysis of "${fullName}" - how first and last name flow together\n8. **Initials**: Note if initials "${initials}" form any words or acronyms` : ''}
 
 Keep responses warm, concise, and actionable. Parents appreciate specific details.
 
@@ -56,6 +57,7 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
   "meaning": "Brief description",
   "origin": "Cultural origin",
   "popularity": "Current ranking/trend with year",
+  "vibe": "One or two words describing the name's style/vibe",
   "nicknames": ["Nickname1", "Nickname2"],
   "siblingCompatibility": "Specific notes about how it pairs with sibling names"${lastName ? `,
   "fullNameFlow": "Analysis of first + last name",

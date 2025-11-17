@@ -272,6 +272,37 @@ export default function NameBoardView({
     }
   };
 
+  const handleUpdateOrder = async (nameId: string, newIndex: number) => {
+    // Reorder names locally
+    const oldIndex = names.findIndex(n => n.id === nameId);
+    if (oldIndex === -1) return;
+
+    const newNames = [...names];
+    const [movedName] = newNames.splice(oldIndex, 1);
+    newNames.splice(newIndex, 0, movedName);
+
+    // Update order_index for affected names
+    const updates = newNames.map((name, index) => ({
+      id: name.id,
+      order_index: index,
+    }));
+
+    // Update state immediately for better UX
+    setNames(newNames.map((n, i) => ({ ...n, order_index: i })));
+
+    // Update database
+    try {
+      for (const update of updates) {
+        await supabase
+          .from('baby_name_ideas')
+          .update({ order_index: update.order_index })
+          .eq('id', update.id);
+      }
+    } catch (error) {
+      console.error('Failed to update order:', error);
+    }
+  };
+
   const handleEnhanceAll = async () => {
     // Find names that don't have AI enhancements yet
     const unenhancedNames = names.filter(n => !n.ai_enhanced_notes || Object.keys(n.ai_enhanced_notes).length === 0);
@@ -301,7 +332,7 @@ export default function NameBoardView({
         total: unenhancedNames.length
       });
 
-      await handleEnhanceName(name.id, false);
+      await handleEnhanceName(name.id, true); // Save AI insights to notes
       // Small delay to avoid overwhelming the API
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -389,6 +420,7 @@ export default function NameBoardView({
           onEnhanceAll={handleEnhanceAll}
           onDelete={handleDeleteName}
           onOpenComments={(nameId) => setSelectedNameId(nameId)}
+          onUpdateOrder={handleUpdateOrder}
         />
 
         {/* Name Detail Sheet */}
