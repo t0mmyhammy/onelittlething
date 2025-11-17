@@ -139,6 +139,7 @@ export default function ReadyForBabyView({
   userId,
   familyId,
 }: ReadyForBabyViewProps) {
+  const supabase = createClient();
   const [babyPrepList, setBabyPrepList] = useState(initialBabyPrepList);
   const [tasks, setTasks] = useState(initialTasks);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -146,6 +147,12 @@ export default function ReadyForBabyView({
   );
   const [hideCompleted, setHideCompleted] = useState(false);
   const [newTaskInputs, setNewTaskInputs] = useState<Record<string, string>>({});
+  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
+  const [recommendationsCategory, setRecommendationsCategory] = useState<string | null>(null);
+  const [generatingHospitalBags, setGeneratingHospitalBags] = useState(false);
+  const [generatedPackListIds, setGeneratedPackListIds] = useState<string[]>([]);
+
+  const hasOlderChildren = babyPrepList?.is_second_child || false;
 
   const getTasksByCategory = (category: string) => {
     return tasks.filter(t => t.category === category);
@@ -158,6 +165,16 @@ export default function ReadyForBabyView({
   const getVisibleTasks = (category: string) => {
     const categoryTasks = getTasksByCategory(category);
     return hideCompleted ? categoryTasks.filter(t => !t.is_complete) : categoryTasks;
+  };
+
+  const toggleSection = (category: string) => {
+    const newExpanded = new Set(expandedSections);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedSections(newExpanded);
   };
 
   const handleToggleTask = async (taskId: string) => {
