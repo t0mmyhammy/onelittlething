@@ -152,10 +152,10 @@ export default function ReadyForBabyView({
   const [generatingHospitalBags, setGeneratingHospitalBags] = useState(false);
   const [generatedPackListIds, setGeneratedPackListIds] = useState<string[]>([]);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
-  const [showNameChecker, setShowNameChecker] = useState(false);
-  const [checkedName, setCheckedName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
+  const [editingNameNotes, setEditingNameNotes] = useState('');
+  const [familyLastName, setFamilyLastName] = useState('');
   const supabase = createClient();
 
   // Determine if family has older children (to show context-specific tasks)

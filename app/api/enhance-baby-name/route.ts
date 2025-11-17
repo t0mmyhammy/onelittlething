@@ -9,7 +9,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { name, type } = await req.json();
+    const { name, type, siblingNames, lastName } = await req.json();
 
     // Verify user is authenticated
     const supabase = await createClient();
@@ -32,33 +32,46 @@ export async function POST(req: Request) {
     }
 
     const genderContext = type === 'F' ? 'feminine' : type === 'M' ? 'masculine' : 'gender-neutral';
+    const fullName = lastName ? `${name} ${lastName}` : name;
+    const initials = lastName ? `${name[0]}${lastName[0]}` : '';
+    const siblingContext = siblingNames && siblingNames.length > 0
+      ? `\n\nSibling names: ${siblingNames.join(', ')}`
+      : '';
 
-    const systemPrompt = `You are a helpful assistant that provides information about baby names.
+    const systemPrompt = `You are a helpful assistant that provides comprehensive information about baby names.
 
-For each name, provide:
-1. Meaning and what it represents
-2. Origin (cultural/linguistic background)
-3. Current popularity ranking or trend
-4. How it sounds with common sibling names (general compatibility notes)
+For each name, provide detailed information that helps parents make an informed decision:
 
-Keep responses concise, warm, and informative. Focus on interesting facts parents would appreciate.
+1. **Meaning**: What the name means and symbolizes
+2. **Origin**: Cultural, linguistic, or historical background
+3. **Popularity**: Current ranking and trend (verify from recent data sources like SSA, The Bump, Nameberry)
+4. **Nicknames**: Common shortened versions or pet names
+5. **Sibling Compatibility**: How it sounds with the provided sibling names (rhythm, style, similar vs. contrasting)
+${lastName ? `6. **Full Name**: Analysis of "${fullName}" - how first and last name flow together\n7. **Initials**: Note if initials "${initials}" form any words or acronyms` : ''}
+
+Keep responses warm, concise, and actionable. Parents appreciate specific details.
 
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 {
-  "meaning": "Brief description of what the name means",
-  "origin": "Cultural or linguistic origin",
-  "popularity": "Current popularity trend or ranking",
-  "siblingCompatibility": "Notes on how it sounds with other names"
+  "meaning": "Brief description",
+  "origin": "Cultural origin",
+  "popularity": "Current ranking/trend with year",
+  "nicknames": ["Nickname1", "Nickname2"],
+  "siblingCompatibility": "Specific notes about how it pairs with sibling names"${lastName ? `,
+  "fullNameFlow": "Analysis of first + last name",
+  "initials": "Initials and any notes"` : ''}
 }`;
+
+    const userPrompt = `Please provide comprehensive information about the ${genderContext} name "${name}".${siblingContext}${lastName ? `\n\nLast name: ${lastName}` : ''}`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Please provide information about the ${genderContext} name "${name}".` }
+        { role: 'user', content: userPrompt }
       ],
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 800,
     });
 
     const content = completion.choices[0]?.message?.content;
