@@ -12,7 +12,12 @@
       "Bash(git commit:*)",
       "Bash(npm run build:*)",
       "Bash(supabase db push:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npx tsx:*)",
+      "Bash(brew upgrade:*)",
+      "Bash(psql:*)",
+      "Bash(npx supabase:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

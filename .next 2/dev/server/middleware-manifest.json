@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "middleware": {
+    "/": {
+      "files": [
+        "server/edge/chunks/Desktop_OneLittleThing_bf6d85b0._.js",
+        "server/edge/chunks/dfb5e_@opentelemetry_api_build_esm_7ce515d5._.js",
+        "server/edge/chunks/dfb5e_@supabase_storage-js_dist_module_036ef380._.js",
+        "server/edge/chunks/dfb5e_@supabase_auth-js_dist_module_a8d45122._.js",
+        "server/edge/chunks/dfb5e_c90d8fc6._.js",
+        "server/edge/chunks/[root-of-the-server]__30e391a3._.js",
+        "server/edge/chunks/turbopack-Desktop_OneLittleThing_edge-wrapper_abc344f8.js"
+      ],
+      "name": "middleware",
+      "page": "/",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*))(\\\\.json)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "Qi/oUrdR/k3JjzGVWqQYfjraMUjkKKQ6qGhVJEa5LZc=",
+        "__NEXT_PREVIEW_MODE_ID": "49e6cc4f3f3973f1080db45afc708080",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "fa7672cbc2170f6cc27ea80249c4bc1da78a890b55105e2be01f995e8d8b2e8b",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "7adb6e1b7d0f77d492d20302d56fecb82645d5bc23b5f8b8022772d1d419a67a"
+      }
+    }
+  },
+  "sortedMiddleware": [
+    "/"
+  ],
+  "functions": {}
+}

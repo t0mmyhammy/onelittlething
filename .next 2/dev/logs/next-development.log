@@ -1,0 +1,5 @@
+[00:00:01.893] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:02.057] Server  LOG      ✓ Ready in 1636ms
+[00:00:05.703] Server  LOG      ○ Compiling /dashboard ...
+[00:00:08.692] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:19.113] Browser ERROR   unhandledRejection: i: Failed to connect to MetaMask
