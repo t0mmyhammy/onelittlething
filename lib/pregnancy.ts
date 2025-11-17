@@ -19,10 +19,11 @@ export interface PregnancyMeta {
 
 export function calcFromDueDate(dueISO: string): PregnancyMeta {
   const now = getNowDetroit().startOf("day");
-  const due = DateTime.fromISO(dueISO, { zone: "America/Detroit" }).endOf("day");
+  const due = DateTime.fromISO(dueISO, { zone: "America/Detroit" }).startOf("day");
 
   // Days until due date (can be negative if past due)
-  const daysUntilDue = Math.ceil(due.diff(now, "days").days);
+  // Using Math.round instead of Math.ceil to handle the exact day correctly
+  const daysUntilDue = Math.round(due.diff(now, "days").days);
 
   // Calculate days elapsed in pregnancy (280 days total - days until due)
   const daysElapsed = GESTATION_DAYS - daysUntilDue;
