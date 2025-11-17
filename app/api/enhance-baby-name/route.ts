@@ -44,7 +44,7 @@ For each name, provide detailed information that helps parents make an informed 
 
 1. **Meaning**: What the name means and symbolizes
 2. **Origin**: Cultural, linguistic, or historical background
-3. **Popularity**: Current ranking and trend (verify from recent data sources like SSA, The Bump, Nameberry)
+3. **Popularity**: Current ranking and trend (use thebump.com as the primary source for baby name popularity data, including current year rankings and trends)
 4. **Nicknames**: Common shortened versions or pet names
 5. **Sibling Compatibility**: How it sounds with the provided sibling names (rhythm, style, similar vs. contrasting)
 ${lastName ? `6. **Full Name**: Analysis of "${fullName}" - how first and last name flow together\n7. **Initials**: Note if initials "${initials}" form any words or acronyms` : ''}

@@ -380,13 +380,40 @@ export default function NameBoardView({
 
   if (isTableMode) {
     return (
-      <NameComparisonTable
-        names={names}
-        children={children}
-        lastName={lastName}
-        onBack={() => setViewMode('board')}
-        onEnhanceAll={handleEnhanceAll}
-      />
+      <>
+        <NameComparisonTable
+          names={names}
+          children={children}
+          lastName={lastName}
+          onBack={() => setViewMode('board')}
+          onEnhanceAll={handleEnhanceAll}
+          onDelete={handleDeleteName}
+          onOpenComments={(nameId) => setSelectedNameId(nameId)}
+        />
+
+        {/* Name Detail Sheet */}
+        {selectedName && (
+          <NameDetailSheet
+            name={selectedName}
+            userId={userId}
+            children={children}
+            lastName={lastName}
+            onClose={() => setSelectedNameId(null)}
+            onUpdate={handleUpdateName}
+            onDelete={handleDeleteName}
+            onToggleReaction={handleToggleReaction}
+            onEnhance={handleEnhanceName}
+          />
+        )}
+
+        {/* Progress Modal */}
+        <NameProgressModal
+          isOpen={progressModal.isOpen}
+          type={progressModal.type}
+          current={progressModal.current}
+          total={progressModal.total}
+        />
+      </>
     );
   }
 

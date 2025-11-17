@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronLeftIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, SparklesIcon, TrashIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { BabyName } from './NameBoardView';
 
 interface Child {
@@ -16,6 +16,8 @@ interface NameComparisonTableProps {
   lastName: string;
   onBack: () => void;
   onEnhanceAll: () => Promise<void>;
+  onDelete: (nameId: string) => Promise<void>;
+  onOpenComments: (nameId: string) => void;
 }
 
 export default function NameComparisonTable({
@@ -24,6 +26,8 @@ export default function NameComparisonTable({
   lastName,
   onBack,
   onEnhanceAll,
+  onDelete,
+  onOpenComments,
 }: NameComparisonTableProps) {
   const [enhancing, setEnhancing] = useState(false);
 
@@ -89,7 +93,7 @@ export default function NameComparisonTable({
     <div className="min-h-screen bg-cream">
       {/* Header */}
       <div className="sticky top-0 bg-cream/95 backdrop-blur-sm z-10 border-b border-gray-200 px-4 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto gap-4">
+        <div className="flex items-center justify-between w-full gap-4">
           <button
             onClick={onBack}
             className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
@@ -113,12 +117,12 @@ export default function NameComparisonTable({
       </div>
 
       {/* Table */}
-      <div className="max-w-7xl mx-auto px-4 py-6 overflow-x-auto">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+      <div className="w-full py-6 overflow-x-auto">
+        <div className="bg-white shadow-sm border-y border-gray-200">
+          <table className="w-full text-sm min-w-max">
             <thead className="bg-sage text-white">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold sticky left-0 bg-sage z-10">Name</th>
+                <th className="px-4 py-3 text-left font-semibold sticky left-0 bg-sage z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Name</th>
                 <th className="px-4 py-3 text-left font-semibold min-w-[200px]">Meaning</th>
                 <th className="px-4 py-3 text-left font-semibold min-w-[120px]">Popularity</th>
                 <th className="px-4 py-3 text-left font-semibold min-w-[150px]">Nicknames</th>
@@ -134,6 +138,7 @@ export default function NameComparisonTable({
                     Flow with {sibName}
                   </th>
                 ))}
+                <th className="px-4 py-3 text-center font-semibold min-w-[100px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -152,7 +157,7 @@ export default function NameComparisonTable({
                 return (
                   <tr key={name.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     {/* Name - Sticky */}
-                    <td className={`px-4 py-3 font-semibold text-gray-900 sticky left-0 z-10 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className={`px-4 py-3 font-semibold text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <div className="flex items-center gap-2">
                         {name.name}
                         {name.is_favorite && <span className="text-sm">⭐</span>}
@@ -218,6 +223,26 @@ export default function NameComparisonTable({
                         {enhanced.siblingCompatibility || '—'}
                       </td>
                     ))}
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => onOpenComments(name.id)}
+                          className="p-2 text-gray-500 hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
+                          title="View comments"
+                        >
+                          <ChatBubbleLeftIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(name.id)}
+                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete name"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
