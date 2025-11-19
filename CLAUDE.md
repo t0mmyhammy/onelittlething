@@ -53,6 +53,8 @@ Refer to `firstprinciples.md` for the complete framework, including:
 - RLS policies enforce family isolation
 
 ### Recent Major Features Added
+- **Weekly Highlights** (Nov 2025): AI-powered weekly timeline summary with reflection questions
+- **Names Module Enhancements** (Nov 2025): Family Fit Spotlight, AI notes backfill, comparison table improvements
 - **Reminders** (Nov 2025): Task management with family sharing
 - **Pack Lists** (Nov 2025): Reusable checklists with templates
 - **Ready for Baby** (Nov 2025): Pregnancy preparation hub
@@ -69,5 +71,6 @@ Refer to `firstprinciples.md` for the complete framework, including:
 - Users without family_id will get UUID errors - redirect to dashboard
 - babyPrepList can be null on first visit - handle gracefully
 - RLS policies must allow INSERT for new users
+- Weekly highlights API uses simplified `select('*')` query - entry_children relationship query needs fix (deferred)
 
 Always verify assumptions and test changes in all relevant environments before deploying.

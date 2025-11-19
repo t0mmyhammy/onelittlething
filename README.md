@@ -4,7 +4,7 @@
 
 Calm, human, private by default.
 
-![Version](https://img.shields.io/badge/version-1.8-sage)
+![Version](https://img.shields.io/badge/version-1.9-sage)
 ![Status](https://img.shields.io/badge/status-Active%20Development-success)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-blue)
@@ -91,6 +91,10 @@ Visit `http://localhost:3000`
 ### Capture
 - **Home** - Daily anchor with quick moment capture
 - **Timeline** - Rolling journal with filters by child and type
+- **Weekly Highlights** - AI-powered summary of the week's moments with reflection questions
+  - Per-child highlight sections
+  - Combined family summary
+  - Copy to clipboard functionality
 - **Voice Input** - Hands-free moment recording
 - **Photos** - Attach images to memories
 - **On This Day** - See past memories from this date
@@ -109,6 +113,12 @@ Visit `http://localhost:3000`
   - Name Ideas with AI enhancement and family reactions
   - Context-aware recommendations (first baby vs. second+)
   - Auto-generate hospital bag pack lists
+- **Names Module** - Baby naming with AI research and family context
+  - Family Fit Spotlight: drag names to see full family preview
+  - AI-powered name enhancement (meaning, origin, popularity, vibe)
+  - Name comparison table with detailed research
+  - Parent names editor for family context
+  - Automatic AI notes backfill for enhanced names
 - **Care Guides** - Build comprehensive info for child and family
   - Routines, Health, Comfort, Safety, Contacts
   - Family: Home Base, House Rules, Schedule, Emergency
@@ -145,6 +155,7 @@ onelittlething/
 ├── app/                      # Next.js App Router pages
 │   ├── dashboard/           # Home page (capture)
 │   ├── timeline/            # Journal timeline
+│   ├── names/               # Baby naming with AI research
 │   ├── sizes/               # Sizes & Ideas & Wishlist
 │   ├── reminders/           # Task management
 │   ├── pack-lists/          # Reusable checklists
@@ -153,18 +164,22 @@ onelittlething/
 │   ├── advice/              # AI parenting coach
 │   ├── settings/            # Account & family settings
 │   └── api/                 # API routes
-│       ├── enhance-baby-name/      # AI name enhancement
-│       ├── generate-hospital-bags/ # Template pack list generation
-│       ├── generate-pack-list/     # AI pack list generation
-│       ├── import-reminders/       # Import reminders from text
-│       └── ...                     # Other API endpoints
+│       ├── enhance-baby-name/           # AI name enhancement
+│       ├── generate-weekly-highlights/  # AI weekly timeline summary
+│       ├── generate-hospital-bags/      # Template pack list generation
+│       ├── generate-pack-list/          # AI pack list generation
+│       ├── import-reminders/            # Import reminders from text
+│       └── ...                          # Other API endpoints
 ├── components/              # React components
 │   ├── care-info/          # Care guide sections
 │   ├── tabs/               # Tab components
-│   ├── PackListTemplatesModal.tsx  # Pack list templates
-│   ├── RecommendedTasksModal.tsx   # Baby prep recommendations
-│   ├── ReminderCard.tsx            # Reminder display
-│   └── ...                 # Shared components
+│   ├── timeline/           # Timeline components
+│   ├── WeeklyHighlights.tsx         # Weekly highlights modal
+│   ├── FamilyFitSpotlight.tsx       # Name family fit preview
+│   ├── PackListTemplatesModal.tsx   # Pack list templates
+│   ├── RecommendedTasksModal.tsx    # Baby prep recommendations
+│   ├── ReminderCard.tsx             # Reminder display
+│   └── ...                          # Shared components
 ├── lib/                     # Utilities and helpers
 │   ├── supabase/           # Supabase clients
 │   ├── guideGenerator.ts   # Guide template system
@@ -272,12 +287,17 @@ Amber:  #F59E0B  - Warnings, incomplete states
 - [x] AI name enhancement with family reactions
 - [x] Context-aware recommendations (first vs. second+ baby)
 - [x] Auto-generate hospital bag pack lists
+- [x] Weekly Highlights with AI summary and reflection questions
+- [x] Family Fit Spotlight for name preview
+- [x] Pregnancy term modal improvements
+- [x] Name comparison table text wrapping fixes
+- [x] AI notes backfill for enhanced names
 
 ### Current Sprint
-- [ ] Fix babyPrepList null state issue
-- [ ] Polish Ready for Baby UX
+- [ ] Fix entry_children relationship query in weekly highlights
 - [ ] Add more pack list templates
 - [ ] Improve reminder sharing flow
+- [ ] Polish Names module UX
 
 ### Next Up
 - [ ] Share links with tokens and expiry
@@ -329,5 +349,5 @@ Built with ❤️ by parents, for parents.
 
 ---
 
-**Last Updated**: November 13, 2025
-**Version**: 1.8 - Organize Section Expansion (Reminders, Pack Lists, Ready for Baby)
+**Last Updated**: November 17, 2025
+**Version**: 1.9 - Names Module & Weekly Highlights

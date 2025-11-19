@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] - 2025-11-17
+
+### Added - Names Module & Weekly Highlights
+
+#### Names Feature Enhancements
+- **Family Fit Spotlight**: Drag-and-drop zone to preview names with full family context
+  - Shows "Tom, Natalia, Parker and [Name] Hamilton" format
+  - Parent names editor stored in user preferences
+  - Children names and last name integration
+  - Drag any name card to see how it fits with the family
+- **AI Notes Backfill**: One-time automatic backfill of AI insights into name card notes
+  - Generates formatted notes for names with enhancements but missing insights
+  - Uses AI to create meaningful summaries of name research
+  - Future enhancements auto-save notes when "Enhance All Names" or "Add AI Insight" is clicked
+- **Name Comparison Table**: Improved text wrapping with fixed column widths
+  - Name column: 150px, other columns: 200-300px (about 2x name width)
+  - Added break-words and leading-relaxed for better readability
+  - Fixed horizontal scroll issues with wrapped content
+
+#### Weekly Highlights Feature
+- **AI-Powered Timeline Summary**: Generate weekly highlights from dashboard
+  - Analyzes past week's timeline entries
+  - Creates per-child highlight sections (e.g., "Parker's Week", "Natalia's Week")
+  - Generates combined family summary that weaves together both kids' moments
+  - References specific entry titles and details (e.g., "like when..." or "from [entry title] to...")
+  - Provides 2-3 thoughtful reflection questions to inspire presence and mindfulness
+  - Copy to clipboard functionality with formatted text
+  - Beautiful modal UI with gradient backgrounds for each child section
+- Located in "All Moments" section header on dashboard
+
+#### Pregnancy UI Improvements
+- **Enhanced Term Modal**: Improved pregnancy term information display
+  - Added introductory context paragraph
+  - Visual icons for each term stage (🍼 preterm, 👶 early term, 💚 full term, 📅 late term)
+  - Modern left-border design with better spacing
+  - Larger, bolder headings for improved hierarchy
+  - Added disclaimer footer about pregnancy uniqueness
+  - Better readability with increased padding and clearer typography
+
+### API Endpoints Added
+- `/api/generate-weekly-highlights` - AI-powered weekly timeline summary with per-child sections
+
+### Database Migrations
+- `20251117130000_add_parent_names_to_user_preferences.sql` - Parent names storage for family fit display
+
+### Components Added
+- `WeeklyHighlights.tsx` - Weekly highlights modal with AI summary and copy functionality
+- `FamilyFitSpotlight.tsx` - Drag-and-drop zone for family name preview
+
+### Components Modified
+- `NameBoardView.tsx` - Added AI notes backfill, drag-and-drop context, family fit spotlight
+- `NameCard.tsx` - Made draggable using @dnd-kit
+- `NameComparisonTable.tsx` - Fixed column widths for text wrapping
+- `EntriesSection.tsx` - Added Weekly Highlights button
+- `BabyCountdownCard.tsx` - Improved pregnancy term modal formatting
+
+### Technical Details
+- Uses OpenAI GPT-4o-mini for weekly highlights generation
+- Integrated @dnd-kit library for drag-and-drop functionality
+- One-time effect execution with useRef for backfill operations
+- Clipboard API for copy functionality
+
+### Fixed
+- Pregnancy term modal now renders with proper spacing and visual hierarchy
+- Name comparison table columns now wrap text properly instead of elongating
+- Weekly highlights API uses correct `entries` table (not `timeline_entries`)
+- Simplified entry query to avoid relationship query issues (deferred fix)
+
+---
+
 ## [1.8.0] - 2025-11-13
 
 ### Added - Organize Section Expansion
