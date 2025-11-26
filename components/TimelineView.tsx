@@ -33,6 +33,7 @@ interface Entry {
   entry_date: string;
   created_by: string;
   photo_url?: string | null;
+  audio_url?: string | null;
   entry_children?: Array<{
     children: {
       id: string;
@@ -286,6 +287,7 @@ export default function TimelineView({
                               <MomentCard
                                 content={entry.content}
                                 photoUrl={entry.photo_url}
+                                audioUrl={entry.audio_url}
                                 entryChildren={entry.entry_children}
                                 onEditClick={() => handleEditClick(entry)}
                                 creatorInitial={getCreatorInitial(creatorInfo[entry.created_by])}
