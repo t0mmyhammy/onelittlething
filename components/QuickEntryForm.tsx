@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { HeartIcon } from '@heroicons/react/24/outline';
 import { Mic, Camera, X } from 'lucide-react';
+import VoiceRecorder from './VoiceRecorder';
 
 interface Child {
   id: string;
@@ -40,6 +41,7 @@ export default function QuickEntryForm({
   const [isRecording, setIsRecording] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
@@ -116,6 +118,14 @@ export default function QuickEntryForm({
     }
   };
 
+  const handleAudioRecordingComplete = (blob: Blob) => {
+    setAudioBlob(blob);
+  };
+
+  const removeAudio = () => {
+    setAudioBlob(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -147,6 +157,25 @@ export default function QuickEntryForm({
         }
       }
 
+      // Upload audio if recorded
+      let audioUrl = null;
+      if (audioBlob) {
+        const fileExt = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('mp4') ? 'mp4' : 'wav';
+        const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('entry-audio')
+          .upload(fileName, audioBlob);
+
+        if (uploadError) {
+          console.error('Audio upload error:', uploadError);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('entry-audio')
+            .getPublicUrl(fileName);
+          audioUrl = publicUrl;
+        }
+      }
+
       const { data: entry, error: entryError } = await supabase
         .from('entries')
         .insert({
@@ -155,6 +184,7 @@ export default function QuickEntryForm({
           content: content.trim(),
           entry_date: entryDate,
           photo_url: photoUrl,
+          audio_url: audioUrl,
         })
         .select()
         .single();
@@ -179,6 +209,7 @@ export default function QuickEntryForm({
       setIsExpanded(false);
       setShowDatePicker(false);
       removePhoto();
+      removeAudio();
 
       // Refresh page
       window.location.reload();
@@ -419,6 +450,17 @@ export default function QuickEntryForm({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* STEP 3b: Voice Recording */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Add a voice note</label>
+            <VoiceRecorder
+              onRecordingComplete={handleAudioRecordingComplete}
+              onClear={removeAudio}
+              audioBlob={audioBlob}
+              maxDuration={30}
+            />
           </div>
 
           {/* STEP 4: Submit Button */}

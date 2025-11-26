@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import AudioPlayer from './AudioPlayer';
+import { Trash2 } from 'lucide-react';
 
 interface Child {
   id: string;
@@ -13,6 +15,7 @@ interface Entry {
   id: string;
   content: string;
   entry_date: string;
+  audio_url?: string | null;
   entry_children?: Array<{
     children: {
       id: string;
@@ -56,6 +59,8 @@ export default function EditEntryModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [removeAudio, setRemoveAudio] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const supabase = createClient();
 
@@ -69,6 +74,8 @@ export default function EditEntryModal({
       const childIds = entry.entry_children?.map(ec => ec.children.id) || [];
       setSelectedChildren(childIds);
       setShowDeleteConfirm(false);
+      setCurrentAudioUrl(entry.audio_url || null);
+      setRemoveAudio(false);
 
       // Focus after data is set
       setTimeout(() => {
@@ -98,12 +105,19 @@ export default function EditEntryModal({
       }
 
       // Update the entry
+      const updateData: { content: string; entry_date: string; audio_url?: string | null } = {
+        content: content.trim(),
+        entry_date: entryDate,
+      };
+
+      // If user chose to remove audio, set audio_url to null
+      if (removeAudio) {
+        updateData.audio_url = null;
+      }
+
       const { error: entryError } = await supabase
         .from('entries')
-        .update({
-          content: content.trim(),
-          entry_date: entryDate,
-        })
+        .update(updateData)
         .eq('id', entry.id);
 
       if (entryError) throw entryError;
@@ -210,6 +224,44 @@ export default function EditEntryModal({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sage focus:border-transparent outline-none transition-all resize-none"
               />
             </div>
+
+            {/* Audio - If Present */}
+            {currentAudioUrl && !removeAudio && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Voice note
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <AudioPlayer audioUrl={currentAudioUrl} compact />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRemoveAudio(true)}
+                    className="p-2 text-gray-500 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                    title="Remove voice note"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Audio Removal Notice */}
+            {removeAudio && currentAudioUrl && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-amber-800">Voice note will be removed when you save</span>
+                  <button
+                    type="button"
+                    onClick={() => setRemoveAudio(false)}
+                    className="text-sm text-amber-700 hover:text-amber-900 font-medium"
+                  >
+                    Undo
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Select Children */}
             <div>

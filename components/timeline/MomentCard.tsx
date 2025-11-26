@@ -2,6 +2,7 @@
 
 import { PencilIcon } from '@heroicons/react/24/outline';
 import { getColorClasses } from '@/lib/labelColors';
+import AudioPlayer from '@/components/AudioPlayer';
 
 interface Child {
   id: string;
@@ -16,6 +17,7 @@ interface EntryChild {
 interface MomentCardProps {
   content: string;
   photoUrl?: string | null;
+  audioUrl?: string | null;
   entryChildren?: EntryChild[];
   onEditClick: () => void;
   creatorInitial?: string;
@@ -24,6 +26,7 @@ interface MomentCardProps {
 export default function MomentCard({
   content,
   photoUrl,
+  audioUrl,
   entryChildren,
   onEditClick,
   creatorInitial,
@@ -68,6 +71,13 @@ export default function MomentCard({
             alt="Moment photo"
             className="rounded-xl w-full h-auto max-h-96 object-cover"
           />
+        </div>
+      )}
+
+      {/* Audio - If Present */}
+      {audioUrl && (
+        <div className="mt-4">
+          <AudioPlayer audioUrl={audioUrl} compact />
         </div>
       )}
 
