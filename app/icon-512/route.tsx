@@ -1,12 +1,8 @@
 import { ImageResponse } from 'next/og';
 
-export const size = {
-  width: 48,
-  height: 48,
-};
-export const contentType = 'image/png';
+export const runtime = 'edge';
 
-export default function Icon() {
+export async function GET() {
   return new ImageResponse(
     (
       <div
@@ -17,12 +13,11 @@ export default function Icon() {
           alignItems: 'center',
           justifyContent: 'center',
           background: 'linear-gradient(135deg, #D8A7A0 0%, #C49A93 100%)',
-          borderRadius: '10px',
         }}
       >
         <svg
-          width="28"
-          height="28"
+          width="280"
+          height="280"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +30,8 @@ export default function Icon() {
       </div>
     ),
     {
-      ...size,
+      width: 512,
+      height: 512,
     }
   );
 }
