@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import NewEntryModal from './NewEntryModal';
 import EditEntryModal from './EditEntryModal';
-import { BarsArrowUpIcon, PencilSquareIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import QuickEntryForm from './QuickEntryForm';
+import { BarsArrowUpIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import TimelineNode from './timeline/TimelineNode';
 import MomentCard from './timeline/MomentCard';
 import WeeklyHighlights from './WeeklyHighlights';
@@ -58,7 +58,6 @@ export default function EntriesSection({
   familyId,
   userId,
 }: EntriesSectionProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [selectedChildFilter, setSelectedChildFilter] = useState<string | null>(null);
@@ -100,11 +99,6 @@ export default function EntriesSection({
 
     fetchCreatorInfo();
   }, [initialEntries]);
-
-  const handleEntryCreated = () => {
-    // Refresh the page to show new entry
-    window.location.reload();
-  };
 
   const handleEntryUpdated = () => {
     // Refresh the page to show updated entry
@@ -230,14 +224,16 @@ export default function EntriesSection({
                 </div>
               )}
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-sage text-white p-2 rounded-lg hover:opacity-90 transition-opacity"
-              aria-label="New entry"
-            >
-              <PencilSquareIcon className="w-5 h-5" />
-            </button>
           </div>
+        </div>
+
+        {/* Quick Entry Form - Same as dashboard */}
+        <div className="mb-4">
+          <QuickEntryForm
+            children={children}
+            familyId={familyId}
+            userId={userId}
+          />
         </div>
 
         {/* Search Bar */}
@@ -413,15 +409,6 @@ export default function EntriesSection({
           </div>
         )}
       </div>
-
-      <NewEntryModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onEntryCreated={handleEntryCreated}
-        children={children}
-        familyId={familyId}
-        userId={userId}
-      />
 
       <EditEntryModal
         isOpen={isEditModalOpen}

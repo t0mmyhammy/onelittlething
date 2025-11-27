@@ -222,32 +222,22 @@ export default function QuickEntryForm({
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-sage/20">
-      {/* Collapsed State - Just the text field */}
+      {/* Collapsed State - Small text input that expands on focus */}
       {!isExpanded ? (
-        <button
-          onClick={handleExpand}
-          className="w-full text-left"
-        >
-          <div className="flex items-center gap-3">
-            <HeartIcon className="w-7 h-7 text-rose" />
-            <div className="flex-1">
-              <p className="text-lg font-serif font-bold text-gray-900">
-                {placeholder}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Click to capture a moment
-              </p>
-            </div>
-            <svg
-              className="w-5 h-5 text-gray-400 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <HeartIcon className="w-5 h-5 text-rose" />
+            <span className="text-sm font-medium text-gray-700">{placeholder}</span>
           </div>
-        </button>
+          <input
+            type="text"
+            onClick={handleExpand}
+            onFocus={handleExpand}
+            placeholder="Tap to capture a moment..."
+            readOnly
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-pointer hover:border-sage hover:bg-white transition-all"
+          />
+        </div>
       ) : (
         /* Expanded State - Full form with reordered fields */
         <form onSubmit={handleSubmit} className="space-y-4">
